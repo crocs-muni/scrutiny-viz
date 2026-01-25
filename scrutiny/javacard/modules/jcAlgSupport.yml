@@ -1,0 +1,36 @@
+schema_version: "0.11"
+
+defaults:
+  data:
+    type: list
+    record_schema:
+      name:
+        dtype: string
+        required: true
+        category: nominal
+      value:
+        dtype: string
+        category: binary
+  report:
+    types: ["table","radar"]
+  component:
+    comparator: basic
+    match_key: name
+    show_key: name
+    include_matches: true
+  target: {}
+
+sections:
+  "javacardx.crypto.Cipher": {}
+  "javacard.crypto.Signature": {}
+  "javacard.security.MessageDigest": {}
+  "javacard.security.RandomData": {}
+  "javacard.security.KeyBuilder": {}
+  "javacard.security.KeyAgreement": {}
+  "javacard.security.Checksum": {}
+  "javacard.security.KeyPair ALG_RSA on-card generation": {}
+  "javacard.security.KeyPair ALG_RSA_CRT on-card generation": {}
+  "javacard.security.KeyPair ALG_DSA on-card generation": {}
+  "javacard.security.KeyPair ALG_EC_F2M on-card generation": {}
+  "javacard.security.KeyPair ALG_EC_FP on-card generation": {}
+  "javacardx.crypto.AEADCipher": {}

@@ -1,0 +1,106 @@
+{
+  "MESSAGE_DIGEST": [
+    {
+      "algorithm": "ALG_SHA MessageDigest_doFinal()",
+      "op_name": "ALG_SHA MessageDigest_doFinal()",
+      "measurement_config": "appletPrepareINS;34;appletMeasureINS;41;config;00 15 00 01 ff ff ff ff ff ff 00 06 01 00 ff ff ff ff 00 32 00 01",
+
+      "baseline_measurements_ms": [79.0, 78.0, 78.0, 79.0, 78.0],
+      "baseline_avg_ms": 72.4,
+      "baseline_min_ms": 78.0,
+      "baseline_max_ms": 79.0,
+
+      "operation_raw_measurements_ms": [290.6, 291.6, 283.6, 284.6, 287.6],
+      "avg_ms": 5.75,
+      "min_ms": 5.67,
+      "max_ms": 5.83,
+
+      "data_length": 256,
+      "total_iterations": 250,
+      "total_invocations": 250
+    },
+    {
+      "algorithm": "ALG_MD5 MessageDigest_doFinal()",
+      "op_name": "ALG_MD5 MessageDigest_doFinal()",
+      "measurement_config": "appletPrepareINS;34;appletMeasureINS;41;config;00 15 00 02 ff ff ff ff ff ff 00 06 01 00 ff ff ff ff 00 32 00 01",
+      "error": "NO_SUCH_ALGORITHM"
+    },
+    {
+      "algorithm": "ALG_SHA MessageDigest_doFinal2()",
+      "op_name": "ALG_SHA MessageDigest_doFinal2()",
+      "measurement_config": "appletPrepareINS;34;appletMeasureINS;41;config;00 15 00 01 ff ff ff ff ff ff 00 06 01 00 ff ff ff ff 00 32 00 01",
+
+      "baseline_measurements_ms": [79.0, 78.0, 78.0, 79.0, 78.0],
+      "baseline_avg_ms": 100.0,
+      "baseline_min_ms": 78.0,
+      "baseline_max_ms": 79.0,
+
+      "operation_raw_measurements_ms": [290.6, 291.6, 283.6, 284.6, 287.6],
+      "avg_ms": 5.75,
+      "min_ms": 5.67,
+      "max_ms": 5.83,
+
+      "data_length": 256,
+      "total_iterations": 250,
+      "total_invocations": 250
+    },
+    {
+      "algorithm": "ALG_MD5 MessageDigest_doFinal2()",
+      "op_name": "ALG_MD5 MessageDigest_doFinal2()",
+      "measurement_config": "appletPrepareINS;34;appletMeasureINS;41;config;00 15 00 02 ff ff ff ff ff ff 00 06 01 00 ff ff ff ff 00 32 00 01",
+      "error": "NO_SUCH_ALGORITHM"
+    },
+    {
+      "algorithm": "ALG_SHA MessageDigest_doFinal3()",
+      "op_name": "ALG_SHA MessageDigest_doFinal3()",
+      "measurement_config": "appletPrepareINS;34;appletMeasureINS;41;config;00 15 00 01 ff ff ff ff ff ff 00 06 01 00 ff ff ff ff 00 32 00 01",
+
+      "baseline_measurements_ms": [79.0, 78.0, 78.0, 79.0, 78.0],
+      "baseline_avg_ms": 90.0,
+      "baseline_min_ms": 78.0,
+      "baseline_max_ms": 79.0,
+
+      "operation_raw_measurements_ms": [290.6, 291.6, 283.6, 284.6, 287.6],
+      "avg_ms": 4.75,
+      "min_ms": 5.67,
+      "max_ms": 5.83,
+
+      "data_length": 256,
+      "total_iterations": 250,
+      "total_invocations": 250
+    },
+    {
+      "algorithm": "ALG_MD5 MessageDigest_doFinal3()",
+      "op_name": "ALG_MD5 MessageDigest_doFinal3()",
+      "measurement_config": "appletPrepareINS;34;appletMeasureINS;41;config;00 15 00 02 ff ff ff ff ff ff 00 06 01 00 ff ff ff ff 00 32 00 01",
+      "error": "NO_SUCH_ALGORITHM"
+    }        
+  ],
+  "RANDOM_GENERATOR": [
+    {
+      "algorithm": "ALG_PSEUDO_RANDOM RandomData_generateData()",
+      "op_name": "ALG_PSEUDO_RANDOM RandomData_generateData()",
+      "measurement_config": "appletPrepareINS;33;appletMeasureINS;42;config;00 16 00 01 ff ff ff ff ff ff 00 03 01 00 ff ff ff ff 00 32 00 01",
+
+      "baseline_measurements_ms": [70.0, 69.0, 69.0, 69.0, 69.0],
+      "baseline_avg_ms": 69.2,
+      "baseline_min_ms": 69.0,
+      "baseline_max_ms": 70.0,
+
+      "operation_raw_measurements_ms": [31.8, 30.8, 30.8, 31.8, 31.8],
+      "avg_ms": 0.63,
+      "min_ms": 0.62,
+      "max_ms": 0.64,
+
+      "data_length": 256,
+      "total_iterations": 250,
+      "total_invocations": 250
+    },
+    {
+      "algorithm": "ALG_TRNG RandomData_generateData()",
+      "op_name": "ALG_TRNG RandomData_generateData()",
+      "measurement_config": "appletPrepareINS;33;appletMeasureINS;42;config;00 16 00 03 ff ff ff ff ff ff 00 03 01 00 ff ff ff ff 00 32 00 01",
+      "error": "NO_SUCH_ALGORITHM"
+    }
+  ]
+}

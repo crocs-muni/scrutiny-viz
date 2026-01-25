@@ -1,0 +1,21 @@
+CPLC (Card Production Life Cycle) compares manufacturing and personalization metadata reported by the card.
+
+What it is:
+- A set of fields defined by GlobalPlatform that describes chip/module vendor IDs, fabrication and packaging dates,
+  OS identifiers, serial numbers, and personalization equipment information.
+
+How to interpret results:
+- MATCH means all compared CPLC fields are identical (by default this tool compares the first token of each value,
+  e.g. "7196" in "7196 (2017-07-15)").
+- WARN means some CPLC fields are missing on one side (reference or profiled). This can happen due to measurement or
+  parsing differences, but may also indicate a mismatch.
+- SUSPICIOUS means at least one CPLC field differs. This strongly suggests the devices are not the same card or differ
+  in hardware/software revision.
+
+Important limitation:
+- CPLC is static data and can be forged or copied. A perfect match does NOT guarantee the cards are identical.
+  However, a mismatch is still a strong indicator of non-identity.
+
+Tip:
+- If you see WARN due to missing fields, try repeating the measurement and ensuring the same tool/version and reader
+  are used for both captures.

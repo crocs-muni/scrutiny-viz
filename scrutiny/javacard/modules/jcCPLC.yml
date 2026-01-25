@@ -1,0 +1,44 @@
+schema_version: "0.12"
+
+defaults:
+  data:
+    type: list
+  component:
+    comparator: basic
+    match_key: __override__
+  target: {}
+  report:
+    theme: dark
+
+sections:
+  ATR:
+    data:
+      record_schema:
+        name:  { dtype: string, required: true, category: nominal }
+        value: { dtype: string, category: nominal }
+    component:
+      comparator: basic
+      match_key: name
+      show_key: name
+      include_matches: true
+    report:
+      types: ["table"]
+      doc: docs/cplc.txt
+
+  CPLC:
+    data:
+      record_schema:
+        field: { dtype: string, required: true, category: nominal }
+        value: { dtype: string, category: nominal }
+    component:
+      comparator: cplc
+      match_key: field
+      show_key: field
+      include_matches: true
+    target:
+      value_field: value
+      compare_first_token: true
+    report:
+      types:
+        - type: table
+          variant: cplc

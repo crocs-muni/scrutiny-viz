@@ -1,0 +1,69 @@
+schema_version: "0.11"
+
+defaults:
+  data:
+    type: list
+    record_schema:
+      algorithm:
+        dtype: string
+        category: nominal
+        required: true
+      op_name:
+        dtype: string
+        category: nominal
+      measurement_config:
+        dtype: string
+        category: nominal
+
+      avg_ms:
+        dtype: number
+        category: continuous
+      min_ms:
+        dtype: number
+        category: continuous
+      max_ms:
+        dtype: number
+        category: continuous
+
+      baseline_avg_ms:
+        dtype: number
+        category: continuous
+      baseline_min_ms:
+        dtype: number
+        category: continuous
+      baseline_max_ms:
+        dtype: number
+        category: continuous
+
+      data_length:
+        dtype: integer
+        category: continuous
+      total_iterations:
+        dtype: integer
+        category: continuous
+      total_invocations:
+        dtype: integer
+        category: continuous
+
+      error:
+        dtype: string
+        category: nominal
+      notes:
+        dtype: string
+        category: nominal
+
+  component:
+    comparator: algperf
+    match_key: algorithm
+    show_key: op_name
+    threshold_ratio: 0.20
+    include_matches: true
+
+  report:
+    types: ["chart", "table", "radar"]   
+    x_axis: "Reference avg (ms)"
+    y_axis: "Profile avg (ms)"
+
+sections:
+  MESSAGE_DIGEST: {}
+  RANDOM_GENERATOR: {}

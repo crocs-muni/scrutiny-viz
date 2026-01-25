@@ -1,0 +1,920 @@
+{
+    "javacardx.crypto.Cipher": [
+        {
+            "name": "ALG_DES_CBC_NOPAD",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_CBC_ISO9797_M1",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_CBC_ISO9797_M2",
+            "value": "no"
+        },
+        {
+            "name": "ALG_DES_CBC_PKCS5",
+            "value": "no"
+        },
+        {
+            "name": "ALG_DES_ECB_NOPAD",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_ECB_ISO9797_M1",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_ECB_ISO9797_M2",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_ECB_PKCS5",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_ISO14888",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_PKCS1",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_ISO9796",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_NOPAD",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_AES_BLOCK_128_CBC_NOPAD",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_AES_BLOCK_128_ECB_NOPAD",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_PKCS1_OAEP",
+            "value": "no"
+        },
+        {
+            "name": "ALG_KOREAN_SEED_ECB_NOPAD",
+            "value": "no"
+        },
+        {
+            "name": "ALG_KOREAN_SEED_CBC_NOPAD",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_BLOCK_192_CBC_NOPAD",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_BLOCK_192_ECB_NOPAD",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_BLOCK_256_CBC_NOPAD",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_BLOCK_256_ECB_NOPAD",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_CBC_ISO9797_M1",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_CBC_ISO9797_M2",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_CBC_PKCS5",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_ECB_ISO9797_M1",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_ECB_ISO9797_M2",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_ECB_PKCS5",
+            "value": "no"
+        }
+    ],
+    "javacard.crypto.Signature": [
+        {
+            "name": "ALG_DES_MAC4_NOPAD",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_MAC8_NOPAD",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_MAC4_ISO9797_M1",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_MAC8_ISO9797_M1",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_MAC4_ISO9797_M2",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_MAC8_ISO9797_M2",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_MAC4_PKCS5",
+            "value": "no"
+        },
+        {
+            "name": "ALG_DES_MAC8_PKCS5",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_SHA_ISO9796",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_SHA_PKCS1",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_MD5_PKCS1",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_RIPEMD160_ISO9796",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_RIPEMD160_PKCS1",
+            "value": "no"
+        },
+        {
+            "name": "ALG_DSA_SHA",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_SHA_RFvalue409",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_MD5_RFvalue409",
+            "value": "no"
+        },
+        {
+            "name": "ALG_ECDSA_SHA",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_AES_MAC_128_NOPAD",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_MAC4_ISO9797_1_M2_ALG3",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_DES_MAC8_ISO9797_1_M2_ALG3",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_SHA_PKCS1_PSS",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_MD5_PKCS1_PSS",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_RIPEMD160_PKCS1_PSS",
+            "value": "no"
+        },
+        {
+            "name": "ALG_HMAC_SHA1",
+            "value": "no"
+        },
+        {
+            "name": "ALG_HMAC_SHA_256",
+            "value": "no"
+        },
+        {
+            "name": "ALG_HMAC_SHA_384",
+            "value": "no"
+        },
+        {
+            "name": "ALG_HMAC_SHA_512",
+            "value": "no"
+        },
+        {
+            "name": "ALG_HMAC_MD5",
+            "value": "no"
+        },
+        {
+            "name": "ALG_HMAC_RIPEMD160",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_SHA_ISO9796_MR",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_RIPEMD160_ISO9796_MR",
+            "value": "no"
+        },
+        {
+            "name": "ALG_SEED_MAC_NOPAD",
+            "value": "no"
+        },
+        {
+            "name": "ALG_ECDSA_SHA_256",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_ECDSA_SHA_384",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_AES_MAC_192_NOPAD",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_MAC_256_NOPAD",
+            "value": "no"
+        },
+        {
+            "name": "ALG_ECDSA_SHA_224",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_ECDSA_SHA_512",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_SHA_224_PKCS1",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_SHA_256_PKCS1",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_SHA_384_PKCS1",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_SHA_512_PKCS1",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_SHA_224_PKCS1_PSS",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_SHA_256_PKCS1_PSS",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_SHA_384_PKCS1_PSS",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_SHA_512_PKCS1_PSS",
+            "value": "no"
+        },
+        {
+            "name": "ALG_DES_MAC4_ISO9797_1_M1_ALG3",
+            "value": "no"
+        },
+        {
+            "name": "ALG_DES_MAC8_ISO9797_1_M1_ALG3",
+            "value": "no"
+        },
+        {
+            "name": "ALG_AES_CMAC_128",
+            "value": "no"
+        }
+    ],
+    "javacard.security.MessageDigest": [
+        {
+            "name": "ALG_SHA",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_MD5",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RIPEMD160",
+            "value": "no"
+        },
+        {
+            "name": "ALG_SHA_256",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_SHA_384",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_SHA_512",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_SHA_224",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_SHA3_224",
+            "value": "no"
+        },
+        {
+            "name": "ALG_SHA3_256",
+            "value": "no"
+        },
+        {
+            "name": "ALG_SHA3_384",
+            "value": "no"
+        },
+        {
+            "name": "ALG_SHA3_512",
+            "value": "no"
+        }
+    ],
+    "javacard.security.RandomData": [
+        {
+            "name": "ALG_PSEUDO_RANDOM",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_SECURE_RANDOM",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_TRNG",
+            "value": "no"
+        },
+        {
+            "name": "ALG_ALG_PRESEEDED_DRBG",
+            "value": "no"
+        },
+        {
+            "name": "ALG_FAST",
+            "value": "no"
+        },
+        {
+            "name": "ALG_KEYGENERATION",
+            "value": "no"
+        }
+    ],
+    "javacard.security.KeyBuilder": [
+        {
+            "name": "TYPE_DES_TRANSIENT_RESET",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_DES_TRANSIENT_DESELECT",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_DES LENGTH_DES",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_DES LENGTH_DES3_2KEY",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_DES LENGTH_DES3_3KEY",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_AES_TRANSIENT_RESET",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_AES_TRANSIENT_DESELECT",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_AES LENGTH_AES_128",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_AES LENGTH_AES_192",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_AES LENGTH_AES_256",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_512",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_736",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_768",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_896",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_1024",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_1280",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_1536",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_1984",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_2048",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_3072",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_RSA_PUBLIC LENGTH_RSA_4096",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_512",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_736",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_768",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_896",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_1024",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_1280",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_1536",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_1984",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_2048",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_3072",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE LENGTH_RSA_4096",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE_TRANSIENT_RESET",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_PRIVATE_TRANSIENT_DESELECT",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_512",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_736",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_768",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_896",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_1024",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_1280",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_1536",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_1984",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_2048",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_3072",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE LENGTH_RSA_4096",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE_TRANSIENT_RESET",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_RSA_CRT_PRIVATE_TRANSIENT_DESELECT",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_DSA_PRIVATE LENGTH_DSA_512",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_DSA_PRIVATE LENGTH_DSA_768",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_DSA_PRIVATE LENGTH_DSA_1024",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_DSA_PRIVATE_TRANSIENT_RESET",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_DSA_PRIVATE_TRANSIENT_DESELECT",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_DSA_PUBLIC LENGTH_DSA_512",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_DSA_PUBLIC LENGTH_DSA_768",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_DSA_PUBLIC LENGTH_DSA_1024",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_F2M_PRIVATE LENGTH_EC_F2M_113",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_F2M_PRIVATE LENGTH_EC_F2M_131",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_F2M_PRIVATE LENGTH_EC_F2M_163",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_F2M_PRIVATE LENGTH_EC_F2M_193",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_F2M_PRIVATE_TRANSIENT_RESET",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_F2M_PRIVATE_TRANSIENT_DESELECT",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE LENGTH_EC_FP_112",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE LENGTH_EC_FP_128",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE LENGTH_EC_FP_160",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE LENGTH_EC_FP_192",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE LENGTH_EC_FP_224",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE LENGTH_EC_FP_256",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE LENGTH_EC_FP_320",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE LENGTH_EC_FP_384",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE LENGTH_EC_FP_512",
+            "value": "yes"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE LENGTH_EC_FP_521",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE_TRANSIENT_RESET",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_EC_FP_PRIVATE_TRANSIENT_DESELECT",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_KOREAN_SEED_TRANSIENT_RESET",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_KOREAN_SEED_TRANSIENT_DESELECT",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_KOREAN_SEED LENGTH_KOREAN_SEED_128",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_HMAC_TRANSIENT_RESET",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_HMAC_TRANSIENT_DESELECT",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_HMAC LENGTH_HMAC_SHA_1_BLOCK_64",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_HMAC LENGTH_HMAC_SHA_256_BLOCK_64",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_HMAC LENGTH_HMAC_SHA_384_BLOCK_64",
+            "value": "no"
+        },
+        {
+            "name": "TYPE_HMAC LENGTH_HMAC_SHA_512_BLOCK_64",
+            "value": "no"
+        }
+    ],
+    "javacard.security.KeyAgreement": [
+        {
+            "name": "ALG_EC_SVDP_DH/ALG_EC_SVDP_DH_KDF",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_EC_SVDP_DHC/ALG_EC_SVDP_DHC_KDF",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_EC_SVDP_DH_PLAIN",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_EC_SVDP_DHC_PLAIN",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_EC_PACE_GM",
+            "value": "no"
+        },
+        {
+            "name": "ALG_EC_SVDP_DH_PLAIN_XY",
+            "value": "no"
+        },
+        {
+            "name": "ALG_DH_PLAIN",
+            "value": "no"
+        }
+    ],
+    "javacard.security.Checksum": [
+        {
+            "name": "ALG_ISO3309_CRC16",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_ISO3309_CRC32",
+            "value": "yes"
+        }
+    ],
+    "javacard.security.KeyPair ALG_RSA on-card generation": [
+        {
+            "name": "ALG_RSA LENGTH_RSA_512",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA LENGTH_RSA_736",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA LENGTH_RSA_768",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA LENGTH_RSA_896",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA LENGTH_RSA_1024",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA LENGTH_RSA_1280",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA LENGTH_RSA_1536",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA LENGTH_RSA_1984",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA LENGTH_RSA_2048",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA LENGTH_RSA_3072",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA LENGTH_RSA_4096",
+            "value": "no"
+        }
+    ],
+    "javacard.security.KeyPair ALG_RSA_CRT on-card generation": [
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_512",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_736",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_768",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_896",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_1024",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_1280",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_1536",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_1984",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_2048",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_3072",
+            "value": "no"
+        },
+        {
+            "name": "ALG_RSA_CRT LENGTH_RSA_4096",
+            "value": "no"
+        }
+    ],
+    "javacard.security.KeyPair ALG_DSA on-card generation": [
+        {
+            "name": "ALG_DSA LENGTH_DSA_512",
+            "value": "no"
+        },
+        {
+            "name": "ALG_DSA LENGTH_DSA_768",
+            "value": "no"
+        },
+        {
+            "name": "ALG_DSA LENGTH_DSA_1024",
+            "value": "no"
+        }
+    ],
+    "javacard.security.KeyPair ALG_EC_F2M on-card generation": [
+        {
+            "name": "ALG_EC_F2M LENGTH_EC_F2M_113",
+            "value": "no"
+        },
+        {
+            "name": "ALG_EC_F2M LENGTH_EC_F2M_131",
+            "value": "no"
+        },
+        {
+            "name": "ALG_EC_F2M LENGTH_EC_F2M_163",
+            "value": "no"
+        },
+        {
+            "name": "ALG_EC_F2M LENGTH_EC_F2M_193",
+            "value": "no"
+        }
+    ],
+    "javacard.security.KeyPair ALG_EC_FP on-card generation": [
+        {
+            "name": "ALG_EC_FP LENGTH_EC_FP_112",
+            "value": "no"
+        },
+        {
+            "name": "ALG_EC_FP LENGTH_EC_FP_128",
+            "value": "no"
+        },
+        {
+            "name": "ALG_EC_FP LENGTH_EC_FP_160",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_EC_FP LENGTH_EC_FP_192",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_EC_FP LENGTH_EC_FP_224",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_EC_FP LENGTH_EC_FP_256",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_EC_FP LENGTH_EC_FP_384",
+            "value": "yes"
+        },
+        {
+            "name": "ALG_EC_FP LENGTH_EC_FP_521",
+            "value": "no"
+        }
+    ],
+    "javacardx.crypto.AEADCipher": [
+        {
+            "name": "CIPHER_AES_CCM",
+            "value": "no"
+        },
+        {
+            "name": "CIPHER_AES_GCM",
+            "value": "no"
+        }
+    ]
+}

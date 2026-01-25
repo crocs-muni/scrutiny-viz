@@ -1,0 +1,25 @@
+{
+  "ATR": [
+    { "name": "ATR", "value": "3B8880010073C8400000900062" }
+  ],
+  "CPLC": [
+    { "field": "ICFabricator", "value": "4250" },
+    { "field": "ICType", "value": "0D03" },
+    { "field": "OperatingSystemID", "value": "5542" },
+    { "field": "OperatingSystemReleaseDate", "value": "0163 (2010-06-12)" },
+    { "field": "OperatingSystemReleaseLevel", "value": "2901" },
+    { "field": "ICFabricationDate", "value": "9149 (2019-05-29)" },
+    { "field": "ICSerialNumber", "value": "080740E5" },
+    { "field": "ICBatchIdentifier", "value": "204E" },
+    { "field": "ICModuleFabricator", "value": "4252" },
+    { "field": "ICModulePackagingDate", "value": "9158 (2019-06-07)" },
+    { "field": "ICCManufacturer", "value": "5542" },
+    { "field": "ICEmbeddingDate", "value": "0000 (2010-01-01)" },
+    { "field": "ICPrePersonalizer", "value": "0000" },
+    { "field": "ICPrePersonalizationEquipmentDate", "value": "0000 (2010-01-01)" },
+    { "field": "ICPrePersonalizationEquipmentID", "value": "00000000" },
+    { "field": "ICPersonalizer", "value": "1234" },
+    { "field": "ICPersonalizationDate", "value": "2222 (2012-08-09)" },
+    { "field": "ICPersonalizationEquipmentID", "value": "33334444" }
+  ]
+}

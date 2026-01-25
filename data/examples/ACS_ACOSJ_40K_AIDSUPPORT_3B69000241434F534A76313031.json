@@ -1,0 +1,117 @@
+{
+  "packages": [
+    { "packageName": "java.lang", "version": "1.0", "packageAID": "a0000000620001" },
+    { "packageName": "java.io", "version": "1.0", "packageAID": "a0000000620002" },
+    { "packageName": "java.rmi", "version": "1.0", "packageAID": "a0000000620003" },
+
+    { "packageName": "javacard.framework", "version": "1.0", "packageAID": "a0000000620101" },
+    { "packageName": "javacard.framework", "version": "1.1", "packageAID": "a0000000620101" },
+    { "packageName": "javacard.framework", "version": "1.2", "packageAID": "a0000000620101" },
+    { "packageName": "javacard.framework", "version": "1.3", "packageAID": "a0000000620101" },
+    { "packageName": "javacard.framework", "version": "1.4", "packageAID": "a0000000620101" },
+    { "packageName": "javacard.framework", "version": "1.5", "packageAID": "a0000000620101" },
+
+    { "packageName": "javacard.framework.service", "version": "1.0", "packageAID": "a000000062010101" },
+
+    { "packageName": "javacard.security", "version": "1.0", "packageAID": "a0000000620102" },
+    { "packageName": "javacard.security", "version": "1.1", "packageAID": "a0000000620102" },
+    { "packageName": "javacard.security", "version": "1.2", "packageAID": "a0000000620102" },
+    { "packageName": "javacard.security", "version": "1.3", "packageAID": "a0000000620102" },
+    { "packageName": "javacard.security", "version": "1.4", "packageAID": "a0000000620102" },
+    { "packageName": "javacard.security", "version": "1.5", "packageAID": "a0000000620102" },
+
+    { "packageName": "javacardx.crypto", "version": "1.0", "packageAID": "a0000000620201" },
+    { "packageName": "javacardx.crypto", "version": "1.1", "packageAID": "a0000000620201" },
+    { "packageName": "javacardx.crypto", "version": "1.2", "packageAID": "a0000000620201" },
+    { "packageName": "javacardx.crypto", "version": "1.3", "packageAID": "a0000000620201" },
+    { "packageName": "javacardx.crypto", "version": "1.4", "packageAID": "a0000000620201" },
+    { "packageName": "javacardx.crypto", "version": "1.5", "packageAID": "a0000000620201" },
+
+    { "packageName": "javacardx.biometry", "version": "1.0", "packageAID": "a0000000620202" },
+    { "packageName": "javacardx.biometry", "version": "1.1", "packageAID": "a0000000620202" },
+    { "packageName": "javacardx.biometry", "version": "1.2", "packageAID": "a0000000620202" },
+
+    { "packageName": "javacardx.framework.util", "version": "1.0", "packageAID": "a000000062020801" },
+    { "packageName": "javacardx.framework.util.intx", "version": "1.0", "packageAID": "a00000006202080101" },
+    { "packageName": "javacardx.framework.math", "version": "1.0", "packageAID": "a000000062020802" },
+    { "packageName": "javacardx.framework.tlv", "version": "1.0", "packageAID": "a000000062020803" }
+  ],
+  "fullPackages": [
+    { "fullPackageAID": "000107A0000000620001", "isSupported": true,  "packageNameWithVersion": "java.lang v1.0 a0000000620001" },
+    { "fullPackageAID": "010107A0000000620001", "isSupported": false, "packageNameWithVersion": "java.lang v1.1 a0000000620001" },
+
+    { "fullPackageAID": "000107A0000000620002", "isSupported": true,  "packageNameWithVersion": "java.io v1.0 a0000000620002" },
+    { "fullPackageAID": "010107A0000000620002", "isSupported": false, "packageNameWithVersion": "java.io v1.1 a0000000620002" },
+
+    { "fullPackageAID": "000107A0000000620003", "isSupported": true,  "packageNameWithVersion": "java.rmi v1.0 a0000000620003" },
+    { "fullPackageAID": "010107A0000000620003", "isSupported": false, "packageNameWithVersion": "java.rmi v1.1 a0000000620003" },
+
+    { "fullPackageAID": "000107A0000000620101", "isSupported": true,  "packageNameWithVersion": "javacard.framework v1.0 a0000000620101" },
+    { "fullPackageAID": "010107A0000000620101", "isSupported": true,  "packageNameWithVersion": "javacard.framework v1.1 a0000000620101" },
+    { "fullPackageAID": "020107A0000000620101", "isSupported": true,  "packageNameWithVersion": "javacard.framework v1.2 a0000000620101" },
+    { "fullPackageAID": "030107A0000000620101", "isSupported": true,  "packageNameWithVersion": "javacard.framework v1.3 a0000000620101" },
+    { "fullPackageAID": "040107A0000000620101", "isSupported": true,  "packageNameWithVersion": "javacard.framework v1.4 a0000000620101" },
+    { "fullPackageAID": "050107A0000000620101", "isSupported": true,  "packageNameWithVersion": "javacard.framework v1.5 a0000000620101" },
+    { "fullPackageAID": "060107A0000000620101", "isSupported": false, "packageNameWithVersion": "javacard.framework v1.6 a0000000620101" },
+    { "fullPackageAID": "070107A0000000620101", "isSupported": false, "packageNameWithVersion": "javacard.framework v1.7 a0000000620101" },
+
+    { "fullPackageAID": "000108A000000062010101", "isSupported": true,  "packageNameWithVersion": "javacard.framework.service v1.0 a000000062010101" },
+    { "fullPackageAID": "010108A000000062010101", "isSupported": false, "packageNameWithVersion": "javacard.framework.service v1.1 a000000062010101" },
+
+    { "fullPackageAID": "000107A0000000620102", "isSupported": true,  "packageNameWithVersion": "javacard.security v1.0 a0000000620102" },
+    { "fullPackageAID": "010107A0000000620102", "isSupported": true,  "packageNameWithVersion": "javacard.security v1.1 a0000000620102" },
+    { "fullPackageAID": "020107A0000000620102", "isSupported": true,  "packageNameWithVersion": "javacard.security v1.2 a0000000620102" },
+    { "fullPackageAID": "030107A0000000620102", "isSupported": true,  "packageNameWithVersion": "javacard.security v1.3 a0000000620102" },
+    { "fullPackageAID": "040107A0000000620102", "isSupported": true,  "packageNameWithVersion": "javacard.security v1.4 a0000000620102" },
+    { "fullPackageAID": "050107A0000000620102", "isSupported": true,  "packageNameWithVersion": "javacard.security v1.5 a0000000620102" },
+    { "fullPackageAID": "060107A0000000620102", "isSupported": false, "packageNameWithVersion": "javacard.security v1.6 a0000000620102" },
+    { "fullPackageAID": "070107A0000000620102", "isSupported": false, "packageNameWithVersion": "javacard.security v1.7 a0000000620102" },
+
+    { "fullPackageAID": "000107A0000000620201", "isSupported": true,  "packageNameWithVersion": "javacardx.crypto v1.0 a0000000620201" },
+    { "fullPackageAID": "010107A0000000620201", "isSupported": true,  "packageNameWithVersion": "javacardx.crypto v1.1 a0000000620201" },
+    { "fullPackageAID": "020107A0000000620201", "isSupported": true,  "packageNameWithVersion": "javacardx.crypto v1.2 a0000000620201" },
+    { "fullPackageAID": "030107A0000000620201", "isSupported": true,  "packageNameWithVersion": "javacardx.crypto v1.3 a0000000620201" },
+    { "fullPackageAID": "040107A0000000620201", "isSupported": true,  "packageNameWithVersion": "javacardx.crypto v1.4 a0000000620201" },
+    { "fullPackageAID": "050107A0000000620201", "isSupported": true,  "packageNameWithVersion": "javacardx.crypto v1.5 a0000000620201" },
+    { "fullPackageAID": "060107A0000000620201", "isSupported": false, "packageNameWithVersion": "javacardx.crypto v1.6 a0000000620201" },
+    { "fullPackageAID": "070107A0000000620201", "isSupported": false, "packageNameWithVersion": "javacardx.crypto v1.7 a0000000620201" },
+
+    { "fullPackageAID": "000107A0000000620202", "isSupported": true,  "packageNameWithVersion": "javacardx.biometry v1.0 a0000000620202" },
+    { "fullPackageAID": "010107A0000000620202", "isSupported": true,  "packageNameWithVersion": "javacardx.biometry v1.1 a0000000620202" },
+    { "fullPackageAID": "020107A0000000620202", "isSupported": true,  "packageNameWithVersion": "javacardx.biometry v1.2 a0000000620202" },
+    { "fullPackageAID": "030107A0000000620202", "isSupported": false, "packageNameWithVersion": "javacardx.biometry v1.3 a0000000620202" },
+    { "fullPackageAID": "040107A0000000620202", "isSupported": false, "packageNameWithVersion": "javacardx.biometry v1.4 a0000000620202" },
+
+    { "fullPackageAID": "000107A0000000620203", "isSupported": false, "packageNameWithVersion": "javacardx.external v1.0 a0000000620203" },
+    { "fullPackageAID": "010107A0000000620203", "isSupported": false, "packageNameWithVersion": "javacardx.external v1.1 a0000000620203" },
+
+    { "fullPackageAID": "000107A0000000620204", "isSupported": false, "packageNameWithVersion": "javacardx.biometry1toN v1.0 a0000000620204" },
+    { "fullPackageAID": "010107A0000000620204", "isSupported": false, "packageNameWithVersion": "javacardx.biometry1toN v1.1 a0000000620204" },
+
+    { "fullPackageAID": "000107A0000000620205", "isSupported": false, "packageNameWithVersion": "javacardx.security v1.0 a0000000620205" },
+    { "fullPackageAID": "010107A0000000620205", "isSupported": false, "packageNameWithVersion": "javacardx.security v1.1 a0000000620205" },
+
+    { "fullPackageAID": "000108A000000062020801", "isSupported": true,  "packageNameWithVersion": "javacardx.framework.util v1.0 a000000062020801" },
+    { "fullPackageAID": "010108A000000062020801", "isSupported": false, "packageNameWithVersion": "javacardx.framework.util v1.1 a000000062020801" },
+    { "fullPackageAID": "020108A000000062020801", "isSupported": false, "packageNameWithVersion": "javacardx.framework.util v1.2 a000000062020801" },
+
+    { "fullPackageAID": "000109A00000006202080101", "isSupported": true,  "packageNameWithVersion": "javacardx.framework.util.intx v1.0 a00000006202080101" },
+    { "fullPackageAID": "010109A00000006202080101", "isSupported": false, "packageNameWithVersion": "javacardx.framework.util.intx v1.1 a00000006202080101" },
+
+    { "fullPackageAID": "000108A000000062020802", "isSupported": true,  "packageNameWithVersion": "javacardx.framework.math v1.0 a000000062020802" },
+    { "fullPackageAID": "010108A000000062020802", "isSupported": false, "packageNameWithVersion": "javacardx.framework.math v1.1 a000000062020802" },
+
+    { "fullPackageAID": "000108A000000062020803", "isSupported": true,  "packageNameWithVersion": "javacardx.framework.tlv v1.0 a000000062020803" },
+    { "fullPackageAID": "010108A000000062020803", "isSupported": false, "packageNameWithVersion": "javacardx.framework.tlv v1.1 a000000062020803" },
+
+    { "fullPackageAID": "000108A000000062020804", "isSupported": false, "packageNameWithVersion": "javacardx.framework.string v1.0 a000000062020804" },
+    { "fullPackageAID": "010108A000000062020804", "isSupported": false, "packageNameWithVersion": "javacardx.framework.string v1.1 a000000062020804" },
+
+    { "fullPackageAID": "000107A0000000620209", "isSupported": false, "packageNameWithVersion": "javacardx.apdu v1.0 a0000000620209" },
+    { "fullPackageAID": "010107A0000000620209", "isSupported": false, "packageNameWithVersion": "javacardx.apdu v1.1 a0000000620209" },
+
+    { "fullPackageAID": "000108A000000062020901", "isSupported": false, "packageNameWithVersion": "javacardx.apdu.util v1.0 a000000062020901" },
+    { "fullPackageAID": "010108A000000062020901", "isSupported": false, "packageNameWithVersion": "javacardx.apdu.util v1.1 a000000062020901" }
+  ]
+}
+

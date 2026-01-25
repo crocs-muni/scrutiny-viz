@@ -1,0 +1,5 @@
+dominate~=2.9.1
+jsonpickle~=2.0.0
+flake8~=3.9.0
+overrides~=7.7.0
+PyYAML~=6.0.2
