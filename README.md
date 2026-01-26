@@ -37,8 +37,8 @@ Python dependencies (from `requirements.txt`):
 
 ### 1) Clone
 ```bash
-git clone <YOUR_REPO_URL>.git
-cd <YOUR_REPO_FOLDER>
+git clone https://github.com/crocs-muni/scrutiny-viz.git
+cd https://github.com/crocs-muni/scrutiny-viz.git
 ```
 
 ### 2) (Recommended) Create a virtual environment
