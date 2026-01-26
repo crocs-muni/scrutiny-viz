@@ -1,8 +1,3 @@
-# SCRUTINY binaries
-*.jar
-*.cap
-*.exe
-
 # SCRUTINY stuff
 results/* 
 output/*
@@ -42,6 +37,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.venv/*
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

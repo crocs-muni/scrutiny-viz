@@ -87,8 +87,8 @@ python verify.py \
 ```powershell
 python verify.py `
   -s .\scrutiny\javacard\modules\jcCPLC.yml `
-  -r ".\data\CSOB VISA debit.json" `
-  -p ".\data\CSOB VISA debit.json" `
+  -r ".\data\examples\CSOB VISA debit.json" `
+  -p ".\data\examples\CSOB VISA debit.json" `
   -o test.json `
   -v --print-diffs 100 --print-matches 100 -rep
 ```
@@ -171,11 +171,10 @@ scrutiny/
   ...
 data/
   style.css
+  *.json
   script.js
 schemas/
   *.yml
-data/
-  *.json
 verify.py
 report_html.py
 ```
