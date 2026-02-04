@@ -1,10 +1,8 @@
+# scrutiny-viz/scrutiny/reporting/viz/table/cplc.py
 from __future__ import annotations
-
 from typing import Any, Dict, List
 from dominate import tags
-
 from .default import render_table_block
-
 
 def _first_token(s: str) -> str:
     s = (s or "").strip()

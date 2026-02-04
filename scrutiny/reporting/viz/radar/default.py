@@ -1,9 +1,8 @@
+# scrutiny-viz/scrutiny/reporting/viz/radar/default.py
 from typing import Dict, Any, List, Tuple
 from dominate import tags
 from dominate.util import raw
 import math, html
-
-# Radar chart with responsive cap + optional "Show all" (no JS required)
 
 def _pt(cx, cy, r, ang_rad):
     return (cx + r * math.cos(ang_rad), cy + r * math.sin(ang_rad))

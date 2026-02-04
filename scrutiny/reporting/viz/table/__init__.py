@@ -1,10 +1,8 @@
+# scrutiny-viz/scrutiny/reporting/viz/table/__init__.py
 from __future__ import annotations
-
 from typing import Any, Dict, Optional
-
 from .default import render_table_block
 from .cplc import render_cplc_table
-
 
 def render_table_variant(
     *,

@@ -1,4 +1,4 @@
-# scrutiny/comparators/registry.py
+# scrutiny-viz/scrutiny/comparators/registry.py
 from __future__ import annotations
 from typing import Dict, Type
 from .interface import Comparator

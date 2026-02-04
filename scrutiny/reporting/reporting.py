@@ -1,4 +1,4 @@
-# scrutiny/reporting/reporting.py
+# scrutiny-viz/scrutiny/reporting/reporting.py
 from __future__ import annotations
 from typing import Dict, Any, List
 from scrutiny.interfaces import ContrastState

@@ -1,29 +1,36 @@
-# scrutiny/reporting/viz/chart.py
-from typing import Dict, Any, List
+# scrutiny-viz/scrutiny/reporting/viz/chart/default.py
+from __future__ import annotations
+from typing import Any, Dict, List, Optional
+import html
 from dominate import tags
 from dominate.util import raw
-import html
 
-def _num(v):
+def _num(v: Any) -> Optional[float]:
     try:
+        if v is None:
+            return None
         return float(v)
     except Exception:
         return None
 
 
-def _fmt_num(v):
+def _fmt_num(v: Any) -> str:
     if v is None:
         return ""
     try:
         fv = float(v)
         s = f"{fv:.6g}"
-        # trim trailing .0
         if s.endswith(".0"):
             s = s[:-2]
         return s
     except Exception:
         return str(v)
 
+def _trunc(s: str, max_chars: int = 42) -> str:
+    s = s or ""
+    if len(s) <= max_chars:
+        return s
+    return s[: max_chars - 1] + "…"
 
 def render_bar_pair_block(section_name: str, section: Dict[str, Any], idx: int):
     """
@@ -36,15 +43,28 @@ def render_bar_pair_block(section_name: str, section: Dict[str, Any], idx: int):
 
     pad_x = 14
     pad_y = 12
-    label_w = 320         # room for long labels on left
-    bar_h = 8             # each bar height
-    bar_gap = 4           # gap between ref and test bars
-    row_gap = 10          # gap between pairs
-    row_block = (bar_h * 2 + bar_gap)  # vertical space taken by bars for one key
-    row_total = row_block + row_gap     # including gap
+
+    label_w = 380
+    value_pad = 90 
+
+    bar_h = 8
+    bar_gap = 4
+    row_gap = 10
+    row_block = (bar_h * 2 + bar_gap)
+    row_total = row_block + row_gap
     legend_h = 18
 
-    values = []
+    width = 900
+    x_bars = pad_x + label_w
+
+    inner_w = width - label_w - 2 * pad_x - value_pad
+    if inner_w < 1:
+        inner_w = 1
+
+    x_max_text = x_bars + inner_w + value_pad - 6
+
+    # scale
+    values: List[float] = []
     for r in rows:
         ra = _num(r.get("ref_avg"))
         ta = _num(r.get("test_avg"))
@@ -56,52 +76,57 @@ def render_bar_pair_block(section_name: str, section: Dict[str, Any], idx: int):
     if not values:
         return tags.div()
 
-    vmax = max(values) or 1.0
+    vmax = max(values)
+    if vmax <= 0:
+        vmax = 1.0
 
-    # SVG size (fixed width like the old chart, height based on rows)
-    width = 900
-    inner_w = max(1, width - label_w - 2 * pad_x)
     height = pad_y * 2 + len(rows) * row_total + legend_h
 
-    # Build raw SVG (no dependency on dominate SVG helpers)
     parts: List[str] = []
     parts.append(f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" class="barpair">')
 
-    # Left column labels + bars
-    x_label = pad_x
-    x_bars = pad_x + label_w
-
     y = pad_y
     for r in rows:
-        key = html.escape(str(r.get("key", "")))
+        full_key = str(r.get("key", "") or "")
+        short_key = _trunc(full_key, max_chars=44)
+
         ref_v = _num(r.get("ref_avg"))
         tst_v = _num(r.get("test_avg"))
 
-        # Label (aligned with the bar pair)
-        # Use middle baseline and offset to sit between the two bars
+        # label centered on the bar-pair; RIGHT-aligned at bar start
         label_y = y + bar_h + bar_gap / 2.0
+        x_label = x_bars - 8
+
         parts.append(
             f'<text x="{x_label}" y="{label_y + bar_h/2}" '
-            f'class="chart-label" text-anchor="start" dominant-baseline="middle">{key}</text>'
+            f'class="chart-label" text-anchor="end" dominant-baseline="middle">'
+            f'<title>{html.escape(full_key)}</title>'
+            f'{html.escape(short_key)}'
+            f'</text>'
         )
 
-        # Reference bar
+        # reference bar
         if ref_v is not None:
             w = max(0.0, (ref_v / vmax) * inner_w)
             parts.append(f'<rect x="{x_bars}" y="{y}" width="{w}" height="{bar_h}" class="bar-ref"></rect>')
+
+            # value AFTER bar, but clamp into allowed area
+            x_text = min(x_bars + w + 4, x_max_text)
             parts.append(
-                f'<text x="{x_bars + w + 4}" y="{y + bar_h/2}" '
-                f'class="bar-value" dominant-baseline="middle">{_fmt_num(ref_v)}</text>'
+                f'<text x="{x_text}" y="{y + bar_h/2}" '
+                f'class="bar-value" dominant-baseline="middle">{html.escape(_fmt_num(ref_v))}</text>'
             )
 
-        # Test/profile bar
+        # profile bar
         yt = y + bar_h + bar_gap
         if tst_v is not None:
             w = max(0.0, (tst_v / vmax) * inner_w)
             parts.append(f'<rect x="{x_bars}" y="{yt}" width="{w}" height="{bar_h}" class="bar-test"></rect>')
+
+            x_text = min(x_bars + w + 4, x_max_text)
             parts.append(
-                f'<text x="{x_bars + w + 4}" y="{yt + bar_h/2}" '
-                f'class="bar-value" dominant-baseline="middle">{_fmt_num(tst_v)}</text>'
+                f'<text x="{x_text}" y="{yt + bar_h/2}" '
+                f'class="bar-value" dominant-baseline="middle">{html.escape(_fmt_num(tst_v))}</text>'
             )
 
         y += row_total
@@ -110,31 +135,35 @@ def render_bar_pair_block(section_name: str, section: Dict[str, Any], idx: int):
     leg_y = height - pad_y - legend_h / 2
     leg_x = x_bars
     parts.append(f'<rect x="{leg_x}" y="{leg_y - 5}" width="12" height="6" class="bar-ref"></rect>')
-    parts.append(f'<text x="{leg_x + 18}" y="{leg_y + 2}" class="legend-text" dominant-baseline="middle">reference</text>')
+    parts.append(
+        f'<text x="{leg_x + 18}" y="{leg_y + 2}" class="legend-text" dominant-baseline="middle">reference</text>'
+    )
     parts.append(f'<rect x="{leg_x + 110}" y="{leg_y - 5}" width="12" height="6" class="bar-test"></rect>')
-    parts.append(f'<text x="{leg_x + 128}" y="{leg_y + 2}" class="legend-text" dominant-baseline="middle">profile</text>')
+    parts.append(
+        f'<text x="{leg_x + 128}" y="{leg_y + 2}" class="legend-text" dominant-baseline="middle">profile</text>'
+    )
 
-    parts.append('</svg>')
+    parts.append("</svg>")
 
     container = tags.div(_class="chart-container", id=f"chart-{idx}")
     container.add(raw("".join(parts)))
     return container
 
-
 def render_chart_table_block(section_name: str, section: Dict[str, Any], idx: int):
     rows: List[Dict[str, Any]] = section.get("chart_rows", []) or []
-    headers = ["Key", "Ref Avg", "Test Avg", "Δ ms", "Δ %", "Status", "Note"]
+    if not rows:
+        return tags.div()
+
+    headers = ["Key", "Ref Avg", "Profile Avg", "Δ ms", "Δ %", "Status", "Note"]
+
     table = tags.table(_class="chart-table")
     with table:
-        thead = tags.thead()
-        with thead:
-            tr = tags.tr()
+        with tags.tr():
             for h in headers:
                 tags.th(h)
-        tbody = tags.tbody()
-        with tbody:
-            for r in rows:
-                tr = tags.tr()
+
+        for r in rows:
+            with tags.tr():
                 tags.td(str(r.get("key", "")))
                 tags.td(_fmt_num(r.get("ref_avg")))
                 tags.td(_fmt_num(r.get("test_avg")))
@@ -142,4 +171,5 @@ def render_chart_table_block(section_name: str, section: Dict[str, Any], idx: in
                 tags.td(_fmt_num(r.get("delta_pct")))
                 tags.td(str(r.get("status", "")))
                 tags.td(str(r.get("note", "")))
+
     return table

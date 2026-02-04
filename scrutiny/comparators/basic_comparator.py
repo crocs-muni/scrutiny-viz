@@ -1,4 +1,4 @@
-# scrutiny/comparators/basic.py
+# scrutiny-viz/scrutiny/comparators/basic.py
 from __future__ import annotations
 from typing import Any, Dict, List, Optional, Iterable, Tuple, Union
 

@@ -1,12 +1,4 @@
-# --------------------------------------------
-# PURPOSE
-# - Build a self-contained HTML report from a verification JSON.
-# - Uses modular visualizations from scrutiny.reporting.viz.*
-# - Layout parts:
-#     1) Intro (left = text & navigation, right = overview donuts + KPIs)
-#     2) Per-module cards (viz + tables + optional extras)
-# --------------------------------------------
-
+# scrutiny-viz/report_html.py
 import argparse
 import json
 import os

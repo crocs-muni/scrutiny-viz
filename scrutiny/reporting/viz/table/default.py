@@ -1,3 +1,4 @@
+# scrutiny-viz/scrutiny/reporting/viz/table/default.py
 from typing import List, Any
 from dominate import tags
 from scrutiny.htmlutils import show_hide_div

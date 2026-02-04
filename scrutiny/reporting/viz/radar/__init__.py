@@ -1,3 +1,4 @@
+# scrutiny-viz/scrutiny/reporting/viz/chart/__init__.py
 from __future__ import annotations
 from typing import Any, Dict, Optional
 from .default import render_radar_block

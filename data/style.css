@@ -9,6 +9,11 @@
   --orange-color:#d3923e;
   --red-color:#c04444;
 
+  /* chart colors */
+  --chart-ref: #8aa;
+  --chart-test: #557;
+
+
   --space-1: 8px;
   --space-2: 12px;
   --space-3: 16px;
@@ -43,6 +48,10 @@ body[data-theme="dark"]{
 
   --tooltip-bg: rgba(0,0,0,0.85);
   --shadow: none;
+
+  /* chart colors */
+  --chart-ref: #84c5ff;
+  --chart-test: #b78cff;
 }
 
 /* ============================
@@ -62,6 +71,10 @@ body{
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.45;
 }
+
+/* Ensure SVG text inherits theme color (fix dark-mode chart labels) */
+svg text{ fill: currentColor; }
+
 
 /* Keep default browser margins sane */
 h1,h2,h3,h4,p{ margin: 0 0 var(--space-2) 0; }
@@ -237,9 +250,18 @@ body[data-theme="dark"] .badge-warn    { background: rgba(201,180,0,0.16);   col
 /* ============================
    Charts
    ============================ */
-.bar-ref { fill: #8aa; }
-.bar-test { fill: #557; }
-.chart-label, .bar-value, .legend-text { font-size: 13px; }
+.bar-ref { fill: var(--chart-ref); }
+.bar-test { fill: var(--chart-test); }
+.chart-label, .bar-value, .legend-text { font-size: 13px; fill: currentColor; }
+
+.chart-container { overflow-x: auto; }
+svg.barpair { display: block; max-width: 100%; height: auto; }
+
+/* Dark theme: make chart text a bit brighter */
+body[data-theme="dark"] .chart-label,
+body[data-theme="dark"] .bar-value{
+  fill: rgba(255,255,255,0.88);
+}
 
 /* ============================
    Radar
@@ -258,6 +280,9 @@ body[data-theme="dark"] .radar-axis       { stroke: rgba(255,255,255,0.10); }
 body[data-theme="dark"] .radar-grid-label { fill: rgba(255,255,255,0.55); }
 body[data-theme="dark"] .radar-label      { fill: rgba(255,255,255,0.82); }
 body[data-theme="dark"] .radar-legend     { fill: rgba(255,255,255,0.82); }
+body[data-theme="dark"] .radar-ref        { fill: rgba(130,180,255,0.22); stroke: rgba(130,180,255,0.95); }
+body[data-theme="dark"] .radar-test       { fill: rgba(190,150,255,0.18); stroke: rgba(190,150,255,0.90); }
+
 
 /* ============================
    Intro right column

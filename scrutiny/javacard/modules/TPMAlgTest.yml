@@ -1,0 +1,61 @@
+schema_version: "0.12"
+
+
+defaults:
+  data:
+    type: list
+    record_schema:
+      algorithm:          { dtype: string,  required: true, category: nominal }
+      op_name:            { dtype: string,  required: true, category: nominal }
+      measurement_config: { dtype: string,  category: nominal }
+
+      avg_ms:             { dtype: number,  category: continuous }
+      min_ms:             { dtype: number,  category: continuous }
+      max_ms:             { dtype: number,  category: continuous }
+
+      data_length:        { dtype: integer, category: continuous }
+      total_iterations:   { dtype: integer, category: continuous }
+      total_invocations:  { dtype: integer, category: continuous }
+
+      error:              { dtype: string,  category: nominal }
+      notes:              { dtype: string,  category: nominal }
+
+  component:
+    comparator: algperf
+    match_key: algorithm
+    show_key: op_name
+    include_matches: true
+    threshold_ratio: 0.20
+    threshold_count: 0
+
+  report:
+    theme: dark
+    types: ["chart", "table", "radar"]
+    x_axis: "Reference avg (ms)"
+    y_axis: "Profile avg (ms)"
+
+  target: {}
+
+sections:
+  TPM_INFO:
+    data:
+      record_schema:
+        name:  { dtype: string, required: true, category: nominal }
+        value: { dtype: string, required: true, category: nominal }
+    component:
+      comparator: basic
+      match_key: name
+      show_key: name
+      include_matches: true
+    report:
+      types: ["table"]
+
+  TPM2_Create: {}
+  TPM2_EncryptDecrypt: {}
+  TPM2_GetRandom: {}
+  TPM2_HMAC: {}
+  TPM2_Hash: {}
+  TPM2_RSA_Decrypt: {}
+  TPM2_RSA_Encrypt: {}
+  TPM2_Sign: {}
+  TPM2_VerifySignature: {}
