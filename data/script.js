@@ -88,3 +88,28 @@ function displayImage(imgs, expandedImageID, imageTextID) {
 }
 
 /* Gallery end */
+
+function toggleRadarScale(containerId) {
+  var host = document.getElementById(containerId);
+  if (!host) return;
+
+  var normal = host.querySelector('[data-scale="normal"]');
+  var log = host.querySelector('[data-scale="log"]');
+  if (!normal || !log) return;
+
+  var btn = host.querySelector('[data-radar-toggle="scale"]');
+
+  var showLog = log.hasAttribute("hidden");
+  if (showLog) {
+    log.removeAttribute("hidden");
+    normal.setAttribute("hidden", "");
+  } else {
+    normal.removeAttribute("hidden");
+    log.setAttribute("hidden", "");
+  }
+
+  if (btn) {
+    btn.textContent = showLog ? "Scale: log" : "Scale: normal";
+  }
+}
+

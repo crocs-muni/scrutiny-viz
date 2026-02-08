@@ -41,7 +41,7 @@
       "algorithm": "TPM2_Create|ECC|0x0010",
       "op_name": "ECC 0x0010",
       "measurement_config": "Key parameters=ECC 0x0010",
-      "avg_ms": 636.88,
+      "avg_ms": 696.88,
       "min_ms": 624.27,
       "max_ms": 644.51,
       "total_iterations": 1000,

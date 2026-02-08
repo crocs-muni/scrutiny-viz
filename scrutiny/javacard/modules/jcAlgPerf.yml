@@ -60,6 +60,7 @@ defaults:
     include_matches: true
 
   report:
+    theme: dark
     types: ["chart", "table", "radar"]   
     x_axis: "Reference avg (ms)"
     y_axis: "Profile avg (ms)"

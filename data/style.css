@@ -275,6 +275,9 @@ body[data-theme="dark"] .bar-value{
 .radar-test{ fill: rgba(40,60,120,0.25); stroke: rgba(40,60,120,0.85); }
 .radar-legend{ font-size: 12px; fill: #333; }
 
+svg.radar { overflow: visible; }
+.radar-container { overflow: visible; }
+
 body[data-theme="dark"] .radar-grid       { stroke: rgba(255,255,255,0.16); }
 body[data-theme="dark"] .radar-axis       { stroke: rgba(255,255,255,0.10); }
 body[data-theme="dark"] .radar-grid-label { fill: rgba(255,255,255,0.55); }
@@ -283,6 +286,20 @@ body[data-theme="dark"] .radar-legend     { fill: rgba(255,255,255,0.82); }
 body[data-theme="dark"] .radar-ref        { fill: rgba(130,180,255,0.22); stroke: rgba(130,180,255,0.95); }
 body[data-theme="dark"] .radar-test       { fill: rgba(190,150,255,0.18); stroke: rgba(190,150,255,0.90); }
 
+.radar-container{
+  position: relative;
+}
+
+.radar-controls{
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 5;
+}
+
+.radar-controls button{
+  white-space: nowrap;
+}
 
 /* ============================
    Intro right column
