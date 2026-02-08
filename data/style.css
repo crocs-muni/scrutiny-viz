@@ -122,16 +122,56 @@ div{ margin-top: 2px; }
    Tables
    ============================ */
 table{
-  border: solid var(--card-border-w) var(--table-border);
+  border: 1px solid var(--table-border);
   border-collapse: collapse;
   width: 100%;
   max-width: 100%;
 }
 
 th, td{
-  border: solid var(--card-border-w) var(--table-border);
-  padding: 6px 10px;
+  border: none;
+  border-bottom: 1px solid var(--table-border);
+  padding: 7px 10px;
   vertical-align: top;
+}
+
+thead th{
+  font-weight: 700;
+  background: rgba(0,0,0,0.03);
+}
+
+body[data-theme="dark"] thead th{
+  background: rgba(255,255,255,0.05);
+}
+
+tbody tr:nth-child(even) td{
+  background: rgba(0,0,0,0.02);
+}
+
+body[data-theme="dark"] tbody tr:nth-child(even) td{
+  background: rgba(255,255,255,0.03);
+}
+
+tbody tr:last-child td{
+  border-bottom: none;
+}
+
+/* Right-align numeric columns in chart tables */
+.chart-table th:nth-child(2),
+.chart-table th:nth-child(3),
+.chart-table th:nth-child(4),
+.chart-table th:nth-child(5),
+.chart-table td:nth-child(2),
+.chart-table td:nth-child(3),
+.chart-table td:nth-child(4),
+.chart-table td:nth-child(5){
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-table th:nth-child(6),
+.chart-table td:nth-child(6){
+  text-align: center;
 }
 
 /* ============================

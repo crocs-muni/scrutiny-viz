@@ -802,7 +802,7 @@
         },
         {
             "name": "ALG_RSA_CRT LENGTH_RSA_736",
-            "value": "yes"
+            "value": "no"
         },
         {
             "name": "ALG_RSA_CRT LENGTH_RSA_768",

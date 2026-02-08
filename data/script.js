@@ -113,3 +113,35 @@ function toggleRadarScale(containerId) {
   }
 }
 
+function setGlobalFilter(mode) {
+  mode = (mode || "all").toLowerCase();
+
+  document.querySelectorAll(".module-card").forEach(function(card) {
+    var hasIssues = (card.getAttribute("data-has-issues") === "1");
+    var hasErrors = (card.getAttribute("data-has-errors") === "1");
+
+    var show = true;
+    if (mode === "issues") show = hasIssues;
+    else if (mode === "errors") show = hasErrors;
+
+    card.style.display = show ? "" : "none";
+  });
+
+  ["filterAll","filterIssues","filterErrors"].forEach(function(id) {
+    var b = document.getElementById(id);
+    if (!b) return;
+    b.classList.remove("active");
+  });
+
+  if (mode === "issues") {
+    var bi = document.getElementById("filterIssues"); if (bi) bi.classList.add("active");
+  } else if (mode === "errors") {
+    var be = document.getElementById("filterErrors"); if (be) be.classList.add("active");
+  } else {
+    var ba = document.getElementById("filterAll"); if (ba) ba.classList.add("active");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  setGlobalFilter("all");
+});

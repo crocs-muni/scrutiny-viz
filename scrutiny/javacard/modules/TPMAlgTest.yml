@@ -25,12 +25,11 @@ defaults:
     match_key: algorithm
     show_key: op_name
     include_matches: true
-    threshold_ratio: 0.20
-    threshold_count: 0
+    threshold_ratio: 0.5
 
   report:
     theme: dark
-    types: ["chart", "table", "radar"]
+    types: ["chart", "radar"]
     x_axis: "Reference avg (ms)"
     y_axis: "Profile avg (ms)"
 

@@ -5,10 +5,6 @@
       "value": ""
     },
     {
-      "name": "ExecutionDateTime",
-      "value": "2019/05/17 09:03:05"
-    },
-    {
       "name": "Manufacturer",
       "value": "INTC"
     },
@@ -30,7 +26,7 @@
       "algorithm": "TPM2_Create|ECC|0x0003",
       "op_name": "ECC 0x0003",
       "measurement_config": "Key parameters=ECC 0x0003",
-      "avg_ms": 315.61,
+      "avg_ms": 300.61,
       "min_ms": 308.45,
       "max_ms": 340.5,
       "total_iterations": 1000,

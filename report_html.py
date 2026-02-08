@@ -48,6 +48,24 @@ def state_enum(s: str) -> ContrastState:
     except Exception:
         return ContrastState.WARN
 
+def iter_sections_issues_first(report: Dict[str, Any]) -> List[Tuple[str, Dict[str, Any]]]:
+    """
+    Stable partition:
+      - keep original order within groups
+      - move WARN/SUSPICIOUS to the front
+      - keep MATCH last
+    """
+    items = list((report.get("sections") or {}).items())
+    issues: List[Tuple[str, Dict[str, Any]]] = []
+    matches: List[Tuple[str, Dict[str, Any]]] = []
+    for name, sec in items:
+        st = state_enum(sec.get("result", "WARN"))
+        if st == ContrastState.MATCH:
+            matches.append((name, sec))
+        else:
+            issues.append((name, sec))
+    return issues + matches
+
 def render_status_dot_link(*, section_name: str, state: ContrastState, target_id: str):
     """
     Clickable status dot used in the intro strip:
@@ -98,7 +116,6 @@ def fast_summary(stats_or_counts: Dict[str, Any]) -> str:
 # ----------------------------
 
 _link_pat = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
-
 
 def _render_paragraph_with_links(text: str) -> None:
     """Render a paragraph, supporting minimal [text](url) link syntax."""
@@ -308,7 +325,6 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
     # Heading doubles as anchor target for navigation
     tags.h2(f"Module: {section_name}", id=anchor_id)
     with tags.div():
-        # Keep title area clean; dots live in intro navigation
         tags.span(f"{state.name}", style="font-weight:bold;")
 
     # Optional per-module README / doc_text
@@ -324,12 +340,18 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
     types_ordered = normalize_report_types(rep_cfg)
 
     # TOP viz
-    for (t, v) in types_ordered:
-        if t == "table":
-            continue
-        fn = VIZ_TOP.get(t)
-        if callable(fn):
-            fn(section_name, section, idx, v)
+    perf_types = [(t, v) for (t, v) in types_ordered if t != "table" and (t in VIZ_TOP or t in VIZ_BOTTOM)]
+    if perf_types:
+        with show_hide_div(f"section_{idx}_perf", hide=(state == ContrastState.MATCH)):
+            for (t, v) in perf_types:
+                fn = VIZ_TOP.get(t)
+                if callable(fn):
+                    fn(section_name, section, idx, v)
+
+            for (t, v) in perf_types:
+                fn = VIZ_BOTTOM.get(t)
+                if callable(fn):
+                    fn(section_name, section, idx, v)
 
     # TABLES
     table_variant = None
@@ -382,6 +404,7 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
                 tags.h3("Extra on profile (absent in reference)")
                 table(["Item", "Detail"], buckets["extra_rows"])
 
+        # Matches are ALWAYS collapsed by default
         if section.get("matches"):
             with show_hide_div(f"{divname}_matches", hide=True):
                 tags.h3("Matches")
@@ -407,12 +430,6 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
                     table(["Item", "Field", "Value"], rows)
                 else:
                     tags.p("No relevant matches to display (filtered noisy fields).")
-
-    # BOTTOM viz
-    for (t, v) in types_ordered:
-        fn = VIZ_BOTTOM.get(t)
-        if callable(fn):
-            fn(section_name, section, idx, v)
 
     tags.hr()
 
@@ -456,7 +473,7 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
     # Clickable status dots (navigation)
     with tags.div(id="modules"):
         counts = {"MATCH": 0, "WARN": 0, "SUSPICIOUS": 0}
-        for name, sec in report.get("sections", {}).items():
+        for name, sec in (report.get("sections", {}) or {}).items():
             st = state_enum(sec.get("result", "WARN"))
             if st == ContrastState.MATCH:
                 counts["MATCH"] += 1
@@ -464,7 +481,11 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
                 counts["WARN"] += 1
             else:
                 counts["SUSPICIOUS"] += 1
+
+        for name, sec in iter_sections_issues_first(report):
+            st = state_enum(sec.get("result", "WARN"))
             render_status_dot_link(section_name=name, state=st, target_id=safe_id(name))
+
         tags.p(f"{counts['MATCH']} Match • {counts['WARN']} Warn • {counts['SUSPICIOUS']} Suspicious")
 
     # Quick visibility buttons
@@ -474,7 +495,7 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
     default_button()
 
     # Jump-to-module dropdown (secondary nav)
-    sections = list(report.get("sections", {}).keys())
+    sections = [name for (name, _sec) in iter_sections_issues_first(report)]
     if sections:
         with tags.div():
             tags.label("Jump to module: ", _for="jumpMod")
@@ -594,7 +615,7 @@ if __name__ == "__main__":
         # Modules in order
         ref_name = report.get("reference_name", "reference")
         prof_name = report.get("profile_name", "profile")
-        for idx, (section_name, sec) in enumerate(report.get("sections", {}).items()):
+        for idx, (section_name, sec) in enumerate(iter_sections_issues_first(report)):
             render_module_card(section_name, sec, idx, ref_name=ref_name, prof_name=prof_name)
 
     os.makedirs(out_dir, exist_ok=True)
