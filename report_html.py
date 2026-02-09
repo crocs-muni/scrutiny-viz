@@ -414,11 +414,13 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
                     item = display_key(m.get("key"), labels)
                     field = m.get("field")
 
-                    # Skip noisy boolean matches (jcAIDScan: isSupported repeats a lot). Honestly,I have no idea how to fix this. It is midnight and I dont have a clue #TODO
-                    if field is not None and str(field).strip().lower() == "issupported":
-                        continue
+                    #if field is not None and str(field).strip().lower() == "issupported":
+                    #    continue
 
                     val = m.get("value")
+                    if field != "__group__" and val is not None and str(val) == str(item):
+                        continue
+
                     if field == "__group__":
                         pretty_field, val_node = "set", format_group_value(val)
                     else:
