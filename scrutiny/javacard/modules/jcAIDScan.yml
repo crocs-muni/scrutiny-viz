@@ -5,10 +5,11 @@ defaults:
     type: list
   report:
     types: ["table"]
+    theme: dark
   component:
     comparator: basic
     include_matches: true
-    threshold_ratio: 0
+    threshold_ratio: 0.05
     threshold_count: 0
   target: {}
 

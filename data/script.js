@@ -88,3 +88,60 @@ function displayImage(imgs, expandedImageID, imageTextID) {
 }
 
 /* Gallery end */
+
+function toggleRadarScale(containerId) {
+  var host = document.getElementById(containerId);
+  if (!host) return;
+
+  var normal = host.querySelector('[data-scale="normal"]');
+  var log = host.querySelector('[data-scale="log"]');
+  if (!normal || !log) return;
+
+  var btn = host.querySelector('[data-radar-toggle="scale"]');
+
+  var showLog = log.hasAttribute("hidden");
+  if (showLog) {
+    log.removeAttribute("hidden");
+    normal.setAttribute("hidden", "");
+  } else {
+    normal.removeAttribute("hidden");
+    log.setAttribute("hidden", "");
+  }
+
+  if (btn) {
+    btn.textContent = showLog ? "Scale: log" : "Scale: normal";
+  }
+}
+
+function setGlobalFilter(mode) {
+  mode = (mode || "all").toLowerCase();
+
+  document.querySelectorAll(".module-card").forEach(function(card) {
+    var hasIssues = (card.getAttribute("data-has-issues") === "1");
+    var hasErrors = (card.getAttribute("data-has-errors") === "1");
+
+    var show = true;
+    if (mode === "issues") show = hasIssues;
+    else if (mode === "errors") show = hasErrors;
+
+    card.style.display = show ? "" : "none";
+  });
+
+  ["filterAll","filterIssues","filterErrors"].forEach(function(id) {
+    var b = document.getElementById(id);
+    if (!b) return;
+    b.classList.remove("active");
+  });
+
+  if (mode === "issues") {
+    var bi = document.getElementById("filterIssues"); if (bi) bi.classList.add("active");
+  } else if (mode === "errors") {
+    var be = document.getElementById("filterErrors"); if (be) be.classList.add("active");
+  } else {
+    var ba = document.getElementById("filterAll"); if (ba) ba.classList.add("active");
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  setGlobalFilter("all");
+});

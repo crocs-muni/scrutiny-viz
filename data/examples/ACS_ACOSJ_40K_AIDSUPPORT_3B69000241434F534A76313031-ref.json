@@ -53,7 +53,7 @@
     { "fullPackageAID": "040107A0000000620101", "isSupported": true,  "packageNameWithVersion": "javacard.framework v1.4 a0000000620101" },
     { "fullPackageAID": "050107A0000000620101", "isSupported": true,  "packageNameWithVersion": "javacard.framework v1.5 a0000000620101" },
     { "fullPackageAID": "060107A0000000620101", "isSupported": false, "packageNameWithVersion": "javacard.framework v1.6 a0000000620101" },
-    { "fullPackageAID": "070107A0000000620101", "isSupported": false, "packageNameWithVersion": "javacard.framework v1.7 a0000000620101" },
+    { "fullPackageAID": "070107A0000000620101", "isSupported": true, "packageNameWithVersion": "javacard.framework v1.7 a0000000620101" },
 
     { "fullPackageAID": "000108A000000062010101", "isSupported": true,  "packageNameWithVersion": "javacard.framework.service v1.0 a000000062010101" },
     { "fullPackageAID": "010108A000000062010101", "isSupported": false, "packageNameWithVersion": "javacard.framework.service v1.1 a000000062010101" },

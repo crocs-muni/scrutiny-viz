@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# scrutiny-viz/verify.py
 import sys
 import argparse
 import json

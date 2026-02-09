@@ -1,3 +1,4 @@
+# scrutiny-viz/scrutiny/schemaloader.py
 from __future__ import annotations
 import os
 from copy import deepcopy
@@ -246,6 +247,12 @@ class SchemaLoader:
             merged: Dict[str, Any] = {}
             for bucket in ("data", "report", "component", "target"):
                 merged[bucket] = _deep_merge(defaults_norm.get(bucket, {}), section_cfg.get(bucket, {}))
+            
+            sec_data = section_cfg.get("data") or {}
+            if isinstance(sec_data, dict) and "record_schema" in sec_data:
+                rs = sec_data.get("record_schema")
+                if rs is not None:
+                    merged["data"]["record_schema"] = rs
 
             # --- data ---
             data_cfg = merged["data"] or {}

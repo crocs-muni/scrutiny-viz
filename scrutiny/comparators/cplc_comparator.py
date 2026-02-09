@@ -1,4 +1,4 @@
-# scrutiny/comparators/cplc_comparator.py
+# scrutiny-viz/scrutiny/comparators/cplc_comparator.py
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional

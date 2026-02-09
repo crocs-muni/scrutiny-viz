@@ -1,10 +1,9 @@
+# scrutiny-viz/scrutiny/reporting/viz/chart/default.py
 from typing import Dict, Any, List, Optional
 from dominate import tags
 from dominate.util import raw
 import math
 import html
-
-# Donut chart (SVG) with modular legend (counts+percent, native <title> tooltips)
 
 _DEFAULT_COLORS = {
     "MATCH": "#49b473",       # green

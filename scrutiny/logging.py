@@ -1,4 +1,4 @@
-# POC/logging.py
+# scrutiny-viz/scrutiny/logging.py
 from __future__ import annotations
 import logging as _logging
 import os
