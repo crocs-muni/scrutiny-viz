@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import re
+import zipfile
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -21,6 +22,9 @@ from scrutiny.reporting.viz.donut import render_donut_variant
 # ----------------------------
 # Texts & small helpers
 # ----------------------------
+OUT_DIR = "results"
+JS_DIR = "data/script.js"
+CSS_DIR = "data/style.css"
 
 TOOLTIP_TEXT = {
     ContrastState.MATCH: "Devices seem to match",
@@ -548,6 +552,23 @@ def render_intro_right(report: Dict[str, Any]):
                 tags.div("Total diffs", _class="kpi-title")
                 tags.div(str(total_diffs), _class="kpi-value")
 
+
+def zip_preparation(html_report_path: str,verification_profile_path: str, out_dir: str, js_path: str, css_path: str, link_mode: bool) -> str:
+    ts = datetime.now().strftime("%Y%m%d_%H%M")
+    zip_name = f"results_{ts}.zip"
+    zip_path = os.path.join(out_dir, zip_name)
+
+    compression = zipfile.ZIP_DEFLATED
+    with zipfile.ZipFile(zip_path, mode="w", compression=compression) as z:
+        z.write(html_report_path, arcname=os.path.basename(html_report_path))
+        z.write(verification_profile_path, arcname=os.path.basename(verification_profile_path))
+
+        if link_mode:
+            z.write(js_path, arcname="script.js")
+            z.write(css_path, arcname="style.css")
+
+    return zip_path
+
 # ----------------------------
 # Main
 # ----------------------------
@@ -564,6 +585,9 @@ if __name__ == "__main__":
     parser.add_argument("-e", "--exclude-style-and-scripts",
                         help="Inline CSS/JS instead of linking to /data/",
                         action="store_true")
+    parser.add_argument("-nz", "--no-zip",
+                        help="Disables creation of a zip",
+                        action="store_true")
     args = parser.parse_args()
 
     with open(args.verification_profile, "r", encoding="utf-8") as f:
@@ -575,10 +599,8 @@ if __name__ == "__main__":
         if state_enum(s.get("result", "WARN")).value >= ContrastState.WARN.value
     )
 
-    out_dir = "results"
-
     # Load CSS/JS
-    with open("data/script.js", "r", encoding="utf-8") as js, open("data/style.css", "r", encoding="utf-8") as css:
+    with open(JS_DIR, "r", encoding="utf-8") as js, open(CSS_DIR, "r", encoding="utf-8") as css:
         script = "\n" + js.read() + "\n"
         style = "\n" + css.read() + "\n"
 
@@ -620,7 +642,10 @@ if __name__ == "__main__":
         for idx, (section_name, sec) in enumerate(iter_sections_issues_first(report)):
             render_module_card(section_name, sec, idx, ref_name=ref_name, prof_name=prof_name)
 
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = os.path.join(out_dir, os.path.basename(args.output_file))
+    os.makedirs(OUT_DIR, exist_ok=True)
+    out_path = os.path.join(OUT_DIR, os.path.basename(args.output_file))
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(str(doc))
+
+    if not args.no_zip:
+        zip_preparation(out_path, args.verification_profile, out_dir=OUT_DIR, js_path=JS_DIR, css_path=CSS_DIR, link_mode=args.exclude_style_and_scripts,)
