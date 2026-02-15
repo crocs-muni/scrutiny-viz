@@ -33,26 +33,26 @@ def _load_json(parser: JsonParser, title: str, path: str):
 
 
 def main():
-    p = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
         description="YAML-driven verification (modular comparators + reporting)."
     )
-    p.add_argument("-s", "--schema",    required=True, help="Path to structure.yml")
-    p.add_argument("-r", "--reference", required=True, help="Path to the reference JSON file")
-    p.add_argument("-p", "--profile",   required=True, help="Path to the test/profile JSON file")
-    p.add_argument("-o", "--output-file", default="verification.json", help="Output JSON path")
+    parser.add_argument("-s", "--schema",    required=True, help="Path to structure.yml")
+    parser.add_argument("-r", "--reference", required=True, help="Path to the reference JSON file")
+    parser.add_argument("-p", "--profile",   required=True, help="Path to the test/profile JSON file")
+    parser.add_argument("-o", "--output-file", default="verification.json", help="Output JSON path")
 
-    p.add_argument("-v", "--verbose", action="count", default=0,
+    parser.add_argument("-v", "--verbose", action="count", default=0,
                    help="Increase log verbosity (-v, -vv)")
-    p.add_argument("--emit-matches", action="store_true",
+    parser.add_argument("--emit-matches", action="store_true",
                    help="(kept for compatibility; comparators may use it)")
-    p.add_argument("--print-diffs", type=int, default=3, metavar="N",
+    parser.add_argument("--print-diffs", type=int, default=3, metavar="N",
                    help="Print up to N diffs per section (default: 3, 0 to disable)")
-    p.add_argument("--print-matches", type=int, default=0, metavar="N",
+    parser.add_argument("--print-matches", type=int, default=0, metavar="N",
                    help="Print up to N matches per section (default: 0)")
-    p.add_argument("-rep", "--report", action="store_true",
+    parser.add_argument("-rep", "--report", action="store_true",
                    help="Create an HTML report (results/comparison.html) using report_html.py")
 
-    args = p.parse_args()
+    args = parser.parse_args()
     slog.setup_logging(args.verbose)
 
     schema = _load_schema(args.schema)
@@ -141,7 +141,7 @@ def main():
 
         try:
             subprocess.run(
-                [sys.executable, report_script, "-v", args.output_file, "-o", "comparison.html"],
+                [sys.executable, report_script, "-p", args.output_file, "-o", "comparison.html"],
                 check=True
             )
             slog.log_ok("HTML report written to results/comparison.html")

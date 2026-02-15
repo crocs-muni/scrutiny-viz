@@ -12,6 +12,7 @@ from dominate.util import raw
 
 from scrutiny.htmlutils import show_hide_div, show_all_button, hide_all_button, default_button
 from scrutiny.interfaces import ContrastState
+from scrutiny import logging as slog
 
 # Modular viz
 from scrutiny.reporting.viz.table import render_table_block, render_table_variant
@@ -575,7 +576,7 @@ def zip_preparation(html_report_path: str,verification_profile_path: str, out_di
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verification-profile",
+    parser.add_argument("-p", "--verification-profile",
                         help="Input verification JSON produced by verify.py",
                         action="store", metavar="file", required=True)
     parser.add_argument("-o", "--output-file",
@@ -588,22 +589,43 @@ if __name__ == "__main__":
     parser.add_argument("-nz", "--no-zip",
                         help="Disables creation of a zip",
                         action="store_true")
+    parser.add_argument("-v", "--verbose", action="count", default=0,
+                   help="Increase log verbosity (-v, -vv)")
     args = parser.parse_args()
 
-    with open(args.verification_profile, "r", encoding="utf-8") as f:
-        report = json.load(f)
+    slog.setup_logging(args.verbose)
+
+    slog.log_step("Loading report JSON", args.verification_profile)
+    try:
+        with open(args.verification_profile, "r", encoding="utf-8") as f:
+            report = json.load(f)
+    except:
+        slog.log_err("Failed to load report json from path", args.verification_profile)
 
     overall_state = state_enum(report.get("overall", "WARN"))
     suspicions = sum(
         1 for s in report.get("sections", {}).values()
         if state_enum(s.get("result", "WARN")).value >= ContrastState.WARN.value
     )
+    slog.log_info(f"Overall state: {overall_state.name}")
 
     # Load CSS/JS
-    with open(JS_DIR, "r", encoding="utf-8") as js, open(CSS_DIR, "r", encoding="utf-8") as css:
-        script = "\n" + js.read() + "\n"
-        style = "\n" + css.read() + "\n"
+    slog.log_step("Loading JS")
+    try:
+        with open(JS_DIR, "r", encoding="utf-8") as js:
+            script = "\n" + js.read() + "\n"
 
+    except:
+        slog.log_err("Failed to load JS", JS_DIR)
+
+    slog.log_step("Loading CSS")
+    try:
+        with open(CSS_DIR, "r", encoding="utf-8") as css:
+            style = "\n" + css.read() + "\n"
+    except:
+        slog.log_err("Failed to load CSS")
+
+    slog.log_step("Rendering HTML document")
     doc = document(title="Comparison of smart cards")
 
     with doc.head:
@@ -644,8 +666,19 @@ if __name__ == "__main__":
 
     os.makedirs(OUT_DIR, exist_ok=True)
     out_path = os.path.join(OUT_DIR, os.path.basename(args.output_file))
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(str(doc))
+
+    slog.log_step("Writing HTML", OUT_DIR)
+    try:
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(str(doc))
+    except:
+        slog.log_err("Failed to write HTML", OUT_DIR)
+    slog.log_ok(f"HTML written: {out_path}")
 
     if not args.no_zip:
-        zip_preparation(out_path, args.verification_profile, out_dir=OUT_DIR, js_path=JS_DIR, css_path=CSS_DIR, link_mode=args.exclude_style_and_scripts,)
+        slog.log_step("Creating ZIP bundle")
+        try:
+            zip_preparation(out_path, args.verification_profile, out_dir=OUT_DIR, js_path=JS_DIR, css_path=CSS_DIR, link_mode=args.exclude_style_and_scripts,)
+        except:
+            slog.log_err("Failed to create ZIP bundle", out_path)
+        slog.log_ok(f"ZIP written: {out_path}")
