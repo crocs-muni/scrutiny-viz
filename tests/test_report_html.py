@@ -1,6 +1,8 @@
 # scrutiny-viz/tests/test_report_html_modules.py
 from __future__ import annotations
 import json
+import os
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -18,12 +20,51 @@ from utility import (
     load_json,
     load_yaml,
     production_module_yml,
+    results_dir,
     run_report_html,
     safe_unlink,
 )
 
+# -------------------------
+# ZIP helpers
+# -------------------------
 
-# Defines one HTML test case built from a production schema.
+def _clean_result_zips() -> None:
+    for p in results_dir().glob("results_*.zip"):
+        safe_unlink(p)
+
+def _expect_single_zip(label: str) -> Path:
+    zips = sorted(results_dir().glob("results_*.zip"), key=str)
+    assert len(zips) == 1, f"[HTML][{label}] Expected exactly 1 zip in {results_dir()}, found {len(zips)}: {zips}"
+    zip_path = zips[0]
+    assert zip_path.is_file(), f"[HTML][{label}] Zip path is not a file: {zip_path}"
+    return zip_path
+
+
+def _assert_zip_contents(*, label: str, zip_path: Path, html_out_path: Path, report_json_path: Path, link_mode: bool) -> None:
+    expected_html = os.path.basename(str(html_out_path))
+    expected_report = os.path.basename(str(report_json_path))
+
+    with zipfile.ZipFile(zip_path, "r") as z:
+        names = set(z.namelist())
+
+    assert expected_html in names, f"[HTML][{label}] Zip missing HTML: {expected_html}. Has: {sorted(names)}"
+    assert expected_report in names, f"[HTML][{label}] Zip missing report JSON: {expected_report}. Has: {sorted(names)}"
+
+    if link_mode:
+        # zip test inline=false  (link mode: external assets must be present)
+        assert "script.js" in names, f"[HTML][{label}] link_mode zip missing script.js. Has: {sorted(names)}"
+        assert "style.css" in names, f"[HTML][{label}] link_mode zip missing style.css. Has: {sorted(names)}"
+    else:
+        # zip test inline=true  (inline mode: external assets must NOT be present)
+        assert "script.js" not in names, f"[HTML][{label}] inline zip should not contain script.js. Has: {sorted(names)}"
+        assert "style.css" not in names, f"[HTML][{label}] inline zip should not contain style.css. Has: {sorted(names)}"
+
+
+# -------------------------
+# Test cases + builders
+# -------------------------
+
 @dataclass(frozen=True)
 class HtmlCase:
     label: str
@@ -179,19 +220,34 @@ def _build_report_json(tmp_path: Path, *, label: str, schema_filename: str) -> P
     raise AssertionError(_msg(label, f"No builder implemented for schema: {schema_filename}"))
 
 
+# -------------------------
+# Main HTML test
+# -------------------------
 # Validates report_html.py output: issues-first ordering + perf/matches collapsed defaults where applicable.
+@pytest.mark.parametrize("link_mode", [False, True], ids=["inline", "link"])
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.label)
-def test_report_html_modules_order_and_default_collapse(case: HtmlCase, tmp_path: Path):
+def test_report_html_modules_order_and_default_collapse(case: HtmlCase, link_mode: bool, tmp_path: Path):
     report_json_path = _build_report_json(tmp_path, label=case.label, schema_filename=case.schema_yml)
 
     report = load_json(report_json_path)
     assert is_report_json(report), _msg(case.label, "Input must be the REPORT JSON consumed by report_html.py")
 
-    out_name = f"pytest_{case.label}_{uuid4().hex}.html"
-    out_path = run_report_html(report_json_path, out_name)
+    _clean_result_zips()
+
+    link = "link"
+    if not link_mode:
+        link = "inline"
+
+    out_name = f"pytest_{case.label}_{link}_{uuid4().hex}.html"
+    extra_args = ["-e"] if link_mode else []   # -e => LINK mode in your report_html.py
+    out_path = run_report_html(report_json_path, out_name, extra_args=extra_args)
 
     assert out_path.exists(), _msg(case.label, f"Expected HTML output not found: {out_path}")
     html = out_path.read_text(encoding="utf-8")
+
+    # ZIP checks
+    zip_path = _expect_single_zip(case.label)
+    _assert_zip_contents(label=case.label, zip_path=zip_path, html_out_path=out_path, report_json_path=report_json_path, link_mode=link_mode)
 
     # 1) Order: stable partition (WARN/SUSP first, then MATCH), preserving original order within each group.
     expected_order: List[str] = [name for (name, _sec) in iter_sections_issues_first_stable(report)]
@@ -241,3 +297,4 @@ def test_report_html_modules_order_and_default_collapse(case: HtmlCase, tmp_path
                 assert div_is_collapsed(tag), _msg(case.label, f"Matches div exists but should be collapsed, got: {tag}")
 
     safe_unlink(out_path)
+    safe_unlink(zip_path)
