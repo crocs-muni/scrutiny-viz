@@ -1,6 +1,5 @@
 schema_version: "0.12"
 
-
 defaults:
   data:
     type: list

@@ -65,6 +65,12 @@ py -m venv .venv
 pip install -r requirements.txt
 ```
 
+### 4) Run tests to check complete repo
+
+```bash
+python -m pytest -q -rs
+```
+
 ---
 
 ## Verify (generate comparison JSON)
@@ -104,7 +110,7 @@ python report_html.py -h
 
 ### Example
 ```bash
-python report_html.py -v test.json -o comparison.html
+python report_html.py -p test.json -o comparison.html -v
 ```
 
 The report is written to the `results/` folder (depending on your script config), typically:
@@ -170,11 +176,14 @@ scrutiny/
   htmlutils.py
   ...
 data/
+  examples/
+    *.json
   style.css
   *.json
   script.js
 schemas/
   *.yml
+tests/
 verify.py
 report_html.py
 ```
