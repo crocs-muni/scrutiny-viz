@@ -26,11 +26,7 @@ def repo_path(*parts: str) -> Path:
 
 # Returns production module YAML path under scrutiny/javacard/modules/.
 def production_module_yml(name: str) -> Path:
-    """
-    Production module YAML under scrutiny/javacard/modules.
-    Example: production_module_yml("jcAIDScan.yml")
-    """
-    return repo_path("scrutiny", "javacard", "modules", name)
+    return repo_path("scrutiny", "schema", name)
 
 
 # Returns the examples directory path used for fixtures (data/examples).
@@ -94,16 +90,6 @@ def deep_merge(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
 
 # Flattens production YAML (defaults + sections) into per-section configs with defaults merged.
 def flatten_prod_schema(schema_yml: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-    """
-    Convert production YAML format:
-      {defaults: {...}, sections: {...}}
-    into a flat per-section map where defaults are merged into each section:
-      {section_name: merged_section_cfg, ...}
-
-    IMPORTANT merge rule:
-      - If a section defines data.record_schema, it REPLACES defaults.data.record_schema
-        (otherwise you get TPM_INFO inheriting algperf fields like 'algorithm').
-    """
     defaults = schema_yml.get("defaults", {}) or {}
     default_section = {
         "data": defaults.get("data", {}) or {},
