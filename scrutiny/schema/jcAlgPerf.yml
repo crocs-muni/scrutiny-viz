@@ -68,3 +68,24 @@ defaults:
 sections:
   MESSAGE_DIGEST: {}
   RANDOM_GENERATOR: {}
+  CIPHER: {}
+  SIGNATURE: {}
+  CHECKSUM: {}
+  UTIL: {}
+  AESKey: {}
+  DESKey: {}
+  KoreanSEEDKey: {}
+  DSAPrivateKey: {}
+  DSAPublicKey: {}
+  ECF2MPublicKey: {}
+  ECF2MPrivateKey: {}
+  ECFPPublicKey: {}
+  ECFPPrivateKey: {}
+  HMACKey: {}
+  RSAPrivateCRTKey: {}
+  RSAPrivateKey: {}
+  RSAPublicKey: {}
+  UTIL: {}
+  SWALGS: {}
+  KEY_PAIR: {}
+  KEYAGREEMENT: {}
