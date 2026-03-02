@@ -24,8 +24,9 @@ from scrutiny.reporting.viz.donut import render_donut_variant
 # Texts & small helpers
 # ----------------------------
 OUT_DIR = "results"
-JS_DIR = "data/script.js"
-CSS_DIR = "data/style.css"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+JS_DIR = os.path.join(BASE_DIR, "data", "script.js")
+CSS_DIR = os.path.join(BASE_DIR, "data", "style.css")
 
 TOOLTIP_TEXT = {
     ContrastState.MATCH: "Devices seem to match",

@@ -22,4 +22,4 @@ def test_jcAlgSupport_regression(csv_path, tmp_path):
 
     proc, out_json = run_verify(schema, profile_path, tmp_path)
     assert_verify_ok(proc, out_json, csv_path=csv_path)
-    assert expected_report_html_path().exists()
+    assert (tmp_path / "results" / "comparison.html").exists()
