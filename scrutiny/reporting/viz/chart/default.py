@@ -156,20 +156,22 @@ def render_chart_table_block(section_name: str, section: Dict[str, Any], idx: in
 
     headers = ["Key", "Ref Avg", "Profile Avg", "Δ ms", "Δ %", "Status", "Note"]
 
-    table = tags.table(_class="chart-table")
+    table = tags.table(_class="chart-table report-table")
     with table:
-        with tags.tr():
-            for h in headers:
-                tags.th(h)
-
-        for r in rows:
+        with tags.thead():
             with tags.tr():
-                tags.td(str(r.get("key", "")))
-                tags.td(_fmt_num(r.get("ref_avg")))
-                tags.td(_fmt_num(r.get("test_avg")))
-                tags.td(_fmt_num(r.get("delta_ms")))
-                tags.td(_fmt_num(r.get("delta_pct")))
-                tags.td(str(r.get("status", "")))
-                tags.td(str(r.get("note", "")))
+                for h in headers:
+                    tags.th(h)
+
+        with tags.tbody():
+            for r in rows:
+                with tags.tr():
+                    tags.td(str(r.get("key", "")))
+                    tags.td(_fmt_num(r.get("ref_avg")))
+                    tags.td(_fmt_num(r.get("test_avg")))
+                    tags.td(_fmt_num(r.get("delta_ms")))
+                    tags.td(_fmt_num(r.get("delta_pct")))
+                    tags.td(str(r.get("status", "")))
+                    tags.td(str(r.get("note", "")))
 
     return table

@@ -6,6 +6,7 @@ import re
 import zipfile
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+from contextlib import contextmanager
 
 from dominate import document, tags
 from dominate.util import raw
@@ -100,6 +101,20 @@ def bool_to_badge(value: Any) -> tags.span:
         return badge("Unsupported", "bad")
     return badge("Unknown", "neutral")
 
+_BOOLISH_STRINGS = {"true", "false", "yes", "no", "supported", "unsupported", "1", "0"}
+
+def is_boolish_value(v: Any) -> bool:
+    if isinstance(v, bool):
+        return True
+    if v is None:
+        return False
+    s = str(v).strip().lower()
+    return s in _BOOLISH_STRINGS
+
+def is_support_field(field: Any) -> bool:
+    s = str(field or "").strip().lower()
+    return s in {"is_supported", "issupported", "supported"}
+
 def display_key(raw_key: Any, labels: Dict[str, str]) -> str:
     try:
         return labels.get(str(raw_key), str(raw_key))
@@ -116,6 +131,34 @@ def fast_summary(stats_or_counts: Dict[str, Any]) -> str:
             f"Differences: {changed}. "
             f"Missing on profile: {only_ref}. "
             f"Extra on profile: {only_test}.")
+
+@contextmanager
+def toggle_block(
+    *,
+    block_id: str,
+    title: str,
+    button_text: str,
+    button_title: str | None = None,
+    hide: bool = False,
+):
+    with tags.div(cls="toggle-header"):
+        tags.h3(title, cls="toggle-title")
+        tags.button(
+            button_text,
+            cls="toggle-btn",
+            title=(button_title or title),
+            onclick=f"hideButton('{block_id}')",
+            **{"data-toggle-target": block_id, "aria-expanded": "false"},
+        )
+
+    style = "display:none;" if hide else "display:block;"
+    with tags.div(
+        id=block_id,
+        cls="toggle-block",
+        style=style,
+        **{"data-default": "hide" if hide else "show"},
+    ):
+        yield
 
 # ----------------------------
 # README/doc rendering
@@ -276,7 +319,10 @@ def extract_buckets_for_report(section: Dict[str, Any]) -> Dict[str, Any]:
             continue
 
         ref_v, test_v = d.get("ref"), d.get("test")
-        if isinstance(ref_v, bool) or isinstance(test_v, bool):
+
+        if is_support_field(field) and is_boolish_value(ref_v) and is_boolish_value(test_v):
+            boolean_rows_raw.append((item_label, field, ref_v, test_v))
+        elif isinstance(ref_v, bool) or isinstance(test_v, bool):
             boolean_rows_raw.append((item_label, field, ref_v, test_v))
         else:
             string_rows_raw.append((item_label, field, ref_v, test_v))
@@ -348,7 +394,13 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
     # TOP viz
     perf_types = [(t, v) for (t, v) in types_ordered if t != "table" and (t in VIZ_TOP or t in VIZ_BOTTOM)]
     if perf_types:
-        with show_hide_div(f"section_{idx}_perf", hide=(state == ContrastState.MATCH)):
+        with toggle_block(
+            block_id=f"section_{idx}_perf",
+            title="Visualizations",
+            button_text="Viz",
+            button_title="Show/hide visualizations (chart/radar)",
+            hide=(state == ContrastState.MATCH),
+        ):
             for (t, v) in perf_types:
                 fn = VIZ_TOP.get(t)
                 if callable(fn):
@@ -387,33 +439,58 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
         divname = f"section_{idx}"
 
         if buckets["boolean_rows"]:
-            with show_hide_div(f"{divname}_bool", hide=False):
-                tags.h3("Boolean / binary differences")
+            with toggle_block(
+                block_id=f"{divname}_bool",
+                title="Boolean / binary differences",
+                button_text="Table",
+                button_title="Show/hide table: Boolean / binary differences",
+                hide=False,
+            ):
                 tags.p("If a capability is supported by the reference but not by the profile (or vice versa), "
                        "the cards likely do not match.", cls="hint")
                 table(["Item", "Reference", "Profile"], buckets["boolean_rows"])
 
         if buckets["string_rows"]:
-            with show_hide_div(f"{divname}_strings", hide=False):
-                tags.h3("Differences in string fields")
+            with toggle_block(
+                block_id=f"{divname}_strings",
+                title="Differences in string fields",
+                button_text="Table",
+                button_title="Show/hide table: Differences in string fields",
+                hide=False,
+            ):
                 headers = ["Item", "Field", "Reference", "Profile"] if buckets["string_include_field"] else \
                           ["Item", "Reference", "Profile"]
                 table(headers, buckets["string_rows"])
 
         if buckets["missing_rows"]:
-            with show_hide_div(f"{divname}_missing", hide=True):
-                tags.h3("Missing on profile (present in reference)")
+            with toggle_block(
+                block_id=f"{divname}_missing",
+                title="Missing on profile (present in reference)",
+                button_text="Table",
+                button_title="Show/hide table: Missing on profile",
+                hide=True,
+            ):
                 table(["Item", "Detail"], buckets["missing_rows"])
 
         if buckets["extra_rows"]:
-            with show_hide_div(f"{divname}_extra", hide=True):
-                tags.h3("Extra on profile (absent in reference)")
+            with toggle_block(
+                block_id=f"{divname}_extra",
+                title="Extra on profile (absent in reference)",
+                button_text="Table",
+                button_title="Show/hide table: Extra on profile",
+                hide=True,
+            ):
                 table(["Item", "Detail"], buckets["extra_rows"])
 
         # Matches are ALWAYS collapsed by default
         if section.get("matches"):
-            with show_hide_div(f"{divname}_matches", hide=True):
-                tags.h3("Matches")
+            with toggle_block(
+                block_id=f"{divname}_matches",
+                title="Matches",
+                button_text="Table",
+                button_title="Show/hide table: Matches",
+                hide=True,
+            ):
                 rows = []
                 labels = (section.get("key_labels") or section.get("labels") or {})
                 for m in section["matches"]:
@@ -431,7 +508,11 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
                         pretty_field, val_node = "set", format_group_value(val)
                     else:
                         pretty_field = field
-                        val_node = bool_to_badge(val) if isinstance(val, bool) else tags.span("" if val is None else str(val))
+                        field_l = str(field or "").strip().lower()
+                        if (field_l in {"is_supported", "issupported", "supported"}) and is_boolish_value(val):
+                            val_node = bool_to_badge(val)
+                        else:
+                            val_node = bool_to_badge(val) if isinstance(val, bool) else tags.span("" if val is None else str(val))
                     rows.append([item, pretty_field, val_node])
 
                 if rows:
