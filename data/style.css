@@ -83,6 +83,13 @@ h1,h2,h3,h4,p{ margin:0 0 var(--space-2) 0; }
   margin-bottom:var(--space-6);
 }
 
+.intro-details-bar{
+  margin: 10px 0 6px 0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
 h2[id]{ margin-top:var(--space-6); }
 
 hr{
@@ -237,6 +244,14 @@ body[data-theme="dark"] .circle{
   color:#fff;
 }
 
+.circle.circle-small{
+  width:16px;
+  height:16px;
+  line-height:16px;
+  font-size:11px;
+  margin-left:0;
+}
+
 .match{ background-color:var(--green-color); }
 .warn{ background-color:var(--yellow-color); color:#193441; }
 .suspicious{ background-color:var(--red-color); }
@@ -323,6 +338,40 @@ body[data-theme="dark"] .radar-test{ fill:rgba(190,150,255,0.18); stroke:rgba(19
   gap:var(--space-3);
 }
 
+.intro-oneline{
+  font-size: 14px;
+  opacity: 0.95;
+  margin-bottom: 10px;
+}
+
+.intro-meta{
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.dot-legend{
+  margin-top: 8px;
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.legend-item{
+  display:inline-flex;
+  align-items:center;
+  gap: 6px;
+}
+
+.legend-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  display:inline-block;
+}
+
 /* ============================
    Donut cards
    ============================ */
@@ -356,6 +405,15 @@ body[data-theme="dark"] .donut-card{
 }
 body[data-theme="dark"] .legend-text{ color:rgba(255,255,255,0.70); }
 body[data-theme="dark"] svg.donut text{ fill:#e6edf3 !important; }
+
+.donut-card-wrap{
+  position: relative;
+}
+.donut-card-wrap .circle-small{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
 
 /* ============================
    KPI row
@@ -553,6 +611,29 @@ body[data-theme="dark"] button.table-clear{
   width:100%;
   padding:6px 8px;
   box-sizing:border-box;
+}
+
+/* Fix: prevent global green button styling from overriding mode buttons */
+button.table-mode-btn{
+  background: rgba(0,0,0,0.06);
+  color: var(--main-color);
+  border: 1px solid var(--table-border);
+  padding: 6px 9px;
+  font-size: 12px;
+  border-radius: 10px;
+  line-height: 1;
+}
+button.table-mode-btn.active{
+  background: rgba(76,175,80,0.18);
+  border-color: rgba(76,175,80,0.45);
+}
+button.table-mode-btn:disabled{
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+body[data-theme="dark"] button.table-mode-btn{
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.18);
 }
 
 @media (max-width:520px){

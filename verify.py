@@ -124,8 +124,8 @@ def main():
     final_json = assemble_report(
         schema=schema,
         compare_results=all_results,
-        reference_name="reference",
-        profile_name="profile",
+        reference_name=args.reference,
+        profile_name=args.profile,
         section_rows=section_rows,
     )
 

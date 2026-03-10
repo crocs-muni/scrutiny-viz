@@ -132,6 +132,12 @@ def fast_summary(stats_or_counts: Dict[str, Any]) -> str:
             f"Missing on profile: {only_ref}. "
             f"Extra on profile: {only_test}.")
 
+def render_info_icon(tooltip_text: str, *, wide: bool = False) -> tags.span:
+    cls = "tooltiptext info" if wide else "tooltiptext"
+    with tags.span(cls="circle circle-small"):
+        tags.span("i")
+        tags.span(tooltip_text, cls=cls)
+
 @contextmanager
 def toggle_block(
     *,
@@ -374,7 +380,6 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
     state = state_enum(section.get("result", "WARN"))
     anchor_id = safe_id(section_name)
 
-    # Heading doubles as anchor target for navigation
     tags.h2(f"Module: {section_name}", id=anchor_id)
     with tags.div():
         tags.span(f"{state.name}", style="font-weight:bold;")
@@ -414,12 +419,10 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
     # TABLES
     table_variant = None
     if any(t == "table" for (t, _v) in types_ordered):
-        # If table appears multiple times, last one wins (simple policy)
         for (t, v) in types_ordered:
             if t == "table":
                 table_variant = v
 
-        # If a table variant exists and is known, render it and skip generic tables.
         node = render_table_variant(
             section_name=section_name,
             section=section,
@@ -428,13 +431,11 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
             variant=table_variant,
         )
         if node is not None:
-            # Variant rendered (e.g. CPLC side-by-side)
             container = tags.div()
             container.add(node)
             tags.hr()
             return
 
-        # Default (generic) diff tables:
         buckets = extract_buckets_for_report(section)
         divname = f"section_{idx}"
 
@@ -530,11 +531,14 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
     ref_name = report.get("reference_name", "reference")
     prof_name = report.get("profile_name", "profile")
 
-    tags.h1(f"Verification of {prof_name} against {ref_name}")
-    tags.p("Generated on: " + datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-    tags.p("Generated from: " + src_path)
+    tags.h1(f"Verification of profile against")
 
-    # Verification results: put BOTH result message + methodology inside tooltip
+    with tags.p(cls="intro-oneline"):
+        tags.strong("Reference:")
+        tags.span(" baseline measurement used as the expected/known-good comparison point. ")
+        tags.strong("Profile:")
+        tags.span(" the measured device/dataset being checked.")
+
     with tags.div():
         tags.h2("Verification results")
         with tags.span(
@@ -561,29 +565,27 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
 
     # Clickable status dots (navigation)
     with tags.div(id="modules"):
-        counts = {"MATCH": 0, "WARN": 0, "SUSPICIOUS": 0}
-        for name, sec in (report.get("sections", {}) or {}).items():
-            st = state_enum(sec.get("result", "WARN"))
-            if st == ContrastState.MATCH:
-                counts["MATCH"] += 1
-            elif st == ContrastState.WARN:
-                counts["WARN"] += 1
-            else:
-                counts["SUSPICIOUS"] += 1
-
         for name, sec in iter_sections_issues_first(report):
             st = state_enum(sec.get("result", "WARN"))
             render_status_dot_link(section_name=name, state=st, target_id=safe_id(name))
 
-        tags.p(f"{counts['MATCH']} Match • {counts['WARN']} Warn • {counts['SUSPICIOUS']} Suspicious")
+        # Legend
+        with tags.div(cls="dot-legend"):
+            with tags.span(cls="legend-item"):
+                tags.span("", cls="legend-dot match")
+                tags.span("Match")
+            with tags.span(cls="legend-item"):
+                tags.span("", cls="legend-dot warn")
+                tags.span("Warn")
+            with tags.span(cls="legend-item"):
+                tags.span("", cls="legend-dot suspicious")
+                tags.span("Suspicious")
 
-    # Quick visibility buttons
     tags.h3("Quick visibility settings")
     show_all_button()
     hide_all_button()
     default_button()
 
-    # Jump-to-module dropdown (secondary nav)
     sections = [name for (name, _sec) in iter_sections_issues_first(report)]
     if sections:
         with tags.div():
@@ -591,6 +593,39 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
             sel = tags.select(id="jumpMod", onchange="location.hash=this.value")
             for name in sections:
                 sel.add(tags.option(name, value=safe_id(name)))
+
+    # Collapsible Details block
+    meta = report.get("meta", {}) or {}
+    schema_title = meta.get("schema_title")
+    gen_ts = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    # Details button
+    details_id = "intro_details"
+
+    with tags.div(cls="intro-details-bar"):
+        tags.button(
+            "Details",
+            cls="toggle-btn",
+            title="Show/hide details about inputs and generation",
+            onclick=f"hideButton('{details_id}')",
+            **{"data-toggle-target": details_id, "aria-expanded": "false"},
+        )
+
+    with tags.div(
+        id=details_id,
+        cls="toggle-block",
+        style="display:none;",
+        **{"data-default": "hide"},
+    ):
+        with tags.div(cls="intro-meta"):
+            tags.p(f"Generated on: {gen_ts}")
+            tags.p(f"Generated from: {src_path}")
+
+            tags.p(f"Reference label: {ref_name}")
+            tags.p(f"Profile label: {prof_name}")
+
+            if schema_title:
+                tags.p(f"Schema: {schema_title}")
 
 def render_intro_right(report: Dict[str, Any]):
     dashboard = report.get("dashboard", {}) or {}
@@ -605,9 +640,19 @@ def render_intro_right(report: Dict[str, Any]):
         total_diffs += int(s.get("changed", 0) or 0) + int(s.get("only_ref", 0) or 0) + int(s.get("only_test", 0) or 0)
         total_compared += int(s.get("compared", 0) or 0)
 
+    # Donut tooltips (moved explanations out of the layout)
+    tip_modules = (
+        "Overall modules: counts how many modules ended as Match/Warn/Suspicious "
+        "(one verdict per module)."
+    )
+    tip_results = (
+        "Overall results: aggregates all compared items across modules: "
+        "matches vs differences (including missing/extra)."
+    )
+
     with tags.div(_class="donut-stack"):
-        # Donut: distribution of module states
-        render_donut_variant(
+        wrap1 = tags.div(cls="donut-card-wrap")
+        wrap1.add(render_donut_variant(
             "Overall modules",
             overall_counts,
             segments=["MATCH", "WARN", "SUSPICIOUS"],
@@ -615,18 +660,23 @@ def render_intro_right(report: Dict[str, Any]):
             center_label=str(sum(int(overall_counts.get(k, 0) or 0) for k in ("MATCH", "WARN", "SUSPICIOUS"))),
             legend_labels={"MATCH": "Match", "WARN": "Warn", "SUSPICIOUS": "Suspicious"},
             variant=None,
-        )
-        # Donut: matches vs diffs (across all sections)
-        render_donut_variant(
+        ))
+        with wrap1:
+            render_info_icon(tip_modules)
+
+        wrap2 = tags.div(cls="donut-card-wrap")
+        wrap2.add(render_donut_variant(
             "Overall results (matches vs diffs)",
             {"MATCH": total_matched, "WARN": total_diffs},
             segments=["MATCH", "WARN"],
             radius=52, stroke=18,
-            center_label=str(total_compared), 
+            center_label=str(total_compared),
             legend_labels={"MATCH": "Matches", "WARN": "Diffs"},
             variant=None,
-        )
-        # KPI row
+        ))
+        with wrap2:
+            render_info_icon(tip_results)
+
         with tags.div(_class="kpi-row"):
             with tags.div(_class="kpi"):
                 tags.div("Compared items", _class="kpi-title")

@@ -165,21 +165,12 @@ document.addEventListener("DOMContentLoaded", function () {
  * Per-table tools for report tables
  */
 (function () {
-  function normalizeText(s) {
-    return (s == null ? "" : String(s)).replace(/\s+/g, " ").trim().toLowerCase();
+  function normSpace(s) {
+    return (s == null ? "" : String(s)).replace(/\s+/g, " ").trim();
   }
 
-  function cellText(td) {
-    return normalizeText(td ? td.textContent : "");
-  }
-
-  function detectComparable(a, b) {
-    const clean = (v) => String(v).replace(/\s+/g, "").replace(/,/g, ".");
-    const na = parseFloat(clean(a));
-    const nb = parseFloat(clean(b));
-    const aNum = !Number.isNaN(na) && clean(a).match(/^-?\d+(\.\d+)?/);
-    const bNum = !Number.isNaN(nb) && clean(b).match(/^-?\d+(\.\d+)?/);
-    return (aNum && bNum) ? { kind: "num", na, nb } : { kind: "str" };
+  function escapeRegex(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
   function debounce(fn, ms) {
@@ -189,6 +180,15 @@ document.addEventListener("DOMContentLoaded", function () {
       if (t) clearTimeout(t);
       t = setTimeout(() => fn.apply(this, args), ms);
     };
+  }
+
+  function detectComparable(a, b) {
+    const clean = (v) => String(v).replace(/\s+/g, "").replace(/,/g, ".");
+    const na = parseFloat(clean(a));
+    const nb = parseFloat(clean(b));
+    const aNum = !Number.isNaN(na) && clean(a).match(/^-?\d+(\.\d+)?/);
+    const bNum = !Number.isNaN(nb) && clean(b).match(/^-?\d+(\.\d+)?/);
+    return (aNum && bNum) ? { kind: "num", na, nb } : { kind: "str" };
   }
 
   function setPanelOpen(panel, btn, open) {
@@ -204,11 +204,72 @@ document.addEventListener("DOMContentLoaded", function () {
     return panel && (panel.classList.contains("is-open") || panel.hidden === false);
   }
 
+  function ensureTheadTbody(table) {
+    let thead = table.querySelector("thead");
+    let tbody = table.querySelector("tbody");
+
+    if (!thead) {
+      const firstRow = table.querySelector("tr");
+      if (firstRow && firstRow.querySelector("th")) {
+        thead = document.createElement("thead");
+        thead.appendChild(firstRow);
+        table.insertBefore(thead, table.firstChild);
+      }
+    }
+
+    tbody = table.querySelector("tbody");
+    if (!tbody) {
+      tbody = document.createElement("tbody");
+
+      const directTrs = [];
+      for (let i = 0; i < table.children.length; i++) {
+        const ch = table.children[i];
+        if (ch && ch.tagName && ch.tagName.toLowerCase() === "tr") directTrs.push(ch);
+      }
+      directTrs.forEach(tr => tbody.appendChild(tr));
+      table.appendChild(tbody);
+    }
+
+    return { thead: table.querySelector("thead"), tbody: table.querySelector("tbody") };
+  }
+
+  function buildMatcher(query, opts) {
+    const q = normSpace(query);
+    if (!q) return { fn: function () { return true; }, error: null };
+
+    const matchCase = !!opts.matchCase;
+    const wholeWord = !!opts.wholeWord;
+    const useRegex = !!opts.useRegex;
+
+    if (useRegex) {
+      try {
+        const flags = matchCase ? "" : "i";
+        const re = new RegExp(q, flags);
+        return { fn: function (text) { return re.test(text); }, error: null };
+      } catch (e) {
+        return { fn: function () { return true; }, error: "Invalid regex" };
+      }
+    }
+
+    if (wholeWord) {
+      const pat = "(^|[^0-9A-Za-z])" + escapeRegex(q) + "($|[^0-9A-Za-z])";
+      const re = new RegExp(pat, matchCase ? "" : "i");
+      return { fn: function (text) { return re.test(text); }, error: null };
+    }
+
+    if (matchCase) {
+      return { fn: function (text) { return String(text).indexOf(q) !== -1; }, error: null };
+    }
+    const ql = q.toLowerCase();
+    return { fn: function (text) { return String(text).toLowerCase().indexOf(ql) !== -1; }, error: null };
+  }
+
   function enhanceTable(table) {
     if (!table || table.getAttribute("data-enhanced") === "1") return;
 
-    const thead = table.querySelector("thead");
-    const tbody = table.querySelector("tbody");
+    const norm = ensureTheadTbody(table);
+    const thead = norm.thead;
+    const tbody = norm.tbody;
     if (!thead || !tbody) return;
 
     const headerRow = thead.querySelector("tr");
@@ -221,16 +282,14 @@ document.addEventListener("DOMContentLoaded", function () {
       tr.setAttribute("data-orig-index", String(i));
     });
 
-    const toggleHost = table.closest(".toggle-block");
-    const insertTarget = table.closest(".table-container") || table;
-    const host = toggleHost || insertTarget.parentElement;
-    if (!host) return;
+    const node = table.closest(".table-container") || table;
+    const hostParent = node.parentElement;
+    if (!hostParent) return;
 
-    if (insertTarget.previousElementSibling && insertTarget.previousElementSibling.classList
-        && insertTarget.previousElementSibling.classList.contains("table-tools-panel")) {
-      table.setAttribute("data-enhanced", "1");
-      return;
-    }
+    const uiWrap = document.createElement("div");
+    uiWrap.className = "table-ui";
+    hostParent.insertBefore(uiWrap, node);
+    uiWrap.appendChild(node);
 
     const toolsBar = document.createElement("div");
     toolsBar.className = "table-toolsbar";
@@ -252,6 +311,7 @@ document.addEventListener("DOMContentLoaded", function () {
     panel.className = "table-tools-panel";
     panel.hidden = true;
 
+    // --- Find row: input + VSCode-like toggles ---
     const row1 = document.createElement("div");
     row1.className = "table-tools-row";
 
@@ -260,12 +320,37 @@ document.addEventListener("DOMContentLoaded", function () {
     search.className = "table-search";
     search.placeholder = "Search this table…";
 
+    const modeGroup = document.createElement("div");
+    modeGroup.className = "table-mode-group";
+    modeGroup.style.display = "inline-flex";
+    modeGroup.style.gap = "6px";
+    modeGroup.style.alignItems = "center";
+
+    function mkModeBtn(label, title) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "table-mode-btn";
+      b.textContent = label;
+      b.title = title;
+      b.setAttribute("aria-pressed", "false");
+      return b;
+    }
+
+    const btnCase = mkModeBtn("Aa", "Match case");
+    const btnWord = mkModeBtn("W", "Match whole word");
+    const btnRegex = mkModeBtn(".*", "Use regular expression");
+
+    modeGroup.appendChild(btnCase);
+    modeGroup.appendChild(btnWord);
+    modeGroup.appendChild(btnRegex);
+
     const clearBtn = document.createElement("button");
     clearBtn.type = "button";
     clearBtn.className = "table-clear";
     clearBtn.textContent = "Clear";
 
     row1.appendChild(search);
+    row1.appendChild(modeGroup);
     row1.appendChild(clearBtn);
 
     const hint = document.createElement("div");
@@ -299,9 +384,54 @@ document.addEventListener("DOMContentLoaded", function () {
     panel.appendChild(hint);
     panel.appendChild(grid);
 
-    host.insertBefore(toolsBar, insertTarget);
-    host.insertBefore(panel, insertTarget);
+    uiWrap.insertBefore(toolsBar, node);
+    uiWrap.insertBefore(panel, node);
 
+    const modes = { matchCase: false, wholeWord: false, useRegex: false };
+
+    function updateModeButtons() {
+      btnCase.classList.toggle("active", modes.matchCase);
+      btnCase.setAttribute("aria-pressed", modes.matchCase ? "true" : "false");
+
+      btnRegex.classList.toggle("active", modes.useRegex);
+      btnRegex.setAttribute("aria-pressed", modes.useRegex ? "true" : "false");
+
+      if (modes.useRegex) {
+        btnWord.disabled = true;
+        btnWord.classList.remove("active");
+        btnWord.setAttribute("aria-pressed", "false");
+        btnWord.title = "Match whole word (disabled when regex is enabled)";
+      } else {
+        btnWord.disabled = false;
+        btnWord.classList.toggle("active", modes.wholeWord);
+        btnWord.setAttribute("aria-pressed", modes.wholeWord ? "true" : "false");
+        btnWord.title = "Match whole word";
+      }
+    }
+
+    btnCase.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      modes.matchCase = !modes.matchCase;
+      updateModeButtons();
+      applyAll();
+    });
+
+    btnWord.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (modes.useRegex) return;
+      modes.wholeWord = !modes.wholeWord;
+      updateModeButtons();
+      applyAll();
+    });
+
+    btnRegex.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      modes.useRegex = !modes.useRegex;
+      updateModeButtons();
+      applyAll();
+    });
+
+    // --- Sorting state ---
     let sortCol = -1;
     let sortDir = 0;
 
@@ -313,39 +443,6 @@ document.addEventListener("DOMContentLoaded", function () {
           else if (sortDir === -1) th.classList.add("sort-desc");
         }
       });
-    }
-
-    function applyFilters() {
-      const q = normalizeText(search.value);
-      const colFilters = filterInputs.map((inp) => normalizeText(inp.value));
-
-      const rows = Array.from(tbody.querySelectorAll("tr"));
-      let visible = 0;
-
-      rows.forEach((tr) => {
-        const tds = Array.from(tr.querySelectorAll("td"));
-        const rowText = normalizeText(tr.textContent);
-
-        if (q && !rowText.includes(q)) {
-          tr.style.display = "none";
-          return;
-        }
-
-        for (let i = 0; i < colFilters.length; i++) {
-          const f = colFilters[i];
-          if (!f) continue;
-          const v = cellText(tds[i]);
-          if (!v.includes(f)) {
-            tr.style.display = "none";
-            return;
-          }
-        }
-
-        tr.style.display = "";
-        visible++;
-      });
-
-      statusPill.textContent = `Rows: ${visible}/${rows.length}`;
     }
 
     function restoreOriginalOrder() {
@@ -363,7 +460,6 @@ document.addEventListener("DOMContentLoaded", function () {
         restoreOriginalOrder();
         sortCol = -1;
         updateSortIndicators();
-        applyFilters();
         return;
       }
 
@@ -372,8 +468,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const aTds = ra.querySelectorAll("td");
         const bTds = rb.querySelectorAll("td");
 
-        const a = aTds[sortCol] ? aTds[sortCol].textContent.trim() : "";
-        const b = bTds[sortCol] ? bTds[sortCol].textContent.trim() : "";
+        const a = aTds[sortCol] ? normSpace(aTds[sortCol].textContent) : "";
+        const b = bTds[sortCol] ? normSpace(bTds[sortCol].textContent) : "";
 
         const cmp = detectComparable(a, b);
         if (cmp.kind === "num") {
@@ -387,7 +483,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
       rows.forEach((tr) => tbody.appendChild(tr));
       updateSortIndicators();
-      applyFilters();
     }
 
     headerCells.forEach((th, idx) => {
@@ -406,8 +501,58 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         sortRows();
+        applyFilters();
       });
     });
+
+    function applyFilters() {
+      const opts = {
+        matchCase: modes.matchCase,
+        wholeWord: (!modes.useRegex) && modes.wholeWord,
+        useRegex: modes.useRegex,
+      };
+
+      const findMatcher = buildMatcher(search.value, opts);
+      const colMatchers = filterInputs.map((inp) => buildMatcher(inp.value, opts));
+
+      const rows = Array.from(tbody.querySelectorAll("tr"));
+      let visible = 0;
+
+      rows.forEach((tr) => {
+        const rowText = normSpace(tr.textContent);
+
+        if (!findMatcher.fn(rowText)) {
+          tr.style.display = "none";
+          return;
+        }
+
+        const tds = Array.from(tr.querySelectorAll("td"));
+        for (let i = 0; i < colMatchers.length; i++) {
+          const m = colMatchers[i];
+          if (!m) continue;
+          const cell = tds[i] ? normSpace(tds[i].textContent) : "";
+          if (!m.fn(cell)) {
+            tr.style.display = "none";
+            return;
+          }
+        }
+
+        tr.style.display = "";
+        visible++;
+      });
+
+      const hasRegexError = !!findMatcher.error || colMatchers.some(m => m && m.error);
+      statusPill.textContent = hasRegexError
+        ? `Rows: ${visible}/${rows.length} • invalid regex`
+        : `Rows: ${visible}/${rows.length}`;
+    }
+
+    const debouncedApply = debounce(applyFilters, 80);
+
+    function applyAll() {
+      sortRows();
+      applyFilters();
+    }
 
     toolsBtn.addEventListener("click", function (ev) {
       ev.preventDefault();
@@ -429,12 +574,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const t = ev.target;
       if (panel.contains(t)) return;
       if (toolsBar.contains(t)) return;
-      if (insertTarget.contains(t)) return;
+      if (node.contains(t)) return;
 
       setPanelOpen(panel, toolsBtn, false);
     });
 
-    const debouncedApply = debounce(applyFilters, 80);
     search.addEventListener("input", debouncedApply);
     filterInputs.forEach((inp) => inp.addEventListener("input", debouncedApply));
 
@@ -445,8 +589,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     table.setAttribute("data-enhanced", "1");
-    applyFilters();
+    updateModeButtons();
     updateSortIndicators();
+    applyFilters();
   }
 
   document.addEventListener("DOMContentLoaded", function () {
