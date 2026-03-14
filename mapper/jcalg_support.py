@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
 
-from mapper_utils import create_attribute, to_float, to_int, to_bool
+try:
+    from .mapper_utils import create_attribute, to_bool
+except ImportError:
+    from mapper_utils import create_attribute, to_bool
 
 BASIC_INFO = "Basic information"
 END_OF_BASIC_INFO = "JavaCard support version"

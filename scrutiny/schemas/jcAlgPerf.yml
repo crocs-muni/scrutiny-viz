@@ -1,4 +1,9 @@
-schema_version: "0.11"
+schema_version: "0.13"
+
+ingest:
+  dynamic_sections: true
+  strict_sections: false
+  allow_missing_sections: true
 
 defaults:
   data:
@@ -14,7 +19,6 @@ defaults:
       measurement_config:
         dtype: string
         category: nominal
-
       avg_ms:
         dtype: number
         category: continuous
@@ -24,7 +28,6 @@ defaults:
       max_ms:
         dtype: number
         category: continuous
-
       baseline_avg_ms:
         dtype: number
         category: continuous
@@ -34,7 +37,6 @@ defaults:
       baseline_max_ms:
         dtype: number
         category: continuous
-
       data_length:
         dtype: integer
         category: continuous
@@ -44,7 +46,6 @@ defaults:
       total_invocations:
         dtype: integer
         category: continuous
-
       error:
         dtype: string
         category: nominal
@@ -61,31 +62,10 @@ defaults:
 
   report:
     theme: dark
-    types: ["chart", "radar"]   
+    types: ["chart", "radar"]
     x_axis: "Reference avg (ms)"
     y_axis: "Profile avg (ms)"
 
-sections:
-  MESSAGE_DIGEST: {}
-  RANDOM_GENERATOR: {}
-  CIPHER: {}
-  SIGNATURE: {}
-  CHECKSUM: {}
-  UTIL: {}
-  AESKey: {}
-  DESKey: {}
-  KoreanSEEDKey: {}
-  DSAPrivateKey: {}
-  DSAPublicKey: {}
-  ECF2MPublicKey: {}
-  ECF2MPrivateKey: {}
-  ECFPPublicKey: {}
-  ECFPPrivateKey: {}
-  HMACKey: {}
-  RSAPrivateCRTKey: {}
-  RSAPrivateKey: {}
-  RSAPublicKey: {}
-  UTIL: {}
-  SWALGS: {}
-  KEY_PAIR: {}
-  KEYAGREEMENT: {}
+  target: {}
+
+sections: {}

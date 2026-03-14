@@ -1,4 +1,9 @@
-schema_version: "0.12"
+schema_version: "0.13"
+
+ingest:
+  dynamic_sections: false
+  strict_sections: false
+  allow_missing_sections: true
 
 defaults:
   data:

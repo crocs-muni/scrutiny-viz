@@ -1,7 +1,7 @@
 # scrutiny-viz/tests/mapper/test_registry.py
 from __future__ import annotations
 
-import registry
+from mapper import registry
 
 
 def test_registry_has_expected_types():

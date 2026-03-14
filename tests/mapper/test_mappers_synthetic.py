@@ -1,10 +1,10 @@
 # scrutiny-viz/tests/mapper/test_mappers_synthetic.py
 from __future__ import annotations
 
-from jcperf_parser import convert_to_map_jcperf, END_OF_BASIC_INFO as JC_PERF_END
-from tpm_parser import convert_to_map_tpm
-from jcaid_parser import convert_to_map_aid
-
+from mapper.jcperf_parser import convert_to_map_jcperf, END_OF_BASIC_INFO as JC_PERF_END
+from mapper.tpm_parser import convert_to_map_tpm
+from mapper.jcaid_parser import convert_to_map_aid
+from mapper.jcalg_support import convert_to_map_jcalgsupport
 
 def test_jcperf_parser_synthetic_minimal():
     groups = [

@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
-from mapper_utils import to_int, to_float, parse_kv_pairs, flush_block
+
+try:
+    from .mapper_utils import to_int, to_float, parse_kv_pairs, flush_block
+except ImportError:
+    from mapper_utils import to_int, to_float, parse_kv_pairs, flush_block
 
 END_OF_BASIC_INFO = "JCSystem.getVersion()"
 

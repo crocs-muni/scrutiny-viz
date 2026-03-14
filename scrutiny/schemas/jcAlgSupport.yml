@@ -1,0 +1,74 @@
+schema_version: "0.13"
+
+ingest:
+  dynamic_sections: true
+  strict_sections: false
+  allow_missing_sections: true
+
+defaults:
+  data:
+    type: list
+    record_schema:
+      algorithm_name:
+        dtype: string
+        required: true
+        category: nominal
+      is_supported:
+        dtype: string
+        category: binary
+
+  report:
+    theme: dark
+    types: ["table", "radar"]
+
+  component:
+    comparator: basic
+    match_key: algorithm_name
+    show_key: algorithm_name
+    include_matches: true
+
+  target: {}
+
+sections:
+  "Basic information":
+    data:
+      type: list
+      record_schema:
+        name:
+          dtype: string
+          required: true
+          category: nominal
+        value:
+          dtype: string
+          category: nominal
+    report:
+      types: ["table"]
+    component:
+      comparator: basic
+      match_key: name
+      show_key: name
+      include_matches: true
+
+  "CPLC":
+    data:
+      type: list
+      record_schema:
+        name:
+          dtype: string
+          required: true
+          category: nominal
+        value:
+          dtype: string
+          category: nominal
+    report:
+      types:
+        - type: table
+          variant: cplc
+    component:
+      comparator: cplc
+      match_key: name
+      show_key: name
+      include_matches: true
+    target:
+      value_field: value
+      compare_first_token: true

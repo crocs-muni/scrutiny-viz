@@ -1,21 +1,22 @@
 # scrutiny-viz/tests/mapper/helpers.py
 from __future__ import annotations
 
-import re
-import pytest
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-import mapper_utils
-import registry
+import pytest
 
-THIS_DIR = Path(__file__).resolve().parent          # tests/mapper
-REPO_ROOT = THIS_DIR.parents[1]                     # repo root
-MAPPER_DIR = REPO_ROOT / "mapper"
+from mapper import mapper_utils, registry
+from utility import repo_path, scrutinize_path
+
+
+THIS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = repo_path()
 TEST_DATA_DIR = THIS_DIR / "test-data"
 
 
@@ -54,8 +55,11 @@ BUCKETS: dict[str, BucketSpec] = {
     ),
 }
 
-def expected_report_html_path() -> Path:
-    return REPO_ROOT / "results" / "comparison.html"
+
+def expected_report_html_path(base: Optional[Path] = None) -> Path:
+    root = base or REPO_ROOT
+    return root / "results" / "comparison.html"
+
 
 def iter_bucket_csvs(bucket_name: str) -> list[Path]:
     spec = BUCKETS[bucket_name]
@@ -99,6 +103,7 @@ def assert_sections_are_lists(payload: dict[str, Any], *, csv_path: Path, bucket
 
         assert isinstance(val, list), f"{csv_path.name}: section '{key}' is not a list (got {type(val)})"
 
+
 def assert_non_empty_profile(payload: dict[str, Any], *, csv_path: Path) -> None:
     non_meta = [k for k in payload.keys() if not str(k).startswith("_")]
     assert non_meta, f"{csv_path.name}: profile has no sections"
@@ -116,12 +121,11 @@ def assert_jcalgsupport(payload: dict[str, Any], *, csv_path: Path) -> None:
     ]
     assert algo_sections, f"{csv_path.name}: no algorithm sections found"
 
-    # ensure algorithm rows contain required keys
     found_alg_row = False
     for sec in algo_sections:
         for rec in payload.get(sec, []):
             if "algorithm_name" in rec:
-                found_alg_row = True 
+                found_alg_row = True
                 assert "is_supported" in rec, f"{csv_path.name}: {sec} algorithm row missing is_supported: {rec}"
     assert found_alg_row, f"{csv_path.name}: did not find any algorithm rows with 'algorithm_name'"
 
@@ -207,9 +211,10 @@ def assert_bucket(bucket_name: str, payload: dict[str, Any], *, csv_path: Path) 
 # ----------------- verify -----------------
 
 def find_schema_for_bucket(bucket_name: str) -> Optional[Path]:
-    schema_dir = REPO_ROOT / "scrutiny" / "schema"
+    schema_dir = REPO_ROOT / "scrutiny" / "schemas"
     if not schema_dir.exists():
         return None
+
     yamls = sorted(list(schema_dir.glob("*.yml")) + list(schema_dir.glob("*.yaml")))
     if not yamls:
         return None
@@ -229,13 +234,12 @@ def write_json(tmp_dir: Path, stem: str, payload: dict[str, Any]) -> Path:
 
 
 def run_verify(schema: Path, profile_path: Path, tmp_dir: Path) -> tuple[subprocess.CompletedProcess[str], Path]:
-    verify_py = REPO_ROOT / "verify.py"
-    assert verify_py.exists(), f"verify.py not found at {verify_py}"
-
     out_json = tmp_dir / f"{profile_path.stem}.verify.json"
 
     cmd = [
-        sys.executable, str(verify_py),
+        sys.executable,
+        str(scrutinize_path()),
+        "verify",
         "-s", str(schema),
         "-r", str(profile_path),
         "-p", str(profile_path),

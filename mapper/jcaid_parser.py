@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from typing import Optional, Any, Dict
 
-from mapper_utils import create_attribute, flatten_groups
+try:
+    from .mapper_utils import create_attribute, flatten_groups
+except ImportError:
+    from mapper_utils import create_attribute, flatten_groups
 
 BASIC_INFO = "Basic information"
 

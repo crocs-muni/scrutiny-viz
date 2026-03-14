@@ -5,10 +5,16 @@ import inspect
 from dataclasses import dataclass
 from typing import Callable, Dict, Iterable
 
-from jcperf_parser import convert_to_map_jcperf
-from tpm_parser import convert_to_map_tpm
-from jcaid_parser import convert_to_map_aid
-from jcalg_support import convert_to_map_jcalgsupport
+try:
+    from .jcperf_parser import convert_to_map_jcperf
+    from .tpm_parser import convert_to_map_tpm
+    from .jcaid_parser import convert_to_map_aid
+    from .jcalg_support import convert_to_map_jcalgsupport
+except ImportError:
+    from jcperf_parser import convert_to_map_jcperf
+    from tpm_parser import convert_to_map_tpm
+    from jcaid_parser import convert_to_map_aid
+    from jcalg_support import convert_to_map_jcalgsupport
 
 Mapper = Callable[[list[list[str]], str], dict]
 

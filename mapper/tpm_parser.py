@@ -3,14 +3,24 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from mapper_utils import (
-    parse_name_value_attributes,
-    parse_colon_pairs_line,
-    parse_kv_pairs,
-    compact_config,
-    to_int,
-    to_float,
-)
+try:
+    from .mapper_utils import (
+        parse_name_value_attributes,
+        parse_colon_pairs_line,
+        parse_kv_pairs,
+        compact_config,
+        to_int,
+        to_float,
+    )
+except ImportError:
+    from mapper_utils import (
+        parse_name_value_attributes,
+        parse_colon_pairs_line,
+        parse_kv_pairs,
+        compact_config,
+        to_int,
+        to_float,
+    )
 
 TPM_INFO = "TPM_INFO"
 

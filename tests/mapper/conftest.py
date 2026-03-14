@@ -4,10 +4,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-THIS_DIR = Path(__file__).resolve().parent           # C:\scrutiny-viz\tests\mapper
-REPO_ROOT = THIS_DIR.parents[1]                     # C:\scrutiny-viz
-MAPPER_DIR = REPO_ROOT / "mapper"                   # C:\scrutiny-viz\mapper
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
-for p in (str(MAPPER_DIR), str(REPO_ROOT), str(THIS_DIR)):
-    if p not in sys.path:
-        sys.path.insert(0, p)
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
