@@ -1,12 +1,14 @@
-# scrutiny-viz/mapper/jcaid_parser.py
+# scrutiny-viz/mapper/mappers/jcaid.py
 from __future__ import annotations
 
-from typing import Optional, Any, Dict
+from typing import Any, Optional
 
 try:
-    from .mapper_utils import create_attribute, flatten_groups
-except ImportError:
+    from ..mapper_utils import create_attribute, flatten_groups
+except ImportError:  # pragma: no cover
     from mapper_utils import create_attribute, flatten_groups
+
+from .contracts import MapperPlugin, MapperSpec, MappingContext
 
 BASIC_INFO = "Basic information"
 
@@ -40,7 +42,6 @@ def parse_basic_info(lines: list[str], delimiter: str) -> list[dict]:
         if not s or s.startswith("*****") or s.startswith("http"):
             continue
 
-        # stop at tables
         if s.startswith(SECTION_PACKAGE_AID) or s.startswith(SECTION_FULL_PACKAGE_AID):
             break
 
@@ -106,34 +107,27 @@ def parse_package_aid_table(lines: list[str], delimiter: str) -> list[dict]:
                 major = parts[1]
                 minor = parts[2]
                 version = f"{major}.{minor}"
-
-                entry = {
-                    "package_aid": parts[0],
-                    "version": version,
-                    "package_name": parts[3],
-                    # unique match key for comparator / report
-                    "package_key": f"{parts[0]}:{version}",
-                }
-                packages.append(entry)
+                packages.append(
+                    {
+                        "package_aid": parts[0],
+                        "version": version,
+                        "package_name": parts[3],
+                        "package_key": f"{parts[0]}:{version}",
+                    }
+                )
 
     return packages
 
 
 def _normalize_aid(s: str) -> str:
-    """Remove spaces/colons and keep only hex chars."""
     return "".join(c for c in (s or "") if c.lower() in "0123456789abcdef").lower()
 
 
 def _looks_like_aid(s: str) -> bool:
-    norm = _normalize_aid(s)
-    return len(norm) >= 8
+    return len(_normalize_aid(s)) >= 8
 
 
 def parse_full_package_aid_table(lines: list[str], delimiter: str) -> list[dict]:
-    """
-    FULL PACKAGE AID format (3 columns):
-      full_package_aid;yes/no;package_name_version
-    """
     packages: list[dict] = []
     header_found = False
 
@@ -165,50 +159,65 @@ def parse_full_package_aid_table(lines: list[str], delimiter: str) -> list[dict]
     return packages
 
 
+class JcAidMapper(MapperPlugin):
+    spec = MapperSpec(
+        name="jcaid",
+        aliases=("aid", "javacard-aid"),
+        description="JavaCard AID scan CSV mapper",
+    )
+
+    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict:
+        result: dict[str, Any] = {"_type": "javacard-aid"}
+        all_lines = flatten_groups(groups)
+
+        basic_lines: list[str] = []
+        key_lines: list[str] = []
+        package_lines: list[str] = []
+        full_package_lines: list[str] = []
+
+        current = "basic"
+        for line in all_lines:
+            s = (line or "").strip()
+            if not s:
+                continue
+
+            marker = is_section_marker(s)
+            if marker:
+                current = marker
+                continue
+
+            if current in {"basic", "card_info", "card_data"}:
+                basic_lines.append(line)
+            elif current == "key_info":
+                key_lines.append(line)
+            elif current == "package_aid":
+                package_lines.append(line)
+            elif current == "full_package_aid":
+                full_package_lines.append(line)
+
+        if key_lines:
+            result["_key_info"] = parse_key_info(key_lines)
+
+        result[BASIC_INFO] = parse_basic_info(basic_lines, context.delimiter)
+
+        if package_lines:
+            result["Package AID"] = parse_package_aid_table([SECTION_PACKAGE_AID] + package_lines, context.delimiter)
+
+        if full_package_lines:
+            result["Full package AID support"] = parse_full_package_aid_table(
+                [SECTION_FULL_PACKAGE_AID] + full_package_lines,
+                context.delimiter,
+            )
+
+        return result
+
+
+PLUGIN = JcAidMapper()
+PLUGINS = [PLUGIN]
+
+
 def convert_to_map_aid(groups: list[list[str]], delimiter: str) -> dict:
-    result: Dict[str, Any] = {"_type": "javacard-aid"}
-
-    all_lines = flatten_groups(groups)
-
-    basic_lines: list[str] = []
-    key_lines: list[str] = []
-    package_lines: list[str] = []
-    full_package_lines: list[str] = []
-
-    current = "basic"
-    for line in all_lines:
-        s = (line or "").strip()
-        if not s:
-            continue
-
-        marker = is_section_marker(s)
-        if marker:
-            current = marker
-            continue
-
-        if current in {"basic", "card_info", "card_data"}:
-            basic_lines.append(line)
-        elif current == "key_info":
-            key_lines.append(line)
-        elif current == "package_aid":
-            package_lines.append(line)
-        elif current == "full_package_aid":
-            full_package_lines.append(line)
-
-    if key_lines:
-        result["_key_info"] = parse_key_info(key_lines)
-
-    result[BASIC_INFO] = parse_basic_info(basic_lines, delimiter)
-
-    if package_lines:
-        result["Package AID"] = parse_package_aid_table([SECTION_PACKAGE_AID] + package_lines, delimiter)
-
-    if full_package_lines:
-        result["Full package AID support"] = parse_full_package_aid_table(
-            [SECTION_FULL_PACKAGE_AID] + full_package_lines, delimiter
-        )
-
-    return result
+    return PLUGIN.map_groups(groups, MappingContext(delimiter=delimiter))
 
 
 convert_to_map_jcaid = convert_to_map_aid

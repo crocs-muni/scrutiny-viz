@@ -2,42 +2,89 @@
 from __future__ import annotations
 
 import inspect
-from dataclasses import dataclass
-from typing import Callable, Dict, Iterable
+import pkgutil
+from importlib import import_module
+from typing import Dict, Iterable, Optional
 
 try:
-    from .jcperf_parser import convert_to_map_jcperf
-    from .tpm_parser import convert_to_map_tpm
-    from .jcaid_parser import convert_to_map_aid
-    from .jcalg_support import convert_to_map_jcalgsupport
+    from .mappers.contracts import FunctionMapperPlugin, MapperFn, MapperPlugin, MapperSpec
 except ImportError:
-    from jcperf_parser import convert_to_map_jcperf
-    from tpm_parser import convert_to_map_tpm
-    from jcaid_parser import convert_to_map_aid
-    from jcalg_support import convert_to_map_jcalgsupport
-
-Mapper = Callable[[list[list[str]], str], dict]
-
-
-@dataclass(frozen=True)
-class MapperSpec:
-    name: str
-    fn: Mapper
-    aliases: tuple[str, ...] = ()
+    from mappers.contracts import FunctionMapperPlugin, MapperFn, MapperPlugin, MapperSpec
 
 
 _ALIASES: Dict[str, str] = {}
-_MAPPERS: Dict[str, Mapper] = {}
+_MAPPERS: Dict[str, MapperPlugin] = {}
+_DISCOVERED = False
+_DISCOVERED_PACKAGE: str | None = None
 
 
-def _norm(s: str) -> str:
-    return (s or "").strip().lower()
+def _norm(value: str) -> str:
+    return (value or "").strip().lower()
 
 
-def register_mapper(name: str, fn: Mapper, aliases: Iterable[str] = ()) -> None:
+def _package_name() -> str:
+    return f"{__package__}.mappers" if __package__ else "mapper.mappers"
+
+
+def _register_plugin(plugin: MapperPlugin) -> None:
+    spec = getattr(plugin, "spec", None)
+    if spec is None:
+        raise TypeError("Mapper plugin must expose a 'spec' attribute")
+    if not getattr(spec, "name", ""):
+        raise ValueError("Mapper plugin spec.name must be non-empty")
+
+    canon = _norm(spec.name)
+    _MAPPERS[canon] = plugin
+    _ALIASES[canon] = canon
+
+    for alias in getattr(spec, "aliases", ()):
+        alias_key = _norm(alias)
+        if alias_key:
+            _ALIASES[alias_key] = canon
+
+
+def discover_builtin_mappers(*, force: bool = False) -> None:
+    global _DISCOVERED, _DISCOVERED_PACKAGE
+
+    package_name = _package_name()
+
+    if _DISCOVERED and _DISCOVERED_PACKAGE == package_name and not force:
+        return
+
+    _ALIASES.clear()
+    _MAPPERS.clear()
+
+    pkg = import_module(package_name)
+    skip = {"contracts"}
+
+    for module_info in pkgutil.iter_modules(pkg.__path__, pkg.__name__ + "."):
+        short_name = module_info.name.rsplit(".", 1)[-1]
+        if short_name.startswith("_") or short_name in skip:
+            continue
+
+        module = import_module(module_info.name)
+        plugins = getattr(module, "PLUGINS", None)
+        if plugins:
+            for plugin in plugins:
+                _register_plugin(plugin)
+
+    _DISCOVERED = True
+    _DISCOVERED_PACKAGE = package_name
+
+
+def register_mapper(
+    name_or_plugin: str | MapperPlugin,
+    fn: Optional[MapperFn] = None,
+    aliases: Iterable[str] = (),
+) -> None:
+    if isinstance(name_or_plugin, MapperPlugin):
+        _register_plugin(name_or_plugin)
+        return
+
+    name = name_or_plugin
     if not name:
         raise ValueError("Mapper name must be non-empty")
-    if not callable(fn):
+    if fn is None or not callable(fn):
         raise TypeError(f"Mapper '{name}' must be callable")
 
     try:
@@ -47,15 +94,16 @@ def register_mapper(name: str, fn: Mapper, aliases: Iterable[str] = ()) -> None:
     except (ValueError, TypeError):
         pass
 
-    canon = _norm(name)
-    _MAPPERS[canon] = fn
-    _ALIASES[canon] = canon
-
-    for a in aliases:
-        _ALIASES[_norm(a)] = canon
+    _register_plugin(
+        FunctionMapperPlugin(
+            spec=MapperSpec(name=name, aliases=tuple(aliases)),
+            fn=fn,
+        )
+    )
 
 
 def normalize_type(name: str) -> str:
+    discover_builtin_mappers()
     if not name:
         raise ValueError("csv type must be a non-empty string")
     key = _norm(name)
@@ -63,39 +111,23 @@ def normalize_type(name: str) -> str:
 
 
 def list_types() -> list[str]:
+    discover_builtin_mappers()
     return sorted(_MAPPERS.keys())
 
 
-def get_mapper(name: str) -> Mapper:
+def list_specs() -> list[MapperSpec]:
+    discover_builtin_mappers()
+    return [plugin.spec for _, plugin in sorted(_MAPPERS.items())]
+
+
+def get_plugin(name: str) -> MapperPlugin:
+    discover_builtin_mappers()
     canon = normalize_type(name)
     try:
         return _MAPPERS[canon]
-    except KeyError as e:
-        raise KeyError(f"Unknown csv type '{name}'. Known: {', '.join(list_types())}") from e
+    except KeyError as exc:
+        raise KeyError(f"Unknown csv type '{name}'. Known: {', '.join(list_types())}") from exc
 
 
-# ---- built-in registrations ----
-
-register_mapper(
-    "tpm",
-    convert_to_map_tpm,
-    aliases=("tpm-perf", "tpm-performance"),
-)
-
-register_mapper(
-    "jcperf",
-    convert_to_map_jcperf,
-    aliases=("perf", "performance", "javacard-performance", "javacard-perf"),
-)
-
-register_mapper(
-    "jcaid",
-    convert_to_map_aid,
-    aliases=("aid", "javacard-aid"),
-)
-
-register_mapper(
-    "jcalgsupport",
-    convert_to_map_jcalgsupport,
-    aliases=("jcalg", "javacard-alg-support", "jcsupport"),
-)
+def get_mapper(name: str) -> MapperFn:
+    return get_plugin(name).legacy_map

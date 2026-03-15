@@ -12,6 +12,7 @@ from typing import Any, Optional
 import pytest
 
 from mapper import mapper_utils, registry
+from mapper.mappers.contracts import build_context
 from utility import repo_path, scrutinize_path
 
 
@@ -74,8 +75,10 @@ def iter_bucket_csvs(bucket_name: str) -> list[Path]:
 def run_mapper(csv_path: Path, mapper_type: str, delimiter: str = ";") -> dict[str, Any]:
     groups = mapper_utils.load_file(str(csv_path))
     assert groups is not None, f"Failed to load CSV: {csv_path}"
-    mapper = registry.get_mapper(mapper_type)
-    out = mapper(groups, delimiter)
+
+    plugin = registry.get_plugin(mapper_type)
+    out = plugin.map_groups(groups, build_context(delimiter=delimiter))
+
     assert isinstance(out, dict), f"Mapper '{mapper_type}' did not return dict for {csv_path}"
     assert "_type" in out, f"Missing _type for {csv_path}"
     return out

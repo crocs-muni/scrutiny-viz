@@ -1,7 +1,11 @@
 # scrutiny-viz/tests/mapper/test_registry.py
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 from mapper import registry
+from mapper.mappers.contracts import build_context
 
 
 def test_registry_has_expected_types():
@@ -18,3 +22,10 @@ def test_registry_aliases_work():
     assert registry.normalize_type("aid") == "jcaid"
     assert registry.normalize_type("javacard-aid") == "jcaid"
     assert registry.normalize_type("jcalg") == "jcalgsupport"
+
+
+def test_registry_returns_plugin_object():
+    plugin = registry.get_plugin("jcperf")
+    assert plugin.spec.name == "jcperf"
+    assert callable(plugin.map_groups)
+    assert callable(plugin.legacy_map)

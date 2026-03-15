@@ -1,38 +1,17 @@
-# scrutiny-viz/scrutiny/comparators/cplc_comparator.py
+# scrutiny-viz/verification/comparators/cplc.py
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from .interface import Comparator, CompareResult
-from .registry import register
+from .contracts import ComparatorPlugin, ComparatorSpec, CompareResult
 
 
-class CplcComparator(Comparator):
-    """
-    CPLC comparator.
-
-    Intended JSON row format (per section "CPLC"):
-      [
-        {"field": "ICFabricator", "value": "8100"},
-        {"field": "OperatingSystemReleaseDate", "value": "4001 (2014-01-01)"},
-        ...
-      ]
-
-    YAML section should set:
-      component:
-        comparator: cplc
-        match_key: field
-        show_key: field
-      target:
-        value_field: value              # optional (default "value")
-        compare_first_token: true       # optional (default True)
-
-    Semantics:
-      - Presence diffs when a CPLC field exists only in one side.
-      - Value diffs compare only the first whitespace token by default:
-          "4001 (2014-01-01)" -> compares "4001"
-      - Emits diffs using raw values, but mismatch decision uses normalized values.
-    """
+class CplcComparator(ComparatorPlugin):
+    spec = ComparatorSpec(
+        name="cplc",
+        aliases=("jc-cplc", "jccplc"),
+        description="Comparator for CPLC key/value rows with first-token normalization.",
+    )
 
     @staticmethod
     def _first_token(v: Any) -> Any:
@@ -55,7 +34,6 @@ class CplcComparator(Comparator):
         reference: List[Dict[str, Any]],
         tested: List[Dict[str, Any]],
     ) -> CompareResult:
-
         value_field: str = str(metadata.get("value_field") or "value")
         compare_first_token: bool = bool(metadata.get("compare_first_token", True))
         include_matches: bool = bool(metadata.get("include_matches", False))
@@ -63,18 +41,8 @@ class CplcComparator(Comparator):
         def norm(v: Any) -> Any:
             return self._first_token(v) if compare_first_token else v
 
-        # Index rows by CPLC field name (key_field)
-        ref_map = {
-            r.get(key_field): r
-            for r in reference
-            if isinstance(r, dict) and r.get(key_field) is not None
-        }
-        tst_map = {
-            r.get(key_field): r
-            for r in tested
-            if isinstance(r, dict) and r.get(key_field) is not None
-        }
-
+        ref_map = {r.get(key_field): r for r in reference if isinstance(r, dict) and r.get(key_field) is not None}
+        tst_map = {r.get(key_field): r for r in tested if isinstance(r, dict) and r.get(key_field) is not None}
         keys = sorted(set(ref_map.keys()) | set(tst_map.keys()), key=lambda x: (str(type(x)), str(x)))
 
         diffs: List[Dict[str, Any]] = []
@@ -87,7 +55,6 @@ class CplcComparator(Comparator):
             r = ref_map.get(k)
             t = tst_map.get(k)
 
-            # Presence diffs (missing/extra CPLC fields)
             if r is None or t is None:
                 if r is not None and t is None:
                     only_ref += 1
@@ -97,14 +64,12 @@ class CplcComparator(Comparator):
                     diffs.append({"key": str(k), "field": "__presence__", "ref": False, "op": "!=", "test": True})
                 continue
 
-            # Pretty label
             lbl = r.get(show_field or key_field, r.get(key_field, k))
             labels[str(k)] = str(lbl)
 
             rv_raw = r.get(value_field, None)
             tv_raw = t.get(value_field, None)
 
-            # Compare using normalized value (first token by default)
             rv_cmp = norm(rv_raw)
             tv_cmp = norm(tv_raw)
 
@@ -137,5 +102,4 @@ class CplcComparator(Comparator):
         }
 
 
-# Self-register as "cplc" (same pattern as basic/algperf)
-register("cplc", CplcComparator)
+PLUGINS = [CplcComparator()]

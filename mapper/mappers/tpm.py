@@ -1,26 +1,28 @@
-# scrutiny-viz/mapper/tpm_parser.py
+# scrutiny-viz/mapper/mappers/tpm.py
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 try:
-    from .mapper_utils import (
-        parse_name_value_attributes,
+    from ..mapper_utils import (
+        compact_config,
         parse_colon_pairs_line,
         parse_kv_pairs,
-        compact_config,
-        to_int,
+        parse_name_value_attributes,
         to_float,
+        to_int,
     )
-except ImportError:
+except ImportError:  # pragma: no cover
     from mapper_utils import (
-        parse_name_value_attributes,
+        compact_config,
         parse_colon_pairs_line,
         parse_kv_pairs,
-        compact_config,
-        to_int,
+        parse_name_value_attributes,
         to_float,
+        to_int,
     )
+
+from .contracts import MapperPlugin, MapperSpec, MappingContext
 
 TPM_INFO = "TPM_INFO"
 
@@ -98,31 +100,45 @@ def parse_group_as_record(group: list[str], delimiter: str, op: str) -> Optional
     return rec
 
 
+class TpmMapper(MapperPlugin):
+    spec = MapperSpec(
+        name="tpm",
+        aliases=("tpm-perf", "tpm-performance"),
+        description="TPM performance CSV mapper",
+    )
+
+    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict:
+        result: dict[str, Any] = {"_type": "tpm-perf"}
+        current_op: Optional[str] = None
+
+        for i, group in enumerate(groups):
+            if not group:
+                continue
+
+            first = (group[0] or "").strip()
+
+            if i == 0:
+                result[TPM_INFO] = parse_name_value_attributes(group, context.delimiter, allow_single_value=True)
+                continue
+
+            if is_tpm_op_header(first):
+                current_op = first
+                result.setdefault(current_op, [])
+                continue
+
+            if not current_op:
+                continue
+
+            rec = parse_group_as_record(group, context.delimiter, current_op)
+            if rec:
+                result[current_op].append(rec)
+
+        return result
+
+
+PLUGIN = TpmMapper()
+PLUGINS = [PLUGIN]
+
+
 def convert_to_map_tpm(groups: list[list[str]], delimiter: str) -> dict:
-    result: Dict[str, Any] = {"_type": "tpm-perf"}
-
-    current_op: Optional[str] = None
-
-    for i, group in enumerate(groups):
-        if not group:
-            continue
-
-        first = (group[0] or "").strip()
-
-        if i == 0:
-            result[TPM_INFO] = parse_name_value_attributes(group, delimiter, allow_single_value=True)
-            continue
-
-        if is_tpm_op_header(first):
-            current_op = first
-            result.setdefault(current_op, [])
-            continue
-
-        if not current_op:
-            continue
-
-        rec = parse_group_as_record(group, delimiter, current_op)
-        if rec:
-            result[current_op].append(rec)
-
-    return result
+    return PLUGIN.map_groups(groups, MappingContext(delimiter=delimiter))

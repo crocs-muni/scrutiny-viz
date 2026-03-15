@@ -1,10 +1,11 @@
 # scrutiny-viz/tests/mapper/test_mappers_synthetic.py
 from __future__ import annotations
 
-from mapper.jcperf_parser import convert_to_map_jcperf, END_OF_BASIC_INFO as JC_PERF_END
-from mapper.tpm_parser import convert_to_map_tpm
-from mapper.jcaid_parser import convert_to_map_aid
-from mapper.jcalg_support import convert_to_map_jcalgsupport
+from mapper.mappers.jcperf import convert_to_map_jcperf, END_OF_BASIC_INFO as JC_PERF_END
+from mapper.mappers.tpm import convert_to_map_tpm
+from mapper.mappers.jcaid import convert_to_map_aid
+from mapper.mappers.jcalg_support import convert_to_map_jcalgsupport
+
 
 def test_jcperf_parser_synthetic_minimal():
     groups = [
@@ -59,3 +60,16 @@ def test_jcaid_parser_synthetic_minimal():
     assert "Package AID" in out
     assert out["Package AID"][0]["package_key"].startswith("a0000000620101:")
     assert "Full package AID support" in out
+
+
+def test_jcalgsupport_parser_synthetic_minimal():
+    groups = [
+        ["Card name;Example Card", "JavaCard support version;3.0.5"],
+        ["Cipher", "Cipher;ALG_DES_CBC_NOPAD;yes"],
+    ]
+    out = convert_to_map_jcalgsupport(groups, ";")
+    assert isinstance(out, dict)
+    assert out.get("_type") == "javacard-alg-support"
+    assert "Basic information" in out
+    assert "Cipher" in out
+    assert out["Cipher"][0]["algorithm_name"] == "ALG_DES_CBC_NOPAD"

@@ -15,13 +15,10 @@ from dominate.util import raw
 from scrutiny.htmlutils import show_all_button, hide_all_button, default_button
 from scrutiny.interfaces import ContrastState
 from scrutiny import logging as slog
-
-from scrutiny.reporting.viz.table import render_table_block, render_table_variant
-from scrutiny.reporting.viz.chart import render_chart_variant
-from scrutiny.reporting.viz.radar import render_radar_variant
-from scrutiny.reporting.viz.donut import render_donut_variant
-
 from scrutiny.paths import REPORT_ASSETS_DIR, results_dir
+
+from report.viz import registry as viz_registry
+from report.viz.table import render_table_block
 
 OUT_DIR = "results"
 JS_DIR = REPORT_ASSETS_DIR / "script.js"
@@ -34,16 +31,16 @@ TOOLTIP_TEXT = {
 }
 
 RESULT_TEXT = {
-    ContrastState.MATCH: lambda x:
-        "None of the modules raised suspicion during the verification process.",
-    ContrastState.WARN: lambda x:
-        f"There seem to be some differences worth checking. {x} module(s) report inconsistencies.",
-    ContrastState.SUSPICIOUS: lambda x:
+    ContrastState.MATCH: lambda x: "None of the modules raised suspicion during the verification process.",
+    ContrastState.WARN: lambda x: f"There seem to be some differences worth checking. {x} module(s) report inconsistencies.",
+    ContrastState.SUSPICIOUS: lambda x: (
         f"{x} module(s) report suspicious differences between profiled and reference devices. "
-        "The verification process may have been unsuccessful and compared devices are different.",
+        "The verification process may have been unsuccessful and compared devices are different."),
 }
 
 _id_pat = re.compile(r"[^A-Za-z0-9_-]+")
+_link_pat = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+_BOOLISH_STRINGS = {"true", "false", "yes", "no", "supported", "unsupported", "1", "0"}
 
 
 def safe_id(s: str) -> str:
@@ -96,16 +93,12 @@ def bool_to_badge(value: Any) -> tags.span:
     return badge("Unknown", "neutral")
 
 
-_BOOLISH_STRINGS = {"true", "false", "yes", "no", "supported", "unsupported", "1", "0"}
-
-
 def is_boolish_value(v: Any) -> bool:
     if isinstance(v, bool):
         return True
     if v is None:
         return False
-    s = str(v).strip().lower()
-    return s in _BOOLISH_STRINGS
+    return str(v).strip().lower() in _BOOLISH_STRINGS
 
 
 def is_support_field(field: Any) -> bool:
@@ -140,14 +133,7 @@ def render_info_icon(tooltip_text: str, *, wide: bool = False) -> tags.span:
 
 
 @contextmanager
-def toggle_block(
-    *,
-    block_id: str,
-    title: str,
-    button_text: str,
-    button_title: str | None = None,
-    hide: bool = False,
-):
+def toggle_block(*, block_id: str, title: str, button_text: str, button_title: str | None = None, hide: bool = False):
     with tags.div(cls="toggle-header"):
         tags.h3(title, cls="toggle-title")
         tags.button(
@@ -157,18 +143,9 @@ def toggle_block(
             onclick=f"hideButton('{block_id}')",
             **{"data-toggle-target": block_id, "aria-expanded": "false"},
         )
-
     style = "display:none;" if hide else "display:block;"
-    with tags.div(
-        id=block_id,
-        cls="toggle-block",
-        style=style,
-        **{"data-default": "hide" if hide else "show"},
-    ):
+    with tags.div(id=block_id, cls="toggle-block", style=style, **{"data-default": "hide" if hide else "show"}):
         yield
-
-
-_link_pat = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 
 def _render_paragraph_with_links(text: str) -> None:
@@ -197,19 +174,6 @@ def render_doc_text(doc_text: str) -> None:
     for c in chunks:
         if c:
             _render_paragraph_with_links(c)
-
-
-VIZ_TOP = {
-    "chart": lambda name, sec, idx, variant=None: render_chart_variant(
-        section_name=name, section=sec, idx=idx, variant=variant
-    ),
-}
-
-VIZ_BOTTOM = {
-    "radar": lambda name, sec, idx, variant=None: render_radar_variant(
-        section_name=name, section=sec, idx=idx, variant=variant
-    ),
-}
 
 
 def normalize_report_types(rep_cfg: Dict[str, Any]) -> List[Tuple[str, Optional[str]]]:
@@ -311,7 +275,6 @@ def extract_buckets_for_report(section: Dict[str, Any]) -> Dict[str, Any]:
             continue
 
         ref_v, test_v = d.get("ref"), d.get("test")
-
         if is_support_field(field) and is_boolish_value(ref_v) and is_boolish_value(test_v):
             boolean_rows_raw.append((item_label, field, ref_v, test_v))
         elif isinstance(ref_v, bool) or isinstance(test_v, bool):
@@ -328,9 +291,7 @@ def extract_buckets_for_report(section: Dict[str, Any]) -> Dict[str, Any]:
                 td = _filter_tuple_for_label(tdict, item_label)
                 keys = sorted(set(rd.keys()) | set(td.keys())) or ["set"]
                 field_name = ", ".join(keys)
-                string_rows_raw.append(
-                    (item_label, field_name, _tuple_value_text(rdict, item_label), _tuple_value_text(tdict, item_label))
-                )
+                string_rows_raw.append((item_label, field_name, _tuple_value_text(rdict, item_label), _tuple_value_text(tdict, item_label)))
             elif kind == "removed":
                 missing_rows.append([item_label, _tuple_value_text(rdict, item_label)])
             else:
@@ -344,11 +305,9 @@ def extract_buckets_for_report(section: Dict[str, Any]) -> Dict[str, Any]:
         boolean_rows.append([item, bool_to_badge(ref_v), bool_to_badge(test_v)])
 
     if include_field_col:
-        string_rows = [[item, field, ref_v, test_v] for (item, field, ref_v, test_v) in
-                       sorted(string_rows_raw, key=lambda x: (x[0], x[1]))]
+        string_rows = [[item, field, ref_v, test_v] for (item, field, ref_v, test_v) in sorted(string_rows_raw, key=lambda x: (x[0], x[1]))]
     else:
-        string_rows = [[item, ref_v, test_v] for (item, _field, ref_v, test_v) in
-                       sorted(string_rows_raw, key=lambda x: x[0])]
+        string_rows = [[item, ref_v, test_v] for (item, _field, ref_v, test_v) in sorted(string_rows_raw, key=lambda x: x[0])]
 
     return {
         "boolean_rows": boolean_rows,
@@ -357,6 +316,29 @@ def extract_buckets_for_report(section: Dict[str, Any]) -> Dict[str, Any]:
         "missing_rows": sorted(missing_rows, key=lambda x: x[0]),
         "extra_rows": sorted(extra_rows, key=lambda x: x[0]),
     }
+
+
+def _add_rendered_node(node: Any) -> None:
+    if node is None:
+        return
+    if isinstance(node, (list, tuple)):
+        for sub in node:
+            _add_rendered_node(sub)
+        return
+    parent = tags.div()
+    parent.add(node)
+
+
+def _render_viz_plugin(name: str, *, section_name: str, section: Dict[str, Any], idx: int, ref_name: str, prof_name: str, variant: str | None = None) -> Any:
+    plugin = viz_registry.get_plugin(name)
+    return plugin.render(
+        section_name=section_name,
+        section=section,
+        idx=idx,
+        ref_name=ref_name,
+        prof_name=prof_name,
+        variant=variant,
+    )
 
 
 def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, ref_name: str, prof_name: str):
@@ -377,8 +359,7 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
     tags.p(fast_summary(stats_display))
 
     types_ordered = normalize_report_types(rep_cfg)
-
-    perf_types = [(t, v) for (t, v) in types_ordered if t != "table" and (t in VIZ_TOP or t in VIZ_BOTTOM)]
+    perf_types = [(t, v) for (t, v) in types_ordered if t != "table" and t in viz_registry.list_types()]
     if perf_types:
         with toggle_block(
             block_id=f"section_{idx}_perf",
@@ -387,29 +368,16 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
             button_title="Show/hide visualizations (chart/radar)",
             hide=(state == ContrastState.MATCH),
         ):
-            for (t, v) in perf_types:
-                fn = VIZ_TOP.get(t)
-                if callable(fn):
-                    fn(section_name, section, idx, v)
-
-            for (t, v) in perf_types:
-                fn = VIZ_BOTTOM.get(t)
-                if callable(fn):
-                    fn(section_name, section, idx, v)
+            for t, v in perf_types:
+                rendered = _render_viz_plugin(t, section_name=section_name, section=section, idx=idx, ref_name=ref_name, prof_name=prof_name, variant=v)
+                _add_rendered_node(rendered)
 
     table_variant = None
     if any(t == "table" for (t, _v) in types_ordered):
         for (t, v) in types_ordered:
             if t == "table":
                 table_variant = v
-
-        node = render_table_variant(
-            section_name=section_name,
-            section=section,
-            ref_name=ref_name,
-            prof_name=prof_name,
-            variant=table_variant,
-        )
+        node = _render_viz_plugin("table", section_name=section_name, section=section, idx=idx, ref_name=ref_name, prof_name=prof_name, variant=table_variant)
         if node is not None:
             container = tags.div()
             container.add(node)
@@ -420,67 +388,33 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
         divname = f"section_{idx}"
 
         if buckets["boolean_rows"]:
-            with toggle_block(
-                block_id=f"{divname}_bool",
-                title="Boolean / binary differences",
-                button_text="Table",
-                button_title="Show/hide table: Boolean / binary differences",
-                hide=False,
-            ):
-                tags.p("If a capability is supported by the reference but not by the profile (or vice versa), "
-                       "the cards likely do not match.", cls="hint")
+            with toggle_block(block_id=f"{divname}_bool", title="Boolean / binary differences", button_text="Table", button_title="Show/hide table: Boolean / binary differences", hide=False):
+                tags.p("If a capability is supported by the reference but not by the profile (or vice versa), the cards likely do not match.", cls="hint")
                 table(["Item", "Reference", "Profile"], buckets["boolean_rows"])
 
         if buckets["string_rows"]:
-            with toggle_block(
-                block_id=f"{divname}_strings",
-                title="Differences in string fields",
-                button_text="Table",
-                button_title="Show/hide table: Differences in string fields",
-                hide=False,
-            ):
-                headers = ["Item", "Field", "Reference", "Profile"] if buckets["string_include_field"] else \
-                          ["Item", "Reference", "Profile"]
+            with toggle_block(block_id=f"{divname}_strings", title="Differences in string fields", button_text="Table", button_title="Show/hide table: Differences in string fields", hide=False):
+                headers = ["Item", "Field", "Reference", "Profile"] if buckets["string_include_field"] else ["Item", "Reference", "Profile"]
                 table(headers, buckets["string_rows"])
 
         if buckets["missing_rows"]:
-            with toggle_block(
-                block_id=f"{divname}_missing",
-                title="Missing on profile (present in reference)",
-                button_text="Table",
-                button_title="Show/hide table: Missing on profile",
-                hide=True,
-            ):
+            with toggle_block(block_id=f"{divname}_missing", title="Missing on profile (present in reference)", button_text="Table", button_title="Show/hide table: Missing on profile", hide=True):
                 table(["Item", "Detail"], buckets["missing_rows"])
 
         if buckets["extra_rows"]:
-            with toggle_block(
-                block_id=f"{divname}_extra",
-                title="Extra on profile (absent in reference)",
-                button_text="Table",
-                button_title="Show/hide table: Extra on profile",
-                hide=True,
-            ):
+            with toggle_block(block_id=f"{divname}_extra", title="Extra on profile (absent in reference)", button_text="Table", button_title="Show/hide table: Extra on profile", hide=True):
                 table(["Item", "Detail"], buckets["extra_rows"])
 
         if section.get("matches"):
-            with toggle_block(
-                block_id=f"{divname}_matches",
-                title="Matches",
-                button_text="Table",
-                button_title="Show/hide table: Matches",
-                hide=True,
-            ):
+            with toggle_block(block_id=f"{divname}_matches", title="Matches", button_text="Table", button_title="Show/hide table: Matches", hide=True):
                 rows = []
                 labels = (section.get("key_labels") or section.get("labels") or {})
                 for m in section["matches"]:
                     item = display_key(m.get("key"), labels)
                     field = m.get("field")
-
                     val = m.get("value")
                     if field != "__group__" and val is not None and str(val) == str(item):
                         continue
-
                     if field == "__group__":
                         pretty_field, val_node = "set", format_group_value(val)
                     else:
@@ -491,7 +425,6 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
                         else:
                             val_node = bool_to_badge(val) if isinstance(val, bool) else tags.span("" if val is None else str(val))
                     rows.append([item, pretty_field, val_node])
-
                 if rows:
                     table(["Item", "Field", "Value"], rows)
                 else:
@@ -505,7 +438,6 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
     prof_name = report.get("profile_name", "profile")
 
     tags.h1("Verification of profile against")
-
     with tags.p(cls="intro-oneline"):
         tags.strong("Reference:")
         tags.span(" baseline measurement used as the expected/known-good comparison point. ")
@@ -514,48 +446,29 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
 
     with tags.div():
         tags.h2("Verification results")
-        with tags.span(
-            cls="circle",
-            style=("margin-left:8px; background:#333; color:#fff; width:18px; height:18px; "
-                   "line-height:18px; text-align:center; border-radius:50%; display:inline-block; "
-                   "position:relative; font-size:12px;")
-        ):
+        with tags.span(cls="circle", style=("margin-left:8px; background:#333; color:#fff; width:18px; height:18px; line-height:18px; text-align:center; border-radius:50%; display:inline-block; position:relative; font-size:12px;")):
             tags.span("i")
-            with tags.span(
-                cls="tooltiptext info",
-                style="left:0; transform:translateX(-20%);"
-            ):
+            with tags.span(cls="tooltiptext info", style="left:0; transform:translateX(-20%);"):
                 tags.strong("Result: ")
                 tags.span(RESULT_TEXT[overall_state](suspicions))
-                tags.br()
-                tags.br()
+                tags.br(); tags.br()
                 tags.strong("Methodology: ")
-                tags.span(
-                    "WARN when changes are below configured thresholds; "
-                    "SUSPICIOUS when changed/compared exceeds the ratio threshold "
-                    "or the change count exceeds the count threshold."
-                )
+                tags.span("WARN when changes are below configured thresholds; SUSPICIOUS when changed/compared exceeds the ratio threshold or the change count exceeds the count threshold.")
 
     with tags.div(id="modules"):
         for name, sec in iter_sections_issues_first(report):
             st = state_enum(sec.get("result", "WARN"))
             render_status_dot_link(section_name=name, state=st, target_id=safe_id(name))
-
         with tags.div(cls="dot-legend"):
             with tags.span(cls="legend-item"):
-                tags.span("", cls="legend-dot match")
-                tags.span("Match")
+                tags.span("", cls="legend-dot match"); tags.span("Match")
             with tags.span(cls="legend-item"):
-                tags.span("", cls="legend-dot warn")
-                tags.span("Warn")
+                tags.span("", cls="legend-dot warn"); tags.span("Warn")
             with tags.span(cls="legend-item"):
-                tags.span("", cls="legend-dot suspicious")
-                tags.span("Suspicious")
+                tags.span("", cls="legend-dot suspicious"); tags.span("Suspicious")
 
     tags.h3("Quick visibility settings")
-    show_all_button()
-    hide_all_button()
-    default_button()
+    show_all_button(); hide_all_button(); default_button()
 
     sections = [name for (name, _sec) in iter_sections_issues_first(report)]
     if sections:
@@ -568,24 +481,10 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
     meta = report.get("meta", {}) or {}
     schema_title = meta.get("schema_title")
     gen_ts = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-
     details_id = "intro_details"
-
     with tags.div(cls="intro-details-bar"):
-        tags.button(
-            "Details",
-            cls="toggle-btn",
-            title="Show/hide details about inputs and generation",
-            onclick=f"hideButton('{details_id}')",
-            **{"data-toggle-target": details_id, "aria-expanded": "false"},
-        )
-
-    with tags.div(
-        id=details_id,
-        cls="toggle-block",
-        style="display:none;",
-        **{"data-default": "hide"},
-    ):
+        tags.button("Details", cls="toggle-btn", title="Show/hide details about inputs and generation", onclick=f"hideButton('{details_id}')", **{"data-toggle-target": details_id, "aria-expanded": "false"})
+    with tags.div(id=details_id, cls="toggle-block", style="display:none;", **{"data-default": "hide"}):
         with tags.div(cls="intro-meta"):
             tags.p(f"Generated on: {gen_ts}")
             tags.p(f"Generated from: {src_path}")
@@ -607,22 +506,18 @@ def render_intro_right(report: Dict[str, Any]):
         total_diffs += int(s.get("changed", 0) or 0) + int(s.get("only_ref", 0) or 0) + int(s.get("only_test", 0) or 0)
         total_compared += int(s.get("compared", 0) or 0)
 
-    tip_modules = (
-        "Overall modules: counts how many modules ended as Match/Warn/Suspicious "
-        "(one verdict per module)."
-    )
-    tip_results = (
-        "Overall results: aggregates all compared items across modules: "
-        "matches vs differences (including missing/extra)."
-    )
+    tip_modules = "Overall modules: counts how many modules ended as Match/Warn/Suspicious (one verdict per module)."
+    tip_results = "Overall results: aggregates all compared items across modules: matches vs differences (including missing/extra)."
 
+    donut_plugin = viz_registry.get_plugin("donut")
     with tags.div(_class="donut-stack"):
         wrap1 = tags.div(cls="donut-card-wrap")
-        wrap1.add(render_donut_variant(
-            "Overall modules",
-            overall_counts,
+        wrap1.add(donut_plugin.render(
+            title="Overall modules",
+            counts=overall_counts,
             segments=["MATCH", "WARN", "SUSPICIOUS"],
-            radius=52, stroke=18,
+            radius=52,
+            stroke=18,
             center_label=str(sum(int(overall_counts.get(k, 0) or 0) for k in ("MATCH", "WARN", "SUSPICIOUS"))),
             legend_labels={"MATCH": "Match", "WARN": "Warn", "SUSPICIOUS": "Suspicious"},
             variant=None,
@@ -631,11 +526,12 @@ def render_intro_right(report: Dict[str, Any]):
             render_info_icon(tip_modules)
 
         wrap2 = tags.div(cls="donut-card-wrap")
-        wrap2.add(render_donut_variant(
-            "Overall results (matches vs diffs)",
-            {"MATCH": total_matched, "WARN": total_diffs},
+        wrap2.add(donut_plugin.render(
+            title="Overall results (matches vs diffs)",
+            counts={"MATCH": total_matched, "WARN": total_diffs},
             segments=["MATCH", "WARN"],
-            radius=52, stroke=18,
+            radius=52,
+            stroke=18,
             center_label=str(total_compared),
             legend_labels={"MATCH": "Matches", "WARN": "Diffs"},
             variant=None,
@@ -656,26 +552,17 @@ def zip_preparation(html_report_path: str, verification_profile_path: str, out_d
     ts = datetime.now().strftime("%Y%m%d_%H%M")
     zip_name = f"results_{ts}.zip"
     zip_path = os.path.join(out_dir, zip_name)
-
     compression = zipfile.ZIP_DEFLATED
     with zipfile.ZipFile(zip_path, mode="w", compression=compression) as z:
         z.write(html_report_path, arcname=os.path.basename(html_report_path))
         z.write(verification_profile_path, arcname=os.path.basename(verification_profile_path))
-
         if link_mode:
             z.write(js_path, arcname="script.js")
             z.write(css_path, arcname="style.css")
-
     return zip_path
 
 
-def run_report_html(
-    *,
-    verification_profile: str,
-    output_file: str = "comparison.html",
-    exclude_style_and_scripts: bool = False,
-    no_zip: bool = False,
-) -> int:
+def run_report_html(*, verification_profile: str, output_file: str = "comparison.html", exclude_style_and_scripts: bool = False, no_zip: bool = False) -> int:
     slog.log_step("Loading report JSON", verification_profile)
     try:
         with open(verification_profile, "r", encoding="utf-8") as f:
@@ -685,15 +572,11 @@ def run_report_html(
         return 1
 
     overall_state = state_enum(report.get("overall", "WARN"))
-    suspicions = sum(
-        1 for s in report.get("sections", {}).values()
-        if state_enum(s.get("result", "WARN")).value >= ContrastState.WARN.value
-    )
+    suspicions = sum(1 for s in report.get("sections", {}).values() if state_enum(s.get("result", "WARN")).value >= ContrastState.WARN.value)
     slog.log_info(f"Overall state: {overall_state.name}")
 
     script = ""
     style = ""
-
     slog.log_step("Loading JS")
     try:
         with open(JS_DIR, "r", encoding="utf-8") as js:
@@ -708,9 +591,9 @@ def run_report_html(
     except Exception:
         slog.log_err("Failed to load CSS")
 
+    viz_registry.discover_builtin_viz(force=True)
     slog.log_step("Rendering HTML document")
     doc = document(title="Comparison of smart cards")
-
     with doc.head:
         if exclude_style_and_scripts:
             tags.link(rel="stylesheet", href="style.css")
@@ -724,20 +607,12 @@ def run_report_html(
         if theme not in {"light", "dark"}:
             theme = "light"
         doc.body["data-theme"] = theme
-
         tags.button("Back to Top", onclick="backToTop()", id="topButton", cls="floatingbutton")
-
         with tags.div(cls="intro-grid"):
             with tags.div(cls="intro-left", id="intro"):
-                render_intro_left(
-                    report,
-                    overall_state=overall_state,
-                    suspicions=suspicions,
-                    src_path=verification_profile
-                )
+                render_intro_left(report, overall_state=overall_state, suspicions=suspicions, src_path=verification_profile)
             with tags.div(cls="intro-right"):
                 render_intro_right(report)
-
         ref_name = report.get("reference_name", "reference")
         prof_name = report.get("profile_name", "profile")
         for idx, (section_name, sec) in enumerate(iter_sections_issues_first(report)):
@@ -746,30 +621,18 @@ def run_report_html(
     out_dir = results_dir()
     os.makedirs(out_dir, exist_ok=True)
     out_path = str(out_dir / os.path.basename(output_file))
-
     slog.log_step("Writing HTML", str(out_dir))
     try:
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(str(doc))
     except Exception:
-        slog.log_err("Failed to write HTML", str(out_dir))
+        slog.log_err("Failed to write HTML", out_path)
         return 1
-    slog.log_ok(f"HTML written: {out_path}")
 
     if not no_zip:
-        slog.log_step("Creating ZIP bundle")
         try:
-            zip_preparation(
-                out_path,
-                verification_profile,
-                out_dir=str(out_dir),
-                js_path=JS_DIR,
-                css_path=CSS_DIR,
-                link_mode=exclude_style_and_scripts,
-            )
-        except Exception:
-            slog.log_err("Failed to create ZIP bundle", out_path)
-            return 1
-        slog.log_ok(f"ZIP written: {out_path}")
-
+            zip_preparation(out_path, verification_profile, str(out_dir), str(JS_DIR), str(CSS_DIR), exclude_style_and_scripts)
+        except Exception as e:
+            slog.log_err(f"Failed to create zip: {e}")
+    slog.log_ok("HTML report generated")
     return 0

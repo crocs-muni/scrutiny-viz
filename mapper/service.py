@@ -37,6 +37,9 @@ def process_file(
     out_path = output_path.resolve() if output_path else src_path.with_suffix(".json")
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
+    if out_path.exists():
+        logger.warning("Overwriting existing output file: %s", out_path)
+
     try:
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(final_result, f, indent=4, ensure_ascii=False)
@@ -61,8 +64,14 @@ def process_files(
         src_path = Path(file_path).resolve()
 
         out_path: Optional[Path] = None
-        if output_dir and source_base:
-            rel_path = src_path.relative_to(source_base.resolve())
+        if output_dir:
+            if source_base:
+                try:
+                    rel_path = src_path.relative_to(source_base.resolve())
+                except ValueError:
+                    rel_path = Path(src_path.name)
+            else:
+                rel_path = Path(src_path.name)
             out_path = (output_dir.resolve() / rel_path).with_suffix(".json")
 
         written = process_file(

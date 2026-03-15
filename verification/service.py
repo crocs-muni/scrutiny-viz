@@ -11,11 +11,7 @@ from scrutiny.schemaloader import SchemaLoader
 from scrutiny.ingest import JsonParser
 from scrutiny import logging as slog
 
-from scrutiny.comparators.registry import get as get_comparator
-import scrutiny.comparators.basic_comparator
-import scrutiny.comparators.algperf_comparator
-import scrutiny.comparators.cplc_comparator
-
+from .comparators.registry import get_plugin as get_comparator_plugin
 from scrutiny.reporting.reporting import assemble_report
 
 
@@ -149,13 +145,9 @@ def run_verification(
 
     ingest_meta = _collect_ingest_meta(schema, data_ref, data_tst)
     if ingest_meta["applied_dynamic_sections"]:
-        slog.log_info(
-            f"[INGEST] Applied dynamic sections: {', '.join(ingest_meta['applied_dynamic_sections'])}"
-        )
+        slog.log_info(f"[INGEST] Applied dynamic sections: {', '.join(ingest_meta['applied_dynamic_sections'])}")
     if ingest_meta["skipped_sections"]:
-        slog.log_warn(
-            f"[INGEST] Skipped sections: {len(ingest_meta['skipped_sections'])}"
-        )
+        slog.log_warn(f"[INGEST] Skipped sections: {len(ingest_meta['skipped_sections'])}")
         for item in ingest_meta["skipped_sections"]:
             slog.log_warn(
                 f"    - {item.get('source', '?')}: {item.get('section', '?')} ({item.get('reason', 'unknown reason')})"
@@ -176,12 +168,12 @@ def run_verification(
 
         show_key = comp_cfg.get("show_key", match_key)
 
-        Comparator = get_comparator(comp_name)
-        if Comparator is None:
+        try:
+            comparator = get_comparator_plugin(comp_name)
+        except KeyError:
             slog.log_warn(f"[{section}] comparator '{comp_name}' not found; falling back to 'basic'")
-            Comparator = get_comparator("basic")
+            comparator = get_comparator_plugin("basic")
 
-        comparator = Comparator()
         ref_rows = data_ref.get(section, []) or []
         tst_rows = data_tst.get(section, []) or []
 
@@ -194,7 +186,7 @@ def run_verification(
             **(cfg.get("target") or {}),
         }
 
-        slog.log_step("Comparing section:", f"[{section}] comparator={comp_name}")
+        slog.log_step("Comparing section:", f"[{section}] comparator={comparator.spec.name}")
         res = comparator.compare(
             section=section,
             key_field=match_key,
@@ -211,10 +203,7 @@ def run_verification(
         to_print = min(print_diffs, len(diffs)) if print_diffs and diffs else 0
         for i in range(to_print):
             d = diffs[i]
-            line = (
-                f"       - {d.get('key', '')}.{d.get('field', '')}: "
-                f"{d.get('ref', '')} {d.get('op', '!=')} {d.get('test', '')}"
-            )
+            line = f"       - {d.get('key', '')}.{d.get('field', '')}: {d.get('ref', '')} {d.get('op', '!=')} {d.get('test', '')}"
             slog.log_info(line)
 
         if print_matches and res.get("matches"):

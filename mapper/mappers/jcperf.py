@@ -1,12 +1,14 @@
-# scrutiny-viz/mapper/jcperf_parser.py
+# scrutiny-viz/mapper/mappers/jcperf.py
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 try:
-    from .mapper_utils import to_int, to_float, parse_kv_pairs, flush_block
-except ImportError:
-    from mapper_utils import to_int, to_float, parse_kv_pairs, flush_block
+    from ..mapper_utils import flush_block, parse_kv_pairs, to_float, to_int
+except ImportError:  # pragma: no cover
+    from mapper_utils import flush_block, parse_kv_pairs, to_float, to_int
+
+from .contracts import MapperPlugin, MapperSpec, MappingContext
 
 END_OF_BASIC_INFO = "JCSystem.getVersion()"
 
@@ -151,41 +153,56 @@ def parse_method_block(lines: list[str], delimiter: str) -> Optional[dict]:
     return rec
 
 
+class JcPerfMapper(MapperPlugin):
+    spec = MapperSpec(
+        name="jcperf",
+        aliases=("perf", "performance", "javacard-performance", "javacard-perf"),
+        description="JavaCard performance CSV mapper",
+    )
+
+    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict:
+        result: dict[str, Any] = {"_type": "jcperf"}
+
+        start = 0
+        for i, group in enumerate(groups):
+            if any(END_OF_BASIC_INFO in (line or "") for line in group):
+                start = i + 1
+                break
+
+        current_section: Optional[str] = None
+        current_lines: list[str] = []
+
+        for i in range(start, len(groups)):
+            for line in groups[i]:
+                s = (line or "").strip()
+                if not s:
+                    continue
+
+                if is_section_begin(s):
+                    current_lines = flush_block(result, current_section, current_lines, parse_method_block, context.delimiter)
+                    current_section = section_key(s)
+                    result.setdefault(current_section, [])
+                    continue
+
+                if is_section_end(s):
+                    current_lines = flush_block(result, current_section, current_lines, parse_method_block, context.delimiter)
+                    continue
+
+                if is_method(s):
+                    current_lines = flush_block(result, current_section, current_lines, parse_method_block, context.delimiter)
+                    current_lines = [s]
+                    continue
+
+                if current_section:
+                    current_lines.append(s)
+
+        flush_block(result, current_section, current_lines, parse_method_block, context.delimiter)
+        return result
+
+
+PLUGIN = JcPerfMapper()
+PLUGINS = [PLUGIN]
+
+
 def convert_to_map_jcperf(groups: list[list[str]], delimiter: str) -> dict:
-    result: Dict[str, Any] = {"_type": "jcperf"}
-
-    start = 0
-    for i, group in enumerate(groups):
-        if any(END_OF_BASIC_INFO in (ln or "") for ln in group):
-            start = i + 1
-            break
-
-    current_section: Optional[str] = None
-    current_lines: list[str] = []
-
-    for i in range(start, len(groups)):
-        for line in groups[i]:
-            s = (line or "").strip()
-            if not s:
-                continue
-
-            if is_section_begin(s):
-                current_lines = flush_block(result, current_section, current_lines, parse_method_block, delimiter)
-                current_section = section_key(s)
-                result.setdefault(current_section, [])
-                continue
-
-            if is_section_end(s):
-                current_lines = flush_block(result, current_section, current_lines, parse_method_block, delimiter)
-                continue
-
-            if is_method(s):
-                current_lines = flush_block(result, current_section, current_lines, parse_method_block, delimiter)
-                current_lines = [s]
-                continue
-
-            if current_section:
-                current_lines.append(s)
-
-    current_lines = flush_block(result, current_section, current_lines, parse_method_block, delimiter)
-    return result
+    return PLUGIN.map_groups(groups, MappingContext(delimiter=delimiter))
