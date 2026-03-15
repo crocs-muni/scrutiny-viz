@@ -1,0 +1,53 @@
+schema_version: "0.13"
+
+ingest:
+  dynamic_sections: false
+  strict_sections: false
+  allow_missing_sections: true
+
+defaults:
+  data:
+    type: list
+  report:
+    theme: dark
+    types: ["table"]
+  component:
+    comparator: basic
+    include_matches: true
+    threshold_ratio: 0.05
+    threshold_count: 0
+  target: {}
+
+sections:
+  Basic information:
+    data:
+      record_schema:
+        name:  { dtype: string, required: true, category: nominal }
+        value: { dtype: string, category: nominal }
+    component:
+      comparator: basic
+      match_key: name
+      show_key: name
+
+  Package AID:
+    data:
+      record_schema:
+        package_key:   { dtype: string, required: true, category: nominal }
+        package_aid:   { dtype: string, required: true, category: nominal }
+        package_name:  { dtype: string, required: true, category: nominal }
+        version:       { dtype: string, required: true, category: nominal }
+    component:
+      comparator: basic
+      match_key: package_key
+      show_key: package_name
+
+  Full package AID support:
+    data:
+      record_schema:
+        full_package_aid:     { dtype: string, required: true, category: nominal }
+        supported:            { dtype: boolean, required: true, category: binary }
+        package_name_version: { dtype: string, category: nominal }
+    component:
+      comparator: basic
+      match_key: full_package_aid
+      show_key: package_name_version

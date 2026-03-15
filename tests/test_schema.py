@@ -57,13 +57,13 @@ CASES: List[SchemaCase] = [
     SchemaCase(
         label="jcAIDScan",
         schema_filename="jcAIDScan.yml",
-        required_sections=["packages", "fullPackages"],
+        required_sections=["Package AID", "Full package AID support"],
         check_effective_types=_check_jcaidscan_effective_types,
     ),
     SchemaCase(
         label="TPMAlgTest",
         schema_filename="TPMAlgTest.yml",
-        required_sections=["TPM_INFO"],  # TPM2_* is checked in the test body
+        required_sections=["TPM_INFO"],
         check_effective_types=_check_tpm_effective_types,
     ),
 ]

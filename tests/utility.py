@@ -24,19 +24,24 @@ def repo_path(*parts: str) -> Path:
     return project_root().joinpath(*parts)
 
 
+def scrutinize_path() -> Path:
+    return repo_path("scrutinize.py")
+
+
 # Returns production module YAML path under scrutiny/javacard/modules/.
 def production_module_yml(name: str) -> Path:
-    return repo_path("scrutiny", "schema", name)
+    return repo_path("scrutiny", "schemas", name)
 
 
 # Returns the examples directory path used for fixtures (data/examples).
 def examples_dir() -> Path:
-    return repo_path("data", "examples")
+    return repo_path("examples")
 
 
 # Returns the output directory used by report_html.py (results).
-def results_dir() -> Path:
-    return repo_path("results")
+def results_dir(base: Optional[Path] = None) -> Path:
+    root = base if base is not None else project_root()
+    return root / "results"
 
 
 # Returns the report generator script path (report_html.py in repo root).
@@ -303,6 +308,12 @@ def div_is_collapsed(opening_tag: str) -> bool:
     return re.search(r"display\s*:\s*none", opening_tag, flags=re.IGNORECASE) is not None
 
 
+def run_scrutinize(args: List[str], *, cwd: Optional[Path] = None) -> subprocess.CompletedProcess[str]:
+    cwd = cwd or project_root()
+    cmd = [sys.executable, str(scrutinize_path()), *args]
+    return subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True)
+
+
 # Runs report_html.py on a report JSON input and returns the produced results/<out_name> path.
 def run_report_html(
     report_json: Path,
@@ -314,15 +325,24 @@ def run_report_html(
     cwd = cwd or project_root()
     extra_args = extra_args or []
 
-    results_dir().mkdir(parents=True, exist_ok=True)
+    out_dir = results_dir(cwd)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    cmd = [sys.executable, str(report_html_path()), "-p", str(report_json), "-o", out_name, *extra_args]
-    subprocess.check_call(cmd, cwd=str(cwd))
+    proc = run_scrutinize(
+        ["report", "-p", str(report_json), "-o", out_name, *extra_args],
+        cwd=cwd,
+    )
+    if proc.returncode != 0:
+        raise subprocess.CalledProcessError(
+            proc.returncode,
+            [sys.executable, str(scrutinize_path()), "report", "-p", str(report_json), "-o", out_name, *extra_args],
+            output=proc.stdout,
+            stderr=proc.stderr,
+        )
 
-    return results_dir() / out_name
+    return out_dir / out_name
 
 
-# Best-effort file delete helper for cleaning up generated artifacts.
 def safe_unlink(path: Path) -> None:
     try:
         path.unlink()

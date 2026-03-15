@@ -1,6 +1,7 @@
 # scrutiny-viz/scrutiny/reporting/reporting.py
 from __future__ import annotations
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+
 from scrutiny.interfaces import ContrastState
 
 # --------------------------- enums & ordering ---------------------------
@@ -215,11 +216,11 @@ def _collect_pairs_from_rows(diffs: List[Dict[str, Any]], matches: List[Dict[str
         if rn is None and tn is None:
             continue
         out.append({
-            "key": key,
-            "ref_raw": rn if rn is not None else 0.0,
-            "test_raw": tn if tn is not None else 0.0,
-            "kind": "numeric",
-        })
+                "key": key,
+                "ref_raw": rn if rn is not None else 0.0,
+                "test_raw": tn if tn is not None else 0.0,
+                "kind": "numeric",
+            })
     return out
 
 
@@ -309,6 +310,20 @@ def _pick_global_theme(schema: Dict[str, Any]) -> str:
     return "light"
 
 
+def _default_ingest_meta(schema: Dict[str, Any]) -> Dict[str, Any]:
+    schema_meta = getattr(schema, "_loader_meta", {}) or {}
+    return {
+        "dynamic_sections_enabled": bool(schema_meta.get("dynamic_sections", False)),
+        "strict_sections": bool(schema_meta.get("strict_sections", False)),
+        "allow_missing_sections": bool(schema_meta.get("allow_missing_sections", True)),
+        "applied_dynamic_sections": [],
+        "applied_dynamic_sections_reference": [],
+        "applied_dynamic_sections_profile": [],
+        "skipped_sections": [],
+        "skipped_sections_count": 0,
+    }
+
+
 # --------------------------- main entrypoint ---------------------------
 
 def assemble_report(
@@ -318,6 +333,7 @@ def assemble_report(
     reference_name: str,
     profile_name: str,
     section_rows: Dict[str, Any] | None = None,
+    ingest_meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Build the normalized report JSON used by the HTML layer."""
 
@@ -328,12 +344,12 @@ def assemble_report(
     by_section: Dict[str, Dict[str, int]] = {}
 
     theme = _pick_global_theme(schema)
+    ingest_payload = dict(ingest_meta or _default_ingest_meta(schema))
 
     for name, res in (compare_results or {}).items():
         diffs = res.get("diffs", []) or []
         matches = res.get("matches", []) or []
 
-        # Promote artifacts.chart_rows -> chart_rows
         artifacts = res.get("artifacts", {}) or {}
         chart_rows = res.get("chart_rows")
         if chart_rows is None:
@@ -341,7 +357,6 @@ def assemble_report(
         if not isinstance(chart_rows, list):
             chart_rows = []
 
-        # Stats
         provided_stats = res.get("stats")
         if isinstance(provided_stats, dict):
             stats = {
@@ -356,7 +371,6 @@ def assemble_report(
         else:
             stats = _tally_stats(diffs, matches)
 
-        # Severity
         sev_meta = _merge_severity_meta(schema, name, res)
         result = compute_severity(sev_meta, stats["changed"], stats["compared"])
 
@@ -373,11 +387,9 @@ def assemble_report(
             pairs = _collect_pairs_from_rows(diffs, matches)
         radar_rows = _normalize_pairs(pairs)
 
-        # -------------------- Report config (STRICTLY from schema) --------------------
         schema_sec = (schema.get(name, {}) or {}) if isinstance(schema, dict) else {}
         schema_rep = dict(schema_sec.get("report", {}) or {})
 
-        # Allow comparator to override *non-type* report fields if needed
         res_rep = dict(res.get("report") or {})
         rep_cfg = {**schema_rep, **res_rep}
 
@@ -430,5 +442,6 @@ def assemble_report(
         "meta": {
             "generated_by": "assemble_report",
             "schema_title": schema.get("title") if isinstance(schema, dict) else None,
+            "ingest": ingest_payload,
         },
     }
