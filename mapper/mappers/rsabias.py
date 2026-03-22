@@ -56,7 +56,6 @@ class RSABiasMapper(MapperPlugin):
                 continue
 
             lower_name = file_path.name.lower()
-
             if lower_name == "confusion_matrix.txt":
                 confusion_text = mapper_utils.read_text_file(file_path)
                 continue
@@ -104,14 +103,18 @@ class RSABiasMapper(MapperPlugin):
             summary_rows.append({"name": f"n{n_keys}_total", "value": str(summary["total"])})
             summary_rows.append({"name": f"n{n_keys}_accuracy_pct", "value": f"{summary['accuracy_pct']:.4f}"})
 
-        result["SUMMARY"] = summary_rows
         result["CONFUSION_TOP"] = self._parse_confusion_text(confusion_text) if confusion_text else []
 
         if confusion_matrix is not None:
-            matrix_meta, matrix_cells = self._flatten_confusion_matrix(confusion_matrix)
+            matrix_meta, matrix_cells, matrix_nonzero = self._flatten_confusion_matrix(confusion_matrix)
             result["CONFUSION_MATRIX_META"] = matrix_meta
             result["CONFUSION_MATRIX_CELLS"] = matrix_cells
+            result["CONFUSION_MATRIX_NONZERO"] = matrix_nonzero
 
+            for item in matrix_meta:
+                summary_rows.append({"name": f"matrix_{item['name']}", "value": item["value"]})
+
+        result["SUMMARY"] = summary_rows
         return result
 
     def _aggregate_accuracy(self, doc: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -192,9 +195,12 @@ class RSABiasMapper(MapperPlugin):
                     }
                 )
 
+        rows.sort(key=lambda x: (-float(x["share_pct"]), x["true_group"], x["pred_group"]))
+        for idx, row in enumerate(rows, start=1):
+            row["rank"] = idx
         return rows
 
-    def _flatten_confusion_matrix(self, matrix: Any) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
+    def _flatten_confusion_matrix(self, matrix: Any) -> tuple[list[dict[str, str]], list[dict[str, Any]], list[dict[str, Any]]]:
         if np is None:
             raise RuntimeError("numpy is required to process confusion_matrix.pkl")
 
@@ -203,9 +209,13 @@ class RSABiasMapper(MapperPlugin):
             raise ValueError(f"Expected a 2D confusion matrix, got shape {arr.shape}")
 
         rows, cols = arr.shape
-        out_rows: list[dict[str, Any]] = []
+        all_rows: list[dict[str, Any]] = []
+        nonzero_rows: list[dict[str, Any]] = []
+
         finite_cells = 0
         nonzero_finite_cells = 0
+        diag_sum = 0.0
+        offdiag_sum = 0.0
 
         for row_idx in range(rows):
             for col_idx in range(cols):
@@ -215,29 +225,40 @@ class RSABiasMapper(MapperPlugin):
 
                 finite_cells += 1
                 fval = float(val)
+                is_diag = row_idx == col_idx
+
+                if is_diag:
+                    diag_sum += fval
+                else:
+                    offdiag_sum += fval
+
+                rec = {
+                    "cell_id": f"{row_idx}:{col_idx}",
+                    "row_index": int(row_idx),
+                    "col_index": int(col_idx),
+                    "row_label": str(row_idx),
+                    "col_label": str(col_idx),
+                    "value": round(fval, 8),
+                    "is_diagonal": is_diag,
+                }
+                all_rows.append(rec)
+
                 if abs(fval) > 1e-12:
                     nonzero_finite_cells += 1
+                    nonzero_rows.append(dict(rec))
 
-                out_rows.append(
-                    {
-                        "cell_id": f"{row_idx}:{col_idx}",
-                        "row_index": row_idx,
-                        "col_index": col_idx,
-                        "row_label": str(row_idx),
-                        "col_label": str(col_idx),
-                        "value": round(fval, 8),
-                        "is_diagonal": row_idx == col_idx,
-                    }
-                )
+        nonzero_rows.sort(key=lambda x: (-abs(float(x["value"])), x["row_index"], x["col_index"]))
 
         meta = [
             {"name": "rows", "value": str(rows)},
             {"name": "cols", "value": str(cols)},
             {"name": "finite_cells", "value": str(finite_cells)},
             {"name": "nonzero_finite_cells", "value": str(nonzero_finite_cells)},
+            {"name": "diag_sum", "value": f"{diag_sum:.8f}"},
+            {"name": "offdiag_sum", "value": f"{offdiag_sum:.8f}"},
             {"name": "labels_mode", "value": "matrix_index"},
         ]
-        return meta, out_rows
+        return meta, all_rows, nonzero_rows
 
 
 PLUGIN = RSABiasMapper()

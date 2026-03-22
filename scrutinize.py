@@ -90,7 +90,7 @@ def _ensure_json_input(*, input_path: str, role: str, mapper_type: Optional[str]
     out_path = _mapped_output_path(input_path=src, mapped_dir=mapped_dir, role=role)
 
     slog.log_step(f"Mapping {role} CSV", str(src))
-    written = map_single_file(file_path=src, csv_type=mapper_type, delimiter=delimiter, exclude_file=exclude_file, output_path=out_path)
+    written = map_single_file(file_path=src, mapper_type=mapper_type, delimiter=delimiter, exclude_file=exclude_file, output_path=out_path)    
     if written is None:
         raise SystemExit(f"Failed to map {role} CSV: {src}")
 

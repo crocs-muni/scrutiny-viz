@@ -142,3 +142,4 @@ dmypy.json
 
 #Test
 test.json
+generate_example_comparisons.py

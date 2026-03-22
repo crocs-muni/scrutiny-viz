@@ -15,7 +15,7 @@ defaults:
       total:        { dtype: integer, required: false, category: continuous }
       accuracy_pct: { dtype: number,  required: false, category: continuous }
   component:
-    comparator: basic
+    comparator: rsabias
     match_key: group
     show_key: group
     include_matches: true
@@ -23,8 +23,12 @@ defaults:
     threshold_count: 0
   report:
     theme: dark
-    types: ["table"]
-  target: {}
+    types:
+      - type: table
+        variant: rsabias_accuracy
+  target:
+    numeric_epsilon: 0.000001
+    artifact_limit: 15
 
 sections:
   META:
@@ -33,8 +37,13 @@ sections:
         name:  { dtype: string, required: true, category: nominal }
         value: { dtype: string, required: false, category: nominal }
     component:
+      comparator: basic
       match_key: name
       show_key: name
+      include_matches: true
+    report:
+      types: ["table"]
+    target: {}
 
   SUMMARY:
     data:
@@ -42,8 +51,13 @@ sections:
         name:  { dtype: string, required: true, category: nominal }
         value: { dtype: string, required: false, category: nominal }
     component:
+      comparator: basic
       match_key: name
       show_key: name
+      include_matches: true
+    report:
+      types: ["table"]
+    target: {}
 
   ACCURACY_N1: {}
   ACCURACY_N10: {}
@@ -58,9 +72,19 @@ sections:
         true_group: { dtype: string, required: true, category: nominal }
         pred_group: { dtype: string, required: true, category: nominal }
         share_pct:  { dtype: number, required: false, category: continuous }
+        rank:       { dtype: integer, required: false, category: continuous }
     component:
+      comparator: rsabias
       match_key: edge_id
       show_key: edge_id
+      include_matches: true
+    report:
+      types:
+        - type: table
+          variant: rsabias_confusion_top
+    target:
+      numeric_epsilon: 0.000001
+      artifact_limit: 15
 
   CONFUSION_MATRIX_META:
     data:
@@ -68,8 +92,13 @@ sections:
         name:  { dtype: string, required: true, category: nominal }
         value: { dtype: string, required: false, category: nominal }
     component:
+      comparator: basic
       match_key: name
       show_key: name
+      include_matches: true
+    report:
+      types: ["table"]
+    target: {}
 
   CONFUSION_MATRIX_CELLS:
     data:
@@ -82,8 +111,38 @@ sections:
         value:       { dtype: number,  required: true,  category: continuous }
         is_diagonal: { dtype: boolean, required: false, category: binary }
     component:
+      comparator: rsabias
       match_key: cell_id
       show_key: cell_id
+      include_matches: true
     report:
       types:
         - type: heatmap
+        - type: table
+          variant: rsabias_matrix_top
+    target:
+      numeric_epsilon: 0.000001
+      artifact_limit: 15
+
+  CONFUSION_MATRIX_NONZERO:
+    data:
+      record_schema:
+        cell_id:     { dtype: string,  required: true,  category: nominal }
+        row_index:   { dtype: integer, required: true,  category: continuous }
+        col_index:   { dtype: integer, required: true,  category: continuous }
+        row_label:   { dtype: string,  required: false, category: nominal }
+        col_label:   { dtype: string,  required: false, category: nominal }
+        value:       { dtype: number,  required: true,  category: continuous }
+        is_diagonal: { dtype: boolean, required: false, category: binary }
+    component:
+      comparator: rsabias
+      match_key: cell_id
+      show_key: cell_id
+      include_matches: true
+    report:
+      types:
+        - type: table
+          variant: rsabias_matrix_top
+    target:
+      numeric_epsilon: 0.000001
+      artifact_limit: 15

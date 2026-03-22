@@ -54,6 +54,12 @@ BUCKETS: dict[str, BucketSpec] = {
         mapper_type="tpm",
         schema_patterns=("tpm",),
     ),
+    "rsabias": BucketSpec(
+        name="rsabias",
+        folder="RSABias",
+        mapper_type="rsabias",
+        schema_patterns=("rsabias", "rsa_bias", "rsa-bias"),
+    ),
 }
 
 
@@ -62,12 +68,42 @@ def expected_report_html_path(base: Optional[Path] = None) -> Path:
     return root / "results" / "comparison.html"
 
 
-def iter_bucket_csvs(bucket_name: str) -> list[Path]:
+def _bucket_path(bucket_name: str) -> Path:
     spec = BUCKETS[bucket_name]
-    p = TEST_DATA_DIR / spec.folder
+    direct = TEST_DATA_DIR / spec.folder
+    if direct.exists():
+        return direct
+
+    if TEST_DATA_DIR.exists():
+        for child in TEST_DATA_DIR.iterdir():
+            if child.is_dir() and child.name.lower() == spec.folder.lower():
+                return child
+
+    return direct
+
+
+def iter_bucket_csvs(bucket_name: str) -> list[Path]:
+    p = _bucket_path(bucket_name)
     if not p.exists():
         return []
     return sorted(p.rglob("*.csv"))
+
+
+def iter_bucket_dirs(bucket_name: str) -> list[Path]:
+    p = _bucket_path(bucket_name)
+    if not p.exists() or not p.is_dir():
+        return []
+
+    # If the bucket folder itself already looks like one RSABias fixture, use it directly.
+    looks_like_rsabias_fixture = any([
+        any(p.glob("n_*_results.json")),
+        (p / "confusion_matrix.txt").exists(),
+        (p / "confusion_matrix.pkl").exists(),
+    ])
+    if looks_like_rsabias_fixture:
+        return [p]
+
+    return sorted([x for x in p.iterdir() if x.is_dir()])
 
 
 # ----------------- mapping -----------------
@@ -81,6 +117,15 @@ def run_mapper(csv_path: Path, mapper_type: str, delimiter: str = ";") -> dict[s
 
     assert isinstance(out, dict), f"Mapper '{mapper_type}' did not return dict for {csv_path}"
     assert "_type" in out, f"Missing _type for {csv_path}"
+    return out
+
+
+def run_mapper_source(source_path: Path, mapper_type: str, delimiter: str = ";") -> dict[str, Any]:
+    plugin = registry.get_plugin(mapper_type)
+    out = plugin.map_path(source_path, build_context(delimiter=delimiter))
+
+    assert isinstance(out, dict), f"Mapper '{mapper_type}' did not return dict for {source_path}"
+    assert "_type" in out, f"Missing _type for {source_path}"
     return out
 
 
@@ -192,6 +237,51 @@ def assert_tpm(payload: dict[str, Any], *, csv_path: Path) -> None:
     assert found > 0, f"{csv_path.name}: no TPM records parsed"
 
 
+def assert_rsabias(payload: dict[str, Any], *, csv_path: Path) -> None:
+    assert payload.get("_type") == "rsabias", f"{csv_path.name}: expected _type=rsabias"
+
+    assert "META" in payload, f"{csv_path.name}: missing META"
+    assert isinstance(payload["META"], list), f"{csv_path.name}: META is not a list"
+
+    assert "SUMMARY" in payload, f"{csv_path.name}: missing SUMMARY"
+    assert isinstance(payload["SUMMARY"], list), f"{csv_path.name}: SUMMARY is not a list"
+
+    accuracy_sections = [k for k in payload.keys() if str(k).startswith("ACCURACY_N")]
+    assert accuracy_sections, f"{csv_path.name}: no ACCURACY_N* sections found"
+    for sec in accuracy_sections:
+        for rec in payload.get(sec, []):
+            assert "group" in rec, f"{csv_path.name}: {sec} row missing group: {rec}"
+            for field in ("correct", "wrong", "total", "accuracy_pct"):
+                if field in rec:
+                    assert isinstance(rec[field], (int, float, str)), f"{csv_path.name}: {sec}.{field} unexpected type"
+
+    if "CONFUSION_TOP" in payload:
+        assert isinstance(payload["CONFUSION_TOP"], list), f"{csv_path.name}: CONFUSION_TOP is not a list"
+        for rec in payload["CONFUSION_TOP"]:
+            assert "edge_id" in rec, f"{csv_path.name}: CONFUSION_TOP row missing edge_id: {rec}"
+            assert "true_group" in rec, f"{csv_path.name}: CONFUSION_TOP row missing true_group: {rec}"
+            assert "pred_group" in rec, f"{csv_path.name}: CONFUSION_TOP row missing pred_group: {rec}"
+
+    if "CONFUSION_MATRIX_META" in payload:
+        assert isinstance(payload["CONFUSION_MATRIX_META"], list), f"{csv_path.name}: CONFUSION_MATRIX_META is not a list"
+        names = {str(r.get("name")) for r in payload["CONFUSION_MATRIX_META"] if isinstance(r, dict)}
+        assert "rows" in names, f"{csv_path.name}: CONFUSION_MATRIX_META missing rows"
+        assert "cols" in names, f"{csv_path.name}: CONFUSION_MATRIX_META missing cols"
+
+    if "CONFUSION_MATRIX_CELLS" in payload:
+        assert isinstance(payload["CONFUSION_MATRIX_CELLS"], list), f"{csv_path.name}: CONFUSION_MATRIX_CELLS is not a list"
+        for rec in payload["CONFUSION_MATRIX_CELLS"][:10]:
+            assert "cell_id" in rec, f"{csv_path.name}: matrix row missing cell_id: {rec}"
+            assert "row_index" in rec, f"{csv_path.name}: matrix row missing row_index: {rec}"
+            assert "col_index" in rec, f"{csv_path.name}: matrix row missing col_index: {rec}"
+            assert "value" in rec, f"{csv_path.name}: matrix row missing value: {rec}"
+
+    if "CONFUSION_MATRIX_NONZERO" in payload:
+        assert isinstance(payload["CONFUSION_MATRIX_NONZERO"], list), f"{csv_path.name}: CONFUSION_MATRIX_NONZERO is not a list"
+        for rec in payload["CONFUSION_MATRIX_NONZERO"][:10]:
+            assert "value" in rec, f"{csv_path.name}: nonzero matrix row missing value: {rec}"
+
+
 def assert_bucket(bucket_name: str, payload: dict[str, Any], *, csv_path: Path) -> None:
     # generic
     assert_sections_are_lists(payload, csv_path=csv_path, bucket=bucket_name)
@@ -207,6 +297,8 @@ def assert_bucket(bucket_name: str, payload: dict[str, Any], *, csv_path: Path) 
         assert_jcaid(payload, csv_path=csv_path)
     elif bucket_name == "TPMAlgTest":
         assert_tpm(payload, csv_path=csv_path)
+    elif bucket_name == "rsabias":
+        assert_rsabias(payload, csv_path=csv_path)
     else:
         raise ValueError(f"Unknown bucket: {bucket_name}")
 

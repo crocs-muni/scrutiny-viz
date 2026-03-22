@@ -1,0 +1,14 @@
+Group [11] is often missclassified as:
+	group g[12] in 40.0% cases
+	group g[13] in 30.0% cases
+	group g[20] in 20.0% cases
+	group g[18] in 10.0% cases
+Group [15] is often missclassified as:
+	group g[12] in 20.0% cases
+	group g[13] in 25.0% cases
+	group g[20] in 20.0% cases
+	group g[23] in 10.0% cases
+	group g[6] in 25.0% cases
+Group [3] is often missclassified as:
+	group g[2] in 10.0% cases
+	group g[19] in 10.0% cases

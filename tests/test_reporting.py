@@ -1,5 +1,7 @@
 # scrutiny-viz/tests/test_reporting.py
 from scrutiny.reporting.reporting import compute_severity, _tally_stats, _normalize_pairs
+from verification.comparators.rsabias import RSABiasComparator
+
 
 # compute_severity: returns MATCH when there are zero changes (regardless of thresholds).
 def test_compute_severity_match_when_no_changes():
@@ -71,3 +73,58 @@ def test_normalize_pairs_numeric_scales_to_max():
     assert abs(by_key["x"]["test_score"] - 1.0) < 1e-9
     assert abs(by_key["y"]["ref_score"] - 0.25) < 1e-9
     assert abs(by_key["y"]["test_score"] - 0.0) < 1e-9
+
+
+# RSABias comparator: tiny numeric drift under epsilon should not produce a changed row.
+def test_rsabias_comparator_ignores_tiny_accuracy_drift():
+    comp = RSABiasComparator()
+
+    result = comp.compare(
+        section="ACCURACY_N1",
+        key_field="group",
+        show_field="group",
+        metadata={
+            "include_matches": True,
+            "target": {"numeric_epsilon": 1e-6, "artifact_limit": 5},
+        },
+        reference=[
+            {"group": "11", "correct": 9, "wrong": 1, "total": 10, "accuracy_pct": 90.0},
+        ],
+        tested=[
+            {"group": "11", "correct": 9, "wrong": 1, "total": 10, "accuracy_pct": 90.0000005},
+        ],
+    )
+
+    assert result["counts"]["changed"] == 0
+    assert result["counts"]["matched"] == 1
+    assert result["diffs"] == []
+    assert "top_accuracy_changes" in result["artifacts"]
+
+
+# RSABias comparator: matrix sections should emit top cell changes and diagonal/off-diagonal deltas.
+def test_rsabias_comparator_builds_matrix_artifacts():
+    comp = RSABiasComparator()
+
+    result = comp.compare(
+        section="CONFUSION_MATRIX_CELLS",
+        key_field="cell_id",
+        show_field="cell_id",
+        metadata={
+            "include_matches": True,
+            "target": {"numeric_epsilon": 1e-9, "artifact_limit": 5},
+        },
+        reference=[
+            {"cell_id": "0:0", "row_index": 0, "col_index": 0, "row_label": "0", "col_label": "0", "value": 0.8, "is_diagonal": True},
+            {"cell_id": "0:1", "row_index": 0, "col_index": 1, "row_label": "0", "col_label": "1", "value": 0.2, "is_diagonal": False},
+        ],
+        tested=[
+            {"cell_id": "0:0", "row_index": 0, "col_index": 0, "row_label": "0", "col_label": "0", "value": 0.7, "is_diagonal": True},
+            {"cell_id": "0:1", "row_index": 0, "col_index": 1, "row_label": "0", "col_label": "1", "value": 0.3, "is_diagonal": False},
+        ],
+    )
+
+    assert result["counts"]["changed"] == 2
+    assert "top_changed_cells" in result["artifacts"]
+    assert len(result["artifacts"]["top_changed_cells"]) == 2
+    assert abs(result["artifacts"]["diag_delta_pp"] + 10.0) < 1e-9
+    assert abs(result["artifacts"]["offdiag_delta_pp"] - 10.0) < 1e-9
