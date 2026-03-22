@@ -1,6 +1,6 @@
 # 1. How the plugin system works
 
-The new plugin setup in scrutiny-viz is meant to make **mappers**, **comparators**, and **visualizations** easier to extend without repeatedly editing core service files.
+The plugin setup in scrutiny-viz is meant to make **mappers**, **comparators**, and **visualizations** easier to extend without repeatedly editing core service files.
 
 The basic idea is the same in all three areas:
 
@@ -46,16 +46,23 @@ That means plugins are:
 
 This is important because the goal is modularity **inside the project**, not third-party extension installation.
 
+---
+
 # 1.1 Specifics of mapper plugins
 
-Mapper plugins are responsible for converting source input, usually CSV-like files, into the normalized JSON structure used by scrutiny-viz.
+Mapper plugins are responsible for converting source input into the normalized JSON structure used by scrutiny-viz.
+
+The most important recent change is that **ingest is now owned by the mapper plugin**, not by `service.py`. That means the mapper layer now supports both:
+
+* a **default grouped-text ingest path** for existing CSV-like mappers
+* **custom ingest** for special sources such as RSABias directory bundles
 
 ## 1.1.1 Purpose
 
 A mapper plugin should:
 
 * parse one input format or bucket family
-* transform raw rows/groups into normalized sections
+* transform raw input into normalized sections
 * return a dictionary payload ready for further processing
 
 A mapper plugin should **not**:
@@ -67,12 +74,14 @@ A mapper plugin should **not**:
 
 ## 1.1.2 Folder layout
 
-The intended structure is:
+The current intended structure is:
 
 ```text
 mapper/
-  service.py
+  cli.py
+  mapper_utils.py
   registry.py
+  service.py
   mappers/
     __init__.py
     contracts.py
@@ -80,29 +89,42 @@ mapper/
     jcperf.py
     jcalg_support.py
     tpm.py
+    rsabias.py
 ```
 
 ## 1.1.3 Mapper contract
 
-A mapper plugin should implement the mapper contract from the mapper plugin package.
+A mapper plugin implements the mapper contract from `mapper/mappers/contracts.py`.
 
 Conceptually, a mapper plugin contains:
 
 * a **spec** with name and aliases
 * the actual parsing logic
+* an ingest path for its source type
 * a public method used by the rest of the system
 
-Typical responsibilities:
+The current contract supports two practical styles:
 
-* accept grouped input or prepared input
-* apply mapper-specific parsing rules
-* return normalized JSON data
+### A. Default grouped-text mappers
+
+These mappers use the default contract behavior:
+
+* `ingest(...)` loads grouped text
+* `map_source(...)` forwards to `map_groups(...)`
+
+This is the normal path for the existing text/CSV-like mappers.
+
+### B. Custom-source mappers
+
+These mappers override ingest behavior when the input is not just one grouped-text file.
+
+This is the path used by RSABias, where the mapper reads a **directory** containing several result files and combines them into one normalized output.
 
 ## 1.1.4 Registry role
 
 The mapper registry should:
 
-* discover built-in mapper modules
+* discover built-in mapper modules from `mapper.mappers`
 * register mapper names and aliases
 * resolve canonical mapper type names
 * return the mapper plugin when requested
@@ -115,36 +137,92 @@ The mapper service should stay relatively thin.
 
 It should handle:
 
-* reading files
-* preparing grouped input if that is still part of the current design
-* calling the selected mapper plugin
+* resolving the mapper plugin
+* building the mapping context
+* calling the selected plugin
 * applying generic exclusions if needed
 * writing output JSON
+* handling output path decisions
 
-It should not contain mapper-specific parsing logic.
+It should **not** contain mapper-specific parsing logic.
 
-## 1.1.6 How to add a new mapper
+In other words, the service coordinates mapping, but it should not decide how a source file or source directory is parsed.
 
-Typical steps:
+## 1.1.6 Ingest strategy
 
-1. create a new file in `mapper/mappers/`
-2. implement the mapper contract
-3. define a spec with a canonical name and aliases
-4. expose the plugin from the module
-5. run mapping through the registry name
+The mapper layer now follows this rule:
 
-This means adding a mapper should ideally not require edits in unrelated service files.
+* **simple mappers** should use the default grouped-text ingest from the contract
+* **special mappers** should override `ingest(...)` and, if needed, `map_source(...)`
 
-## 1.1.7 Practical example mindset
+This avoids two bad extremes:
 
-Examples of mapper names in the project include:
+* forcing every mapper to reimplement trivial file loading
+* forcing the service layer to know how every source type must be loaded
+
+So the preferred design is:
+
+* default ingest in the contract
+* shared helper functions in `mapper_utils.py`
+* custom ingest only when the source format truly needs it
+
+## 1.1.7 Role of `mapper_utils.py`
+
+`mapper_utils.py` is now best understood as the shared helper layer for mapper ingest and parsing support.
+
+It is a good place for generic helpers such as:
+
+* loading grouped text
+* loading JSON
+* listing files in a directory
+* basic conversions
+* generic parsing helpers
+* exclusion helpers
+
+It is **not** the place for format-specific business logic.  
+For example, RSABias-specific interpretation should stay in `rsabias.py`, not in `mapper_utils.py`.
+
+## 1.1.8 Examples of current mapper styles
+
+Examples of normal grouped-text mappers in the project include:
 
 * `tpm`
 * `jcperf`
 * `jcaid`
 * `jcalgsupport`
 
-Aliases are useful for CLI ergonomics, but the project should still use one canonical name internally.
+These still follow the grouped-text pattern and implement `map_groups(...)`.
+
+The current special-case mapper is:
+
+* `rsabias`
+
+This mapper overrides ingest because its source is a directory containing multiple JSON/text artifacts that must be combined into one normalized output.
+
+## 1.1.9 How to add a new mapper
+
+Typical steps:
+
+1. create a new file in `mapper/mappers/`
+2. implement the mapper contract
+3. define a spec with a canonical name and aliases
+4. decide whether the mapper uses:
+   * the default grouped-text ingest, or
+   * a custom ingest path
+5. expose the plugin from the module through `PLUGINS`
+6. run mapping through the registry name
+
+This means adding a mapper should ideally not require edits in unrelated service files.
+
+## 1.1.10 Practical naming rule
+
+Aliases are useful for CLI ergonomics, but the project should still use one canonical internal name.
+
+That means:
+
+* users may type an alias
+* the registry resolves it
+* the rest of the system works with the canonical mapper name
 
 ---
 
@@ -293,7 +371,7 @@ Legacy files under `scrutiny/reporting/viz/...` may still exist for compatibilit
 A viz plugin should define:
 
 * its identity/spec
-* the slot or role if your current design uses one
+* the slot or role if the current design uses one
 * a render method returning nodes or renderable content
 
 A viz plugin should focus on the visualization itself.
@@ -356,19 +434,25 @@ Typical steps:
 
 ---
 
-# 1.4 Summary of the new plugin situation
+# 1.4 Summary of the plugin situation
 
-The new plugin situation can be summarized like this:
+The plugin situation can be summarized like this:
 
-* **Mapper plugins** transform raw input into normalized JSON
+* **Mapper plugins** transform raw or preprocessed input into normalized JSON
 * **Comparator plugins** compare normalized JSON sections
 * **Viz plugins** render visual blocks for the report
 
-All three should follow the same architectural rule:
+All three follow the same architectural rule:
 
 * implementation lives in plugin modules
 * registration/discovery lives in a registry
 * orchestration lives in service code
+
+For mappers specifically, the important refinement is:
+
+* ingest belongs to the plugin layer
+* the contract provides a default ingest path
+* special formats override ingest when needed
 
 That is the core design principle behind the newer scrutiny-viz structure.
 
@@ -382,9 +466,10 @@ When adding any new plugin type, follow these rules:
 2. keep the registry responsible only for discovery and lookup
 3. keep aliases user-friendly, but use one canonical internal name
 4. keep service code focused on orchestration
-5. leave compatibility shims only where needed, and keep them thin
-6. test autodiscovery with an isolated test package
-7. avoid hidden side effects outside the registry/discovery path
+5. keep generic ingest helpers in shared utilities, not in the service
+6. only override ingest when the source format truly needs it
+7. test autodiscovery with an isolated test package
+8. avoid hidden side effects outside the registry/discovery path
 
 These rules help keep scrutiny-viz modular without making it overly abstract or hard to debug.
 
@@ -407,5 +492,10 @@ Every time a new building block is added, it should follow the same broad patter
 * expose it for autodiscovery
 * resolve it through the registry
 * run it from the service layer
+
+For mapper plugins, that now also means:
+
+* let the contract handle the common ingest case
+* let the mapper override ingest only when needed
 
 That is what makes the project feel modular instead of just split across many files.

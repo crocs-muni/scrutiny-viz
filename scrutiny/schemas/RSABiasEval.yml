@@ -1,0 +1,89 @@
+schema_version: "0.13"
+
+ingest:
+  dynamic_sections: false
+  strict_sections: false
+  allow_missing_sections: true
+
+defaults:
+  data:
+    type: list
+    record_schema:
+      group:        { dtype: string,  required: true,  category: nominal }
+      correct:      { dtype: integer, required: false, category: continuous }
+      wrong:        { dtype: integer, required: false, category: continuous }
+      total:        { dtype: integer, required: false, category: continuous }
+      accuracy_pct: { dtype: number,  required: false, category: continuous }
+  component:
+    comparator: basic
+    match_key: group
+    show_key: group
+    include_matches: true
+    threshold_ratio: 0.0
+    threshold_count: 0
+  report:
+    theme: dark
+    types: ["table"]
+  target: {}
+
+sections:
+  META:
+    data:
+      record_schema:
+        name:  { dtype: string, required: true, category: nominal }
+        value: { dtype: string, required: false, category: nominal }
+    component:
+      match_key: name
+      show_key: name
+
+  SUMMARY:
+    data:
+      record_schema:
+        name:  { dtype: string, required: true, category: nominal }
+        value: { dtype: string, required: false, category: nominal }
+    component:
+      match_key: name
+      show_key: name
+
+  ACCURACY_N1: {}
+  ACCURACY_N10: {}
+  ACCURACY_N20: {}
+  ACCURACY_N30: {}
+  ACCURACY_N100: {}
+
+  CONFUSION_TOP:
+    data:
+      record_schema:
+        edge_id:    { dtype: string, required: true, category: nominal }
+        true_group: { dtype: string, required: true, category: nominal }
+        pred_group: { dtype: string, required: true, category: nominal }
+        share_pct:  { dtype: number, required: false, category: continuous }
+    component:
+      match_key: edge_id
+      show_key: edge_id
+
+  CONFUSION_MATRIX_META:
+    data:
+      record_schema:
+        name:  { dtype: string, required: true, category: nominal }
+        value: { dtype: string, required: false, category: nominal }
+    component:
+      match_key: name
+      show_key: name
+
+  CONFUSION_MATRIX_CELLS:
+    data:
+      record_schema:
+        cell_id:     { dtype: string,  required: true,  category: nominal }
+        row_index:   { dtype: integer, required: true,  category: continuous }
+        col_index:   { dtype: integer, required: true,  category: continuous }
+        row_label:   { dtype: string,  required: false, category: nominal }
+        col_label:   { dtype: string,  required: false, category: nominal }
+        value:       { dtype: number,  required: true,  category: continuous }
+        is_diagonal: { dtype: boolean, required: false, category: binary }
+    component:
+      match_key: cell_id
+      show_key: cell_id
+    report:
+      types:
+        - type: heatmap

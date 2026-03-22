@@ -1,9 +1,9 @@
 # scrutiny-viz/mapper/mappers/__init__.py
-from .contracts import FunctionMapperPlugin, MapperPlugin, MapperSpec, MappingContext
+from .contracts import MapperPlugin, MapperSpec, MappingContext, build_context
 
 __all__ = [
-    "FunctionMapperPlugin",
     "MapperPlugin",
     "MapperSpec",
     "MappingContext",
+    "build_context",
 ]

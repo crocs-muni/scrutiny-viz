@@ -28,4 +28,3 @@ def test_registry_returns_plugin_object():
     plugin = registry.get_plugin("jcperf")
     assert plugin.spec.name == "jcperf"
     assert callable(plugin.map_groups)
-    assert callable(plugin.legacy_map)

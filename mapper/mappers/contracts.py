@@ -4,15 +4,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, FrozenSet, Iterable, Optional
-
-try:
-    from .. import mapper_utils
-except ImportError:  # pragma: no cover
-    import mapper_utils
-
-
-MapperFn = Callable[[list[list[str]], str], dict]
+from typing import Any, FrozenSet, Optional
 
 
 @dataclass(frozen=True)
@@ -28,47 +20,52 @@ class MappingContext:
     excluded_properties: FrozenSet[str] = field(default_factory=frozenset)
 
 
-class MapperPlugin(ABC):
-    """Base contract for all built-in mappers."""
-
-    spec: MapperSpec
-
-    def load_groups(self, file_path: str | Path) -> list[list[str]]:
-        groups = mapper_utils.load_file(str(Path(file_path)))
-        if groups is None:
-            raise ValueError(f"Could not load input file: {file_path}")
-        return groups
-
-    def map_file(self, file_path: str | Path, context: MappingContext) -> dict:
-        result = self.map_groups(self.load_groups(file_path), context)
-        if context.excluded_properties:
-            result = mapper_utils.apply_exclusions(result, set(context.excluded_properties))
-        return result
-
-    def legacy_map(self, groups: list[list[str]], delimiter: str) -> dict:
-        return self.map_groups(groups, MappingContext(delimiter=delimiter))
-
-    @abstractmethod
-    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict:
-        raise NotImplementedError
-
-
-class FunctionMapperPlugin(MapperPlugin):
-    """Adapter for tests or temporary legacy registrations."""
-
-    def __init__(self, spec: MapperSpec, fn: MapperFn) -> None:
-        self.spec = spec
-        self._fn = fn
-
-    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict:
-        return self._fn(groups, context.delimiter)
-
-
 def build_context(
     delimiter: str = ";",
-    excluded_properties: Optional[Iterable[str]] = None,
+    excluded_properties: Optional[set[str] | FrozenSet[str]] = None,
 ) -> MappingContext:
     return MappingContext(
         delimiter=delimiter,
         excluded_properties=frozenset(excluded_properties or ()),
     )
+
+
+class MapperPlugin(ABC):
+    spec: MapperSpec
+
+    @property
+    def accepts_directories(self) -> bool:
+        return False
+
+    def ingest(self, source_path: Path) -> Any:
+        """
+        Default ingest for grouped-text mappers.
+        RSABias-style mappers should override this.
+        """
+        try:
+            from .. import mapper_utils
+        except ImportError:
+            import mapper_utils  # type: ignore
+
+        groups = mapper_utils.load_file(str(source_path))
+        if groups is None:
+            raise FileNotFoundError(f"Failed to load grouped text input from: {source_path}")
+        return groups
+
+    def map_source(self, source: Any, context: MappingContext) -> dict[str, Any]:
+        """
+        Default source mapping for grouped-text mappers.
+        Directory/JSON bundle mappers should override this.
+        """
+        if not isinstance(source, list):
+            raise TypeError(
+                f"Mapper '{self.spec.name}' expected grouped text input, got {type(source).__name__}"
+            )
+        return self.map_groups(source, context)
+
+    @abstractmethod
+    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def map_path(self, source_path: Path, context: MappingContext) -> dict[str, Any]:
+        return self.map_source(self.ingest(source_path), context)

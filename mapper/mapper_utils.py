@@ -1,26 +1,72 @@
 # scrutiny-viz/mapper/mapper_utils.py
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
 from typing import Any, Callable, Optional
 
 logger = logging.getLogger(__name__)
 
 
-# ---------- IO / grouping ----------
+# ---------- IO helpers ----------
 
-def load_file(path: str) -> Optional[list[list[str]]]:
+def read_text_file(path: str | Path) -> Optional[str]:
     try:
-        logger.info(f"Loading file: {path}")
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
-            content = f.read()
-        return prepare_lines(content.splitlines())
+        p = Path(path)
+        logger.info("Loading text file: %s", p)
+        return p.read_text(encoding="utf-8", errors="replace")
     except FileNotFoundError:
-        logger.error(f"File not found: {path}")
+        logger.error("File not found: %s", path)
     except Exception as e:
-        logger.exception(f"An error occurred while reading {path}: {e}")
+        logger.exception("An error occurred while reading %s: %s", path, e)
     return None
 
+
+def require_text_file(path: str | Path) -> str:
+    data = read_text_file(path)
+    if data is None:
+        raise FileNotFoundError(f"Failed to load text file: {path}")
+    return data
+
+
+def read_json_file(path: str | Path) -> Optional[Any]:
+    try:
+        p = Path(path)
+        logger.info("Loading JSON file: %s", p)
+        with p.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.error("JSON file not found: %s", path)
+    except json.JSONDecodeError as e:
+        logger.error("Invalid JSON in %s: %s", path, e)
+    except Exception as e:
+        logger.exception("An error occurred while reading JSON %s: %s", path, e)
+    return None
+
+
+def require_json_file(path: str | Path) -> Any:
+    data = read_json_file(path)
+    if data is None:
+        raise FileNotFoundError(f"Failed to load JSON file: {path}")
+    return data
+
+
+def list_files(path: str | Path) -> list[Path]:
+    p = Path(path)
+    if not p.exists() or not p.is_dir():
+        return []
+    return sorted(x for x in p.iterdir() if x.is_file())
+
+
+def find_files(path: str | Path, pattern: str) -> list[Path]:
+    p = Path(path)
+    if not p.exists() or not p.is_dir():
+        return []
+    return sorted(p.glob(pattern))
+
+
+# ---------- Grouped text ingest ----------
 
 def prepare_lines(lines: list[str]) -> list[list[str]]:
     result: list[list[str]] = []
@@ -37,39 +83,18 @@ def prepare_lines(lines: list[str]) -> list[list[str]]:
     return result
 
 
+def load_file(path: str) -> Optional[list[list[str]]]:
+    content = read_text_file(path)
+    if content is None:
+        return None
+    return prepare_lines(content.splitlines())
+
+
 def flatten_groups(groups: list[list[str]]) -> list[str]:
     out: list[str] = []
     for g in groups:
         out.extend(g)
     return out
-
-
-# ---------- Simple schema-ish helpers ----------
-
-def create_attribute(name: str, value: str) -> dict[str, str]:
-    return {"name": name, "value": value}
-
-
-def parse_name_value_attributes(
-    lines: list[str],
-    delimiter: str,
-    *,
-    allow_single_value: bool = False,
-) -> list[dict[str, str]]:
-    attrs: list[dict[str, str]] = []
-    for line in lines:
-        s = (line or "").strip()
-        if not s:
-            continue
-        parts = s.split(delimiter)
-        if len(parts) >= 2:
-            name = parts[0].strip()
-            value = parts[1].strip()
-            if name:
-                attrs.append(create_attribute(name, value))
-        elif allow_single_value:
-            attrs.append(create_attribute(s, ""))
-    return attrs
 
 
 # ---------- Exclusions ----------
@@ -83,11 +108,11 @@ def load_exclusions(path: str) -> set[str]:
                 if not trimmed or trimmed.startswith("#"):
                     continue
                 excluded.add(trimmed)
-        logger.info(f"Loaded {len(excluded)} excluded propertie(s) from {path}")
+        logger.info("Loaded %d excluded propertie(s) from %s", len(excluded), path)
     except FileNotFoundError:
-        logger.error(f"Exclusion file not found: {path}")
+        logger.error("Exclusion file not found: %s", path)
     except Exception as e:
-        logger.exception(f"Failed to read exclusion file {path}: {e}")
+        logger.exception("Failed to read exclusion file %s: %s", path, e)
     return excluded
 
 
@@ -119,11 +144,37 @@ def apply_exclusions(result: dict, excluded: set[str]) -> dict:
             kept.append(attr)
         filtered[section] = kept
 
-    logger.info(f"Excluded {removed_count} attribute(s) by name")
+    logger.info("Excluded %d attribute(s) by name", removed_count)
     return filtered
 
 
-# ---------- Conversions ----------
+# ---------- Generic parsing helpers ----------
+
+def create_attribute(name: str, value: str) -> dict[str, str]:
+    return {"name": name, "value": value}
+
+
+def parse_name_value_attributes(
+    lines: list[str],
+    delimiter: str,
+    *,
+    allow_single_value: bool = False,
+) -> list[dict[str, str]]:
+    attrs: list[dict[str, str]] = []
+    for line in lines:
+        s = (line or "").strip()
+        if not s:
+            continue
+        parts = s.split(delimiter)
+        if len(parts) >= 2:
+            name = parts[0].strip()
+            value = parts[1].strip()
+            if name:
+                attrs.append(create_attribute(name, value))
+        elif allow_single_value:
+            attrs.append(create_attribute(s, ""))
+    return attrs
+
 
 def to_int(value: Optional[str]) -> Optional[int]:
     if value is None:
@@ -162,8 +213,6 @@ def to_bool(value: Optional[str]) -> Optional[bool]:
         return False
     return None
 
-
-# ---------- Parsing helpers ----------
 
 def parse_kv_pairs(parts: list[str], start: int = 1) -> dict[str, str]:
     out: dict[str, str] = {}

@@ -359,16 +359,16 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
     tags.p(fast_summary(stats_display))
 
     types_ordered = normalize_report_types(rep_cfg)
-    perf_types = [(t, v) for (t, v) in types_ordered if t != "table" and t in viz_registry.list_types()]
-    if perf_types:
+    viz_types  = [(t, v) for (t, v) in types_ordered if t != "table" and t in viz_registry.list_types()]
+    if viz_types :
         with toggle_block(
             block_id=f"section_{idx}_perf",
             title="Visualizations",
             button_text="Viz",
-            button_title="Show/hide visualizations (chart/radar)",
+            button_title="Show/hide visualizations",
             hide=(state == ContrastState.MATCH),
         ):
-            for t, v in perf_types:
+            for t, v in viz_types :
                 rendered = _render_viz_plugin(t, section_name=section_name, section=section, idx=idx, ref_name=ref_name, prof_name=prof_name, variant=v)
                 _add_rendered_node(rendered)
 
