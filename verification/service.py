@@ -234,17 +234,17 @@ def run_verification(
 
     if report:
         slog.log_ok("Generating HTML report")
-        report_script = Path(__file__).resolve().parents[1] / "report_html.py"
-        if not report_script.exists():
-            report_script = Path("report_html.py")
-
         try:
-            subprocess.run(
-                [sys.executable, str(report_script), "-p", output_file, "-o", "comparison.html", "-v"],
-                check=True,
+            from report.service import run_report_html
+
+            rc = run_report_html(
+                verification_profile=output_file,
+                output_file="comparison.html",
+                exclude_style_and_scripts=False,
+                no_zip=False,
             )
-        except subprocess.CalledProcessError as e:
-            slog.log_err(f"Failed to build HTML report: {e}")
+            if rc != 0:
+                slog.log_err("Failed to build HTML report")
         except Exception as e:
             slog.log_err(f"Error while generating HTML report: {e}")
     else:

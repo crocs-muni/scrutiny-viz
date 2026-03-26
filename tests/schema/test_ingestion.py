@@ -1,4 +1,4 @@
-# scrutiny-viz/tests/test_ingestion.py
+# scrutiny-viz/tests/plugins/test_ingestion.py
 from __future__ import annotations
 
 import json
@@ -9,7 +9,7 @@ import pytest
 
 from scrutiny.ingest import JsonParser
 from scrutiny.schemaloader import SchemaLoader
-from utility import (
+from tests.utility import (
     assert_required_fields_present,
     build_minimal_raw_json,
     build_parser_schema_from_production_yml,
@@ -19,20 +19,13 @@ from utility import (
     production_module_yml,
 )
 
-# Production schemas covered by the generic ingestion tests:
-#   (schema_filename, label, require_real_example)
 MODULES: List[Tuple[str, str, bool]] = [
     ("jcAIDScan.yml", "jcAIDScan", True),
     ("TPMAlgTest.yml", "TPMAlgTest", True),
+    ("RSABiasEval.yml", "RSABias", False),
 ]
 
 
-# ---------------------------------------------------------------------
-# Generic production-schema ingestion helpers
-# ---------------------------------------------------------------------
-
-# Load a production YAML schema and convert it to the normalized per-section
-# structure expected by JsonParser.
 def _parser_schema(schema_filename: str) -> Dict[str, Dict]:
     yml_path = production_module_yml(schema_filename)
     assert yml_path.exists(), f"[INGEST][{schema_filename}] Missing production schema: {yml_path}"
@@ -40,7 +33,6 @@ def _parser_schema(schema_filename: str) -> Dict[str, Dict]:
     return build_parser_schema_from_production_yml(schema_yml)
 
 
-# Build a helpful failure/skip message when no real raw fixture matches the schema.
 def _missing_fixture_message(label: str, schema_filename: str, section_names: List[str]) -> str:
     n = len(section_names)
     return (
@@ -52,70 +44,37 @@ def _missing_fixture_message(label: str, schema_filename: str, section_names: Li
     )
 
 
-# ---------------------------------------------------------------------
-# Generic production-schema ingestion tests
-# ---------------------------------------------------------------------
-
-# Verify that JsonParser accepts a minimal synthetic raw JSON for each selected
-# production schema. This checks required fields + match_key handling.
 @pytest.mark.parametrize("schema_filename,label,_require", MODULES)
-def test_jsonparser_accepts_minimal_synthetic_raw_json(
-    schema_filename: str,
-    label: str,
-    _require: bool,
-    tmp_path: Path,
-):
+def test_jsonparser_accepts_minimal_synthetic_raw_json(schema_filename: str, label: str, _require: bool, tmp_path: Path):
     parser_schema = _parser_schema(schema_filename)
-
     raw = build_minimal_raw_json(parser_schema)
     p = tmp_path / f"synthetic_{label}.json"
     p.write_text(json.dumps(raw), encoding="utf-8")
-
     parser = JsonParser(parser_schema)
     parsed = parser.parse(str(p))
-
-    assert set(parsed.keys()) == set(parser_schema.keys()), (
-        f"[INGEST][{label}] Parsed sections differ from schema sections"
-    )
+    assert set(parsed.keys()) == set(parser_schema.keys())
     assert_required_fields_present(parser_schema, parsed)
 
 
-# If a matching real raw fixture exists, parse it and verify required fields.
 @pytest.mark.parametrize("schema_filename,label,require_real_example", MODULES)
-def test_jsonparser_parses_real_example_if_present(
-    schema_filename: str,
-    label: str,
-    require_real_example: bool,
-):
+def test_jsonparser_parses_real_example_if_present(schema_filename: str, label: str, require_real_example: bool):
     parser_schema = _parser_schema(schema_filename)
     section_names = list(parser_schema.keys())
-
     fixture = find_raw_fixture_for_sections(examples_dir(), section_names)
     if fixture is None:
         msg = _missing_fixture_message(label, schema_filename, section_names)
         if require_real_example:
             pytest.fail(msg)
         pytest.skip(msg)
-
     parser = JsonParser(parser_schema)
     parsed = parser.parse(str(fixture))
-
-    assert set(parsed.keys()) == set(parser_schema.keys()), (
-        f"[INGEST][{label}] Parsed sections differ from schema sections"
-    )
+    assert set(parsed.keys()) == set(parser_schema.keys())
     assert_required_fields_present(parser_schema, parsed)
 
 
-# ---------------------------------------------------------------------
-# Dynamic-section ingestion helpers
-# ---------------------------------------------------------------------
-
-# Write a small schema fixture that enables dynamic sections.
-# strict_sections controls whether unknown sections should be accepted or rejected.
 def _write_dynamic_schema(tmp_path: Path, strict_sections: bool) -> Path:
     yml = tmp_path / "dynamic_sections.yml"
-    yml.write_text(
-        f"""
+    yml.write_text(f'''
 schema_version: "0.13"
 
 ingest:
@@ -166,110 +125,59 @@ sections:
       include_matches: true
     report:
       types: ["table"]
-""".strip()
-        + "\n",
-        encoding="utf-8",
-    )
+'''.strip() + "\n", encoding="utf-8")
     return yml
 
 
-# Load the temporary dynamic-section schema through the real SchemaLoader path.
 def _load_dynamic_schema(schema_path: Path):
     return SchemaLoader(str(schema_path)).load()
 
 
-# Write a JSON payload fixture used by the dynamic-section tests.
 def _write_dynamic_json(tmp_path: Path, filename: str, payload: dict) -> Path:
     p = tmp_path / filename
     p.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return p
 
 
-# ---------------------------------------------------------------------
-# Dynamic-section ingestion tests
-# ---------------------------------------------------------------------
-
-# In permissive mode, an unknown section should inherit defaults dynamically,
-# be parsed successfully, and be tracked in ingest metadata.
 def test_ingestion_dynamic_section_succeeds_in_permissive_mode(tmp_path: Path):
     schema_path = _write_dynamic_schema(tmp_path, strict_sections=False)
     schema = _load_dynamic_schema(schema_path)
-
-    raw = {
-        "Basic information": [
-            {"name": "Card name", "value": "ExampleCard"}
-        ],
-        "javacard.crypto.Signature": [
-            {"algorithm_name": "ALG_RSA_SHA_PKCS1", "is_supported": "yes"},
-            {"algorithm_name": "ALG_RSA_SHA_256_PKCS1", "is_supported": "no"},
-        ],
-    }
+    raw = {"Basic information": [{"name": "Card name", "value": "ExampleCard"}], "javacard.crypto.Signature": [{"algorithm_name": "ALG_RSA_SHA_PKCS1", "is_supported": "yes"}, {"algorithm_name": "ALG_RSA_SHA_256_PKCS1", "is_supported": "no"}]}
     raw_path = _write_dynamic_json(tmp_path, "dynamic_ok.json", raw)
-
     parser = JsonParser(schema)
     parsed = parser.parse(str(raw_path))
-
     assert "Basic information" in parsed
     assert "javacard.crypto.Signature" in parsed
-
     assert parsed._ingest_meta["applied_dynamic_sections"] == ["javacard.crypto.Signature"]
     assert "javacard.crypto.Signature" in parsed._ingest_meta["dynamic_section_configs"]
-
     cfg = parsed._ingest_meta["dynamic_section_configs"]["javacard.crypto.Signature"]
     assert cfg["component"]["match_key"] == "algorithm_name"
     assert cfg["component"]["show_key"] == "algorithm_name"
-
-    # Active schema should also be extended so downstream verification can see it.
     assert "javacard.crypto.Signature" in schema
 
 
-# In strict mode, an unknown section should fail ingestion immediately.
 def test_ingestion_dynamic_section_fails_in_strict_mode(tmp_path: Path):
     schema_path = _write_dynamic_schema(tmp_path, strict_sections=True)
     schema = _load_dynamic_schema(schema_path)
-
-    raw = {
-        "Basic information": [
-            {"name": "Card name", "value": "ExampleCard"}
-        ],
-        "javacard.crypto.Signature": [
-            {"algorithm_name": "ALG_RSA_SHA_PKCS1", "is_supported": "yes"}
-        ],
-    }
+    raw = {"Basic information": [{"name": "Card name", "value": "ExampleCard"}], "javacard.crypto.Signature": [{"algorithm_name": "ALG_RSA_SHA_PKCS1", "is_supported": "yes"}]}
     raw_path = _write_dynamic_json(tmp_path, "dynamic_strict_fail.json", raw)
-
     parser = JsonParser(schema)
-
     with pytest.raises(KeyError, match="Unknown section"):
         parser.parse(str(raw_path))
 
 
-# In permissive mode, an invalid dynamic section should be skipped, recorded,
-# and should not abort parsing of valid sections.
 def test_ingestion_dynamic_section_invalid_is_skipped(tmp_path: Path):
     schema_path = _write_dynamic_schema(tmp_path, strict_sections=False)
     schema = _load_dynamic_schema(schema_path)
-
-    raw = {
-        "Basic information": [
-            {"name": "Card name", "value": "ExampleCard"}
-        ],
-        "javacardx.crypto.Cipher": [
-            {"is_supported": "yes"}
-        ],
-    }
+    raw = {"Basic information": [{"name": "Card name", "value": "ExampleCard"}], "javacardx.crypto.Cipher": [{"is_supported": "yes"}]}
     raw_path = _write_dynamic_json(tmp_path, "dynamic_skip.json", raw)
-
     parser = JsonParser(schema)
     parsed = parser.parse(str(raw_path))
-
     assert "Basic information" in parsed
     assert "javacardx.crypto.Cipher" not in parsed
-
     skipped = parsed._ingest_meta["skipped_sections"]
     assert skipped
     assert skipped[0]["section"] == "javacardx.crypto.Cipher"
     assert "missing required field 'algorithm_name'" in skipped[0]["reason"]
-
     assert parsed._ingest_meta["applied_dynamic_sections"] == []
     assert parsed._ingest_meta["dynamic_section_configs"] == {}

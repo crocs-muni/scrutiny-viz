@@ -23,7 +23,7 @@ def add_verify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--print-matches", type=int, default=0, metavar="N",
         help="Print up to N matches per section (default: 0)",)
     parser.add_argument("-rep", "--report", action="store_true",
-        help="Create an HTML report (results/comparison.html) using report_html.py",)
+        help="Create an HTML report (results/comparison.html) after verification",)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
