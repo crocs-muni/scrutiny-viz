@@ -236,7 +236,7 @@ def run_verify_workflow(schema: Path, profile_path: Path, tmp_dir: Path, *, repo
     out_json = tmp_dir / f"{profile_path.stem}.verify.json"
     cmd = [sys.executable, str(scrutinize_path()), "verify", "-s", str(schema), "-r", str(profile_path), "-p", str(profile_path), "-o", str(out_json)]
     if report:
-        cmd.append("-rep")
+        cmd.append("--report")
     proc = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True)
     return proc, out_json
 

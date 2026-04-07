@@ -150,7 +150,7 @@ def test_report_workflow_modules_order_and_default_collapse(case: HtmlCase, link
     _clean_result_zips(tmp_path)
     mode = "link" if link_mode else "inline"
     out_name = f"pytest_{case.label}_{mode}_{uuid4().hex}.html"
-    extra_args = ["-e"] if link_mode else []
+    extra_args = ["--exclude-style-and-scripts"] if link_mode else []
     out_path = run_report_workflow(report_json_path, out_name, cwd=tmp_path, extra_args=extra_args)
     assert out_path.exists()
     html = out_path.read_text(encoding="utf-8")

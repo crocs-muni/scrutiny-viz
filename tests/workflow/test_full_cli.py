@@ -13,7 +13,7 @@ def test_full_cli_csv_to_verify_and_report_jcaid(tmp_path):
     csv_path = csvs[0]
     out_json = tmp_path / "jcaid.verify.json"
     proc = run_scrutinize([
-        "full", "-s", str(schema), "-r", str(csv_path), "-p", str(csv_path), "-t", "jcaid", "-vo", str(out_json), "-ro", "comparison.html",
+        "full", "-s", str(schema), "-r", str(csv_path), "-p", str(csv_path), "-t", "jcaid", "--verify-output", str(out_json), "--report-output", "comparison.html",
     ], cwd=tmp_path)
     assert proc.returncode == 0, f"full failed\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}"
     assert out_json.exists()
@@ -29,7 +29,7 @@ def test_full_cli_json_passthrough_tpm_examples(tmp_path):
     assert prof_json.exists()
     out_json = tmp_path / "tpm.verify.json"
     proc = run_scrutinize([
-        "full", "-s", str(schema), "-r", str(ref_json), "-p", str(prof_json), "-vo", str(out_json), "-ro", "comparison.html",
+        "full", "-s", str(schema), "-r", str(ref_json), "-p", str(prof_json), "--verify-output", str(out_json), "--report-output", "comparison.html",
     ], cwd=tmp_path)
     assert proc.returncode == 0, f"full failed\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}"
     assert out_json.exists()

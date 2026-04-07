@@ -12,13 +12,13 @@ from .service import process_files, process_folder, map_single_source
 
 
 def add_mapper_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("file_paths", nargs="*", default=[], help="Path(s) to source file(s)")
-    parser.add_argument("-f", "--folder", dest="folder_path", help="Folder containing input files, or a source directory for directory-based mappers")
     parser.add_argument("-t", "--type", dest="mapper_type", required=True, help="Mapper type to use")
     parser.add_argument("-o", "--output", dest="output_path", help="Output file path for one source, or output directory for multi-file folder mode")
-    parser.add_argument("-d", "--delimiter", default=";", help="Delimiter to use for grouped-text mappers (default: ;)")
-    parser.add_argument("-x", "--exclude-file", default=None, help="File with attribute names to exclude")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase log verbosity (-v, -vv)")
+    parser.add_argument("file_paths", nargs="*", default=[], help="Path(s) to source file(s)")
+    parser.add_argument("--folder", dest="folder_path", help="Folder containing input files, or a source directory for directory-based mappers")
+    parser.add_argument("--delimiter", default=";", help="Delimiter to use for grouped-text mappers (default: ;)")
+    parser.add_argument("--exclude-file", default=None, help="File with attribute names to exclude")
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -28,13 +28,25 @@ def build_arg_parser() -> argparse.ArgumentParser:
         epilog=f"""
 Examples:
   python scrutinize.py map -t jcperf file.csv
-  python scrutinize.py map -t tpm -f ./csvs -o ./out
-  python scrutinize.py map -t rsabias -f ./out_eval -o ./results/rsabias_old.json
+  python scrutinize.py map -t tpm --folder ./csvs -o ./out
+  python scrutinize.py map -t rsabias --folder ./out_eval -o ./results/rsabias_old.json
 Known types: {", ".join(registry.list_types())}
 """,
     )
     add_mapper_args(parser)
     return parser
+
+
+def print_mapper_success(outputs: list[Path], output_hint: str | None) -> None:
+    if len(outputs) == 1:
+        print(f"map completed successfully. Output written to: {outputs[0]}")
+        return
+
+    if output_hint:
+        base_path = Path(output_hint).resolve()
+        print(f"map completed successfully. {len(outputs)} outputs written under: {base_path}")
+    else:
+        print(f"map completed successfully. {len(outputs)} outputs written.")
 
 
 def run_from_namespace(args: argparse.Namespace) -> int:
@@ -51,37 +63,43 @@ def run_from_namespace(args: argparse.Namespace) -> int:
             delimiter=args.delimiter,
             excluded_properties=excluded,
         )
-        for p in outputs:
-            print(p)
-        return 0 if outputs else 1
+        if not outputs:
+            return 1
+        print_mapper_success(outputs, args.output_path)
+        return 0
 
     if args.file_paths:
-        if len(args.file_paths) == 1 and plugin.accepts_directories:
+        # Single input source: always respect -o as an explicit output file path.
+        if len(args.file_paths) == 1:
             src = Path(args.file_paths[0]).resolve()
-            if src.is_dir():
-                written = map_single_source(
-                    source_path=src,
-                    mapper_type=args.mapper_type,
-                    delimiter=args.delimiter,
-                    exclude_file=args.exclude_file,
-                    output_path=Path(args.output_path).resolve() if args.output_path else None,
-                )
-                if written:
-                    print(written)
-                    return 0
-                return 1
+
+            if src.is_dir() and not plugin.accepts_directories:
+                raise SystemExit(f"Mapper '{args.mapper_type}' does not accept directory input: {src}")
+
+            written = map_single_source(
+                source_path=src,
+                mapper_type=args.mapper_type,
+                delimiter=args.delimiter,
+                exclude_file=args.exclude_file,
+                output_path=Path(args.output_path).resolve() if args.output_path else None,
+            )
+            if written:
+                print(f"map completed successfully. Output written to: {written}")
+                return 0
+            return 1
 
         outputs = process_files(
             args.file_paths,
             mapper_type=args.mapper_type,
             delimiter=args.delimiter,
             excluded_properties=excluded,
-            output_dir=Path(args.output_path).resolve() if args.output_path and len(args.file_paths) > 1 else None,
-            source_base=Path.cwd() if args.output_path and len(args.file_paths) > 1 else None,
+            output_dir=Path(args.output_path).resolve() if args.output_path else None,
+            source_base=Path.cwd() if args.output_path else None,
         )
-        for p in outputs:
-            print(p)
-        return 0 if outputs else 1
+        if not outputs:
+            return 1
+        print_mapper_success(outputs, args.output_path)
+        return 0
 
     raise SystemExit("Please provide either file paths or use --folder option.")
 

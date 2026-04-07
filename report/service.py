@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 import re
 import zipfile
 from contextlib import contextmanager
@@ -562,14 +563,22 @@ def zip_preparation(html_report_path: str, verification_profile_path: str, out_d
     return zip_path
 
 
-def run_report_html(*, verification_profile: str, output_file: str = "comparison.html", exclude_style_and_scripts: bool = False, no_zip: bool = False) -> int:
+def _fail(exit_code: int, error: str) -> Dict[str, Any]:
+    return {
+        "ok": False,
+        "exit_code": int(exit_code),
+        "error": str(error),
+    }
+
+
+def run_report_html(*, verification_profile: str, output_file: str = "comparison.html", exclude_style_and_scripts: bool = False, no_zip: bool = False) -> Dict[str, Any]:
     slog.log_step("Loading report JSON", verification_profile)
     try:
         with open(verification_profile, "r", encoding="utf-8") as f:
             report = json.load(f)
     except Exception:
         slog.log_err("Failed to load report json from path", verification_profile)
-        return 1
+        return _fail(1, f"Failed to load report json from path: {verification_profile}")
 
     overall_state = state_enum(report.get("overall", "WARN"))
     suspicions = sum(1 for s in report.get("sections", {}).values() if state_enum(s.get("result", "WARN")).value >= ContrastState.WARN.value)
@@ -620,19 +629,26 @@ def run_report_html(*, verification_profile: str, output_file: str = "comparison
 
     out_dir = results_dir()
     os.makedirs(out_dir, exist_ok=True)
-    out_path = str(out_dir / os.path.basename(output_file))
+    out_path = (out_dir / os.path.basename(output_file)).resolve()
+
     slog.log_step("Writing HTML", str(out_dir))
     try:
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(str(doc))
     except Exception:
-        slog.log_err("Failed to write HTML", out_path)
-        return 1
+        slog.log_err("Failed to write HTML", str(out_path))
+        return _fail(1, f"Failed to write HTML: {out_path}")
 
+    zip_path: str | None = None
     if not no_zip:
         try:
-            zip_preparation(out_path, verification_profile, str(out_dir), str(JS_DIR), str(CSS_DIR), exclude_style_and_scripts)
+            zip_path = zip_preparation(str(out_path), verification_profile, str(out_dir), str(JS_DIR), str(CSS_DIR), exclude_style_and_scripts)
         except Exception as e:
             slog.log_err(f"Failed to create zip: {e}")
-    slog.log_ok("HTML report generated")
-    return 0
+
+    return {
+        "ok": True,
+        "exit_code": 0,
+        "html_path": str(out_path),
+        "zip_path": str(Path(zip_path).resolve()) if zip_path else None,
+    }

@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -48,10 +46,10 @@ def _normalize_skipped(source: str, items: List[Dict[str, Any]]) -> List[Dict[st
         if not isinstance(item, dict):
             continue
         out.append({
-            "source": source,
-            "section": item.get("section"),
-            "reason": item.get("reason"),
-        })
+                "source": source,
+                "section": item.get("section"),
+                "reason": item.get("reason"),
+            })
     return out
 
 
@@ -126,6 +124,14 @@ def _build_effective_schema(
     return effective_schema
 
 
+def _fail(exit_code: int, error: str) -> Dict[str, Any]:
+    return {
+        "ok": False,
+        "exit_code": int(exit_code),
+        "error": str(error),
+    }
+
+
 def run_verification(
     *,
     schema_path: str,
@@ -136,7 +142,7 @@ def run_verification(
     print_diffs: int = 3,
     print_matches: int = 0,
     report: bool = False,
-) -> int:
+) -> Dict[str, Any]:
     schema = _load_schema(schema_path)
     parser = JsonParser(schema)
 
@@ -164,7 +170,7 @@ def run_verification(
         match_key = comp_cfg.get("match_key")
         if not match_key:
             slog.log_err(f"[{section}] missing component.match_key in schema")
-            return 2
+            return _fail(2, f"[{section}] missing component.match_key in schema")
 
         show_key = comp_cfg.get("show_key", match_key)
 
@@ -195,6 +201,13 @@ def run_verification(
             reference=ref_rows,
             tested=tst_rows,
         )
+
+        # Allow specialized comparators to force the old-style section verdict.
+        override_result = str(res.get("override_result", "") or "").upper().strip()
+        if override_result:
+            res["result"] = override_result
+            res["section_result"] = override_result
+            slog.log_info(f"    • {section}: forced result {override_result}")
 
         counts = res.get("counts", {"compared": 0, "changed": 0})
         slog.log_info(f"    • {section}: diffs {counts.get('changed', 0)}/{counts.get('compared', 0)}")
@@ -228,27 +241,47 @@ def run_verification(
         ingest_meta=ingest_meta,
     )
 
-    slog.log_step("Writing output JSON:", output_file)
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(final_json, f, indent=2, ensure_ascii=False)
+    output_path = Path(output_file).resolve()
+
+    slog.log_step("Writing output JSON:", str(output_path))
+    try:
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(final_json, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        slog.log_err(f"Failed to write verification JSON: {e}")
+        return _fail(1, f"Failed to write verification JSON: {e}")
+
+    overall = str(final_json.get("overall", "WARN")).upper()
+    report_html_path: str | None = None
+    report_zip_path: str | None = None
 
     if report:
-        slog.log_ok("Generating HTML report")
+        slog.log_step("Generating HTML report", "comparison.html")
         try:
             from report.service import run_report_html
 
-            rc = run_report_html(
-                verification_profile=output_file,
+            report_result = run_report_html(
+                verification_profile=str(output_path),
                 output_file="comparison.html",
                 exclude_style_and_scripts=False,
                 no_zip=False,
             )
-            if rc != 0:
-                slog.log_err("Failed to build HTML report")
+            if not report_result.get("ok", False):
+                return _fail(
+                    int(report_result.get("exit_code", 1)),
+                    report_result.get("error", "Failed to build HTML report"),
+                )
+            report_html_path = report_result.get("html_path")
+            report_zip_path = report_result.get("zip_path")
         except Exception as e:
             slog.log_err(f"Error while generating HTML report: {e}")
-    else:
-        slog.log_info("Report generation skipped (use -rep/--report to enable).")
+            return _fail(1, f"Error while generating HTML report: {e}")
 
-    slog.log_ok("Done.")
-    return 0
+    return {
+        "ok": True,
+        "exit_code": 0,
+        "output_json_path": str(output_path),
+        "overall": overall,
+        "report_html_path": report_html_path,
+        "report_zip_path": report_zip_path,
+    }
