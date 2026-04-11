@@ -18,8 +18,11 @@ from scrutiny.interfaces import ContrastState
 from scrutiny import logging as slog
 from scrutiny.paths import REPORT_ASSETS_DIR, results_dir
 
+from report.bundle import prepare_report_bundle
 from report.viz import registry as viz_registry
 from report.viz.table import render_table_block
+
+log = slog.get_logger("REPORT")
 
 OUT_DIR = "results"
 JS_DIR = REPORT_ASSETS_DIR / "script.js"
@@ -549,17 +552,46 @@ def render_intro_right(report: Dict[str, Any]):
                 tags.div(str(total_diffs), _class="kpi-value")
 
 
-def zip_preparation(html_report_path: str, verification_profile_path: str, out_dir: str, js_path: str, css_path: str, link_mode: bool) -> str:
+def _zip_add_tree(z: zipfile.ZipFile, root_path: str, arc_prefix: str) -> None:
+    root = Path(root_path).resolve()
+    if not root.exists() or not root.is_dir():
+        return
+
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(root).as_posix()
+        arcname = f"{arc_prefix.rstrip('/')}/{rel}" if rel else arc_prefix.rstrip("/")
+        z.write(path, arcname=arcname)
+
+
+def zip_preparation(
+    html_report_path: str,
+    verification_profile_path: str,
+    out_dir: str,
+    js_path: str,
+    css_path: str,
+    link_mode: bool,
+    assets_dir: str | None = None,
+) -> str:
     ts = datetime.now().strftime("%Y%m%d_%H%M")
     zip_name = f"results_{ts}.zip"
     zip_path = os.path.join(out_dir, zip_name)
     compression = zipfile.ZIP_DEFLATED
+
     with zipfile.ZipFile(zip_path, mode="w", compression=compression) as z:
         z.write(html_report_path, arcname=os.path.basename(html_report_path))
         z.write(verification_profile_path, arcname=os.path.basename(verification_profile_path))
+
         if link_mode:
             z.write(js_path, arcname="script.js")
             z.write(css_path, arcname="style.css")
+
+        if assets_dir:
+            assets_root = Path(assets_dir).resolve()
+            if assets_root.exists() and assets_root.is_dir():
+                _zip_add_tree(z, str(assets_root), assets_root.name)
+
     return zip_path
 
 
@@ -571,37 +603,66 @@ def _fail(exit_code: int, error: str) -> Dict[str, Any]:
     }
 
 
-def run_report_html(*, verification_profile: str, output_file: str = "comparison.html", exclude_style_and_scripts: bool = False, no_zip: bool = False) -> Dict[str, Any]:
-    slog.log_step("Loading report JSON", verification_profile)
+def run_report_html(
+    *,
+    verification_profile: str,
+    output_file: str = "comparison.html",
+    exclude_style_and_scripts: bool = False,
+    no_zip: bool = False,
+) -> Dict[str, Any]:
+    log.step("Loading report JSON", verification_profile)
     try:
         with open(verification_profile, "r", encoding="utf-8") as f:
             report = json.load(f)
     except Exception:
-        slog.log_err("Failed to load report json from path", verification_profile)
+        log.err(f"Failed to load report json from path: {verification_profile}")
         return _fail(1, f"Failed to load report json from path: {verification_profile}")
 
+    out_dir = results_dir()
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = (out_dir / os.path.basename(output_file)).resolve()
+
+    bundle_result = prepare_report_bundle(
+        report,
+        source_report_path=verification_profile,
+        html_output_path=out_path,
+    )
+    report = bundle_result["report"]
+
+    if bundle_result.get("tracecompare_detected", False):
+        log.info(
+            "tracecompare detected: "
+            f"copied={bundle_result.get('copied_assets', 0)}, "
+            f"rewritten={bundle_result.get('rewritten_paths', 0)}, "
+            f"missing={bundle_result.get('missing_assets', 0)}"
+        )
+
     overall_state = state_enum(report.get("overall", "WARN"))
-    suspicions = sum(1 for s in report.get("sections", {}).values() if state_enum(s.get("result", "WARN")).value >= ContrastState.WARN.value)
-    slog.log_info(f"Overall state: {overall_state.name}")
+    suspicions = sum(
+        1
+        for s in report.get("sections", {}).values()
+        if state_enum(s.get("result", "WARN")).value >= ContrastState.WARN.value
+    )
+    log.info(f"Overall state: {overall_state.name}")
 
     script = ""
     style = ""
-    slog.log_step("Loading JS")
+    log.step("Loading JS")
     try:
         with open(JS_DIR, "r", encoding="utf-8") as js:
             script = "\n" + js.read() + "\n"
     except Exception:
-        slog.log_err("Failed to load JS", JS_DIR)
+        log.err(f"Failed to load JS: {JS_DIR}")
 
-    slog.log_step("Loading CSS")
+    log.step("Loading CSS")
     try:
         with open(CSS_DIR, "r", encoding="utf-8") as css:
             style = "\n" + css.read() + "\n"
     except Exception:
-        slog.log_err("Failed to load CSS")
+        log.err("Failed to load CSS")
 
     viz_registry.discover_builtin_viz(force=True)
-    slog.log_step("Rendering HTML document")
+    log.step("Rendering HTML document")
     doc = document(title="Comparison of smart cards")
     with doc.head:
         if exclude_style_and_scripts:
@@ -627,24 +688,33 @@ def run_report_html(*, verification_profile: str, output_file: str = "comparison
         for idx, (section_name, sec) in enumerate(iter_sections_issues_first(report)):
             render_module_card(section_name, sec, idx, ref_name=ref_name, prof_name=prof_name)
 
-    out_dir = results_dir()
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = (out_dir / os.path.basename(output_file)).resolve()
-
-    slog.log_step("Writing HTML", str(out_dir))
+    log.step("Writing HTML", str(out_dir))
     try:
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(str(doc))
     except Exception:
-        slog.log_err("Failed to write HTML", str(out_path))
+        log.err(f"Failed to write HTML: {out_path}")
         return _fail(1, f"Failed to write HTML: {out_path}")
 
     zip_path: str | None = None
+    bundled_json_path = bundle_result.get("bundled_json_path")
+    json_for_zip = str(Path(bundled_json_path).resolve()) if bundled_json_path else verification_profile
+    assets_dir = bundle_result.get("assets_dir")
+    assets_dir_str = str(Path(assets_dir).resolve()) if assets_dir else None
+
     if not no_zip:
         try:
-            zip_path = zip_preparation(str(out_path), verification_profile, str(out_dir), str(JS_DIR), str(CSS_DIR), exclude_style_and_scripts)
+            zip_path = zip_preparation(
+                str(out_path),
+                json_for_zip,
+                str(out_dir),
+                str(JS_DIR),
+                str(CSS_DIR),
+                exclude_style_and_scripts,
+                assets_dir=assets_dir_str,
+            )
         except Exception as e:
-            slog.log_err(f"Failed to create zip: {e}")
+            log.err(f"Failed to create zip: {e}")
 
     return {
         "ok": True,

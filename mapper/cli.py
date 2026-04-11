@@ -38,19 +38,21 @@ Known types: {", ".join(registry.list_types())}
 
 
 def print_mapper_success(outputs: list[Path], output_hint: str | None) -> None:
+    log = slog.get_logger("MAPPER")
     if len(outputs) == 1:
-        print(f"map completed successfully. Output written to: {outputs[0]}")
+        log.info(f"Mapper completed successfully. Output written to: {outputs[0]}")
         return
 
     if output_hint:
         base_path = Path(output_hint).resolve()
-        print(f"map completed successfully. {len(outputs)} outputs written under: {base_path}")
+        log.info(f"Mapper completed successfully. {len(outputs)} outputs written under: {base_path}")
     else:
-        print(f"map completed successfully. {len(outputs)} outputs written.")
+        log.info(f"Mapper completed successfully. {len(outputs)} outputs written.")
 
 
 def run_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(getattr(args, "verbose", 0))
+    log = slog.get_logger("MAPPER")
 
     excluded = mapper_utils.load_exclusions(args.exclude_file) if args.exclude_file else None
     plugin = registry.get_plugin(args.mapper_type)
@@ -69,7 +71,6 @@ def run_from_namespace(args: argparse.Namespace) -> int:
         return 0
 
     if args.file_paths:
-        # Single input source: always respect -o as an explicit output file path.
         if len(args.file_paths) == 1:
             src = Path(args.file_paths[0]).resolve()
 
@@ -84,7 +85,7 @@ def run_from_namespace(args: argparse.Namespace) -> int:
                 output_path=Path(args.output_path).resolve() if args.output_path else None,
             )
             if written:
-                print(f"map completed successfully. Output written to: {written}")
+                log.info(f"Mapper completed successfully. Output written to: {written}")
                 return 0
             return 1
 

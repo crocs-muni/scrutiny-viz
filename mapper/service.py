@@ -2,14 +2,15 @@
 from __future__ import annotations
 
 import json
-import logging
 from pathlib import Path
 from typing import Optional, Set
+
+from scrutiny import logging as slog
 
 from . import mapper_utils, registry
 from .mappers.contracts import build_context
 
-logger = logging.getLogger(__name__)
+log = slog.get_logger("MAPPER")
 
 
 def _default_output_path(src_path: Path) -> Path:
@@ -42,14 +43,14 @@ def process_source(
     canon = registry.normalize_type(mapper_type)
 
     src_path = Path(source_path).resolve()
-    logger.info("Processing source: %s (type=%s)", src_path, canon)
+    log.info(f"Processing source: {src_path} (type={canon})")
 
     context = build_context(delimiter=delimiter, excluded_properties=excluded_properties)
 
     try:
         final_result = plugin.map_path(src_path, context)
     except Exception as e:
-        logger.exception("Failed to map source %s: %s", src_path, e)
+        log.err(f"Failed to map source {src_path}: {e}")
         return None
 
     if excluded_properties:
@@ -61,10 +62,10 @@ def process_source(
     try:
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(final_result, f, indent=4, ensure_ascii=False)
-        logger.info("Result saved to %s", out_path)
+        log.info(f"Result saved to {out_path}")
         return out_path
     except Exception as e:
-        logger.exception("Failed to write output for %s: %s", src_path, e)
+        log.err(f"Failed to write output for {src_path}: {e}")
         return None
 
 
@@ -132,10 +133,10 @@ def process_folder(
     plugin = registry.get_plugin(mapper_type)
 
     if not source_path.exists():
-        logger.error("Source folder does not exist: %s", source_path)
+        log.err(f"Source folder does not exist: {source_path}")
         return []
     if not source_path.is_dir():
-        logger.error("Path is not a directory: %s", source_path)
+        log.err(f"Path is not a directory: {source_path}")
         return []
 
     if plugin.accepts_directories:
@@ -157,7 +158,7 @@ def process_folder(
 
     csv_files = list(source_path.rglob("*.csv"))
     if not csv_files:
-        logger.warning("No CSV files found in %s", source_path)
+        log.warn(f"No CSV files found in {source_path}")
         return []
 
     output_path.mkdir(parents=True, exist_ok=True)

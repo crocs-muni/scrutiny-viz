@@ -20,6 +20,7 @@ def add_verify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--print-matches", type=int, default=0, metavar="N", help="Print up to N matches per section (default: 0)")
     parser.add_argument("--report", action="store_true", help="Create an HTML report after verification")
 
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="YAML-driven verification (modular comparators + reporting)."
@@ -30,6 +31,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def run_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(args.verbose)
+    log = slog.get_logger("VERIFY")
     result = run_verification(
         schema_path=args.schema,
         reference_path=args.reference,
@@ -50,10 +52,10 @@ def run_from_namespace(args: argparse.Namespace) -> int:
     )
     if result.get("report_html_path"):
         msg += f" Report written to: {result['report_html_path']}."
-    print(msg)
+    log.info(msg)
 
     if result.get("report_zip_path"):
-        print(f"Report zip written to: {result['report_zip_path']}")
+        log.info(f"Report zip written to: {result['report_zip_path']}")
 
     return 0
 
@@ -68,5 +70,5 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except Exception as e:
         from scrutiny import logging as slog
-        slog.log_err(f"Error: {e}")
+        slog.get_logger("VERIFY").err(f"Error: {e}")
         raise SystemExit(1)

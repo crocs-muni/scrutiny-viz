@@ -15,6 +15,7 @@ def add_report_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--exclude-style-and-scripts", help="Inline CSS/JS instead of linking to /data/", action="store_true")
     parser.add_argument("--no-zip", help="Disables creation of a zip", action="store_true")
 
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Render an HTML report from verification JSON."
@@ -25,6 +26,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def run_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(args.verbose)
+    log = slog.get_logger("REPORT")
     result = run_report_html(
         verification_profile=args.verification_profile,
         output_file=args.output_file,
@@ -38,7 +40,7 @@ def run_from_namespace(args: argparse.Namespace) -> int:
     msg = f"report completed successfully. HTML written to: {result['html_path']}"
     if result.get("zip_path"):
         msg += f". Zip written to: {result['zip_path']}"
-    print(msg)
+    log.info(msg)
     return 0
 
 
@@ -52,5 +54,5 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except Exception as e:
         from scrutiny import logging as slog
-        slog.log_err(f"Error: {e}")
+        slog.get_logger("REPORT").err(f"Error: {e}")
         raise SystemExit(1)

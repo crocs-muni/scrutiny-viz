@@ -40,6 +40,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 def run_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(args.verbose)
+    log = slog.get_logger("BATCH")
     result = run_batch_verification(
         schema_path=args.schema,
         reference_input=args.reference,
@@ -62,15 +63,15 @@ def run_from_namespace(args: argparse.Namespace) -> int:
         else:
             status = "batch-verify completed."
 
-        print(
+        log.info(
             f"{status} "
             f"Summary written to: {result['summary_json_path']}. "
             f"Profiles processed: {result['profiles_processed']}. "
             f"Non-MATCH profiles: {result.get('nonmatch_profiles', 0)}. "
             f"Reports generated: {result['reports_generated']}."
         )
-        print(f"Verification outputs: {result['verify_dir']}")
-        print(f"Report outputs: {result['report_dir']}")
+        log.info(f"Verification outputs: {result['verify_dir']}")
+        log.info(f"Report outputs: {result['report_dir']}")
         return exit_code
 
     return exit_code

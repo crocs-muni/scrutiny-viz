@@ -1,0 +1,39 @@
+schema_version: "0.13"
+
+ingest:
+  dynamic_sections: false
+  strict_sections: false
+  allow_missing_sections: true
+
+defaults:
+  data:
+    type: list
+  component:
+    comparator: basic
+    match_key: operation_code
+    show_key: operation_code
+    include_matches: true
+    threshold_ratio: 0.0
+    threshold_count: 0
+  report:
+    theme: dark
+    types: ["table"]
+  target: {}
+
+sections:
+  TRACE_OPERATIONS:
+    data:
+      record_schema:
+        operation_code:            { dtype: string,  required: true,  category: nominal }
+        operation_present:         { dtype: boolean, required: false, category: binary }
+        pipeline_comparisons_json: { dtype: string,  required: false, category: nominal }
+        execution_times_json:      { dtype: string,  required: false, category: nominal }
+    component:
+      comparator: tracescompare
+      match_key: operation_code
+      show_key: operation_code
+      include_matches: true
+    report:
+      types:
+        - type: table
+          variant: tracescompare

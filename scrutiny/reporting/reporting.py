@@ -134,7 +134,7 @@ def _merge_severity_meta(schema: Dict[str, Any], section_name: str, section_res:
     return out
 
 
-# --------------------------- radar helpers (bool/int/float) ---------------------------
+# --------------------------- radar helpers ---------------------------
 
 def _parse_boolish(v) -> float | None:
     if isinstance(v, bool):
@@ -216,11 +216,11 @@ def _collect_pairs_from_rows(diffs: List[Dict[str, Any]], matches: List[Dict[str
         if rn is None and tn is None:
             continue
         out.append({
-                "key": key,
-                "ref_raw": rn if rn is not None else 0.0,
-                "test_raw": tn if tn is not None else 0.0,
-                "kind": "numeric",
-            })
+            "key": key,
+            "ref_raw": rn if rn is not None else 0.0,
+            "test_raw": tn if tn is not None else 0.0,
+            "kind": "numeric",
+        })
     return out
 
 
@@ -268,7 +268,6 @@ def _normalize_pairs(pairs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 # --------------------------- report config helpers ---------------------------
 
 def _normalize_types_from_schema(explicit_types: Any) -> List[Dict[str, Any]]:
-    """SchemaLoader should already normalize this, but keep it defensive."""
     if explicit_types is None:
         return []
     out: List[Dict[str, Any]] = []
@@ -294,7 +293,6 @@ def _normalize_types_from_schema(explicit_types: Any) -> List[Dict[str, Any]]:
 
 
 def _pick_global_theme(schema: Dict[str, Any]) -> str:
-    """Find first non-null report.theme in schema, else 'light'."""
     if not isinstance(schema, dict):
         return "light"
     for _name, sec in schema.items():
@@ -335,8 +333,6 @@ def assemble_report(
     section_rows: Dict[str, Any] | None = None,
     ingest_meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Build the normalized report JSON used by the HTML layer."""
-
     sections_out: Dict[str, Any] = {}
     overall = "MATCH"
 
@@ -351,6 +347,7 @@ def assemble_report(
         matches = res.get("matches", []) or []
 
         artifacts = res.get("artifacts", {}) or {}
+
         chart_rows = res.get("chart_rows")
         if chart_rows is None:
             chart_rows = artifacts.get("chart_rows", []) or []
@@ -371,8 +368,12 @@ def assemble_report(
         else:
             stats = _tally_stats(diffs, matches)
 
-        sev_meta = _merge_severity_meta(schema, name, res)
-        result = compute_severity(sev_meta, stats["changed"], stats["compared"])
+        override_result = str(res.get("result") or res.get("section_result") or "").upper().strip()
+        if override_result in _ORDER:
+            result = override_result
+        else:
+            sev_meta = _merge_severity_meta(schema, name, res)
+            result = compute_severity(sev_meta, stats["changed"], stats["compared"])
 
         overall_counts[result] = overall_counts.get(result, 0) + 1
         by_section[name] = {
@@ -393,7 +394,7 @@ def assemble_report(
         res_rep = dict(res.get("report") or {})
         rep_cfg = {**schema_rep, **res_rep}
 
-        explicit_types = schema_rep.get("types", None)
+        explicit_types = rep_cfg.get("types", None)
         rep_cfg["types"] = _normalize_types_from_schema(explicit_types)
 
         if "doc_text" in schema_rep and schema_rep.get("doc_text"):
@@ -405,6 +406,8 @@ def assemble_report(
         src_rows = None
         if isinstance(section_rows, dict):
             src_rows = section_rows.get(name)
+        if src_rows is None:
+            src_rows = res.get("source_rows")
 
         sections_out[name] = {
             "result": result,
@@ -416,6 +419,7 @@ def assemble_report(
             "chart_rows": chart_rows,
             "radar_rows": radar_rows,
             "report": rep_cfg,
+            "artifacts": artifacts,
             **({"source_rows": src_rows} if src_rows is not None else {}),
         }
 

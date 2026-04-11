@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 
 from scrutiny import logging as slog
 
+ingest_log = slog.get_logger("INGEST")
+
 
 class ParsedJson(dict):
     """Dict-like parsed JSON with ingest metadata attached."""
@@ -68,14 +70,11 @@ class JsonParser:
         )
 
         msg = (
-            f"[INGEST] JsonParser settings: allow_missing_sections={self.allow_missing_sections}, "
+            f"JsonParser settings: allow_missing_sections={self.allow_missing_sections}, "
             f"dynamic_sections={self.dynamic_sections}, strict_sections={self.strict_sections}, "
             f"error_on_unknown_sections={self.error_on_unknown_sections}"
         )
-        if hasattr(slog, "log_info"):
-            slog.log_info(msg)
-        else:
-            slog.log_warn(msg)
+        ingest_log.info(msg)
 
     def _validate_entries(
         self,
@@ -164,8 +163,8 @@ class JsonParser:
 
                 template = self._schema_meta.get("dynamic_template")
                 if not isinstance(template, dict):
-                    slog.log_warn(
-                        f"[INGEST] Dynamic sections requested but no dynamic template is available. Ignored: {unknown}"
+                    ingest_log.warn(
+                        f"Dynamic sections requested but no dynamic template is available. Ignored: {unknown}"
                     )
                 else:
                     for section_name in unknown:
@@ -185,10 +184,10 @@ class JsonParser:
                             # Store the resolved config explicitly for downstream consumers.
                             parsed._ingest_meta["dynamic_section_configs"][section_name] = deepcopy(section_cfg)
 
-                            slog.log_info(f"[INGEST] Applied defaults dynamically to section '{section_name}'")
+                            ingest_log.info(f"Applied defaults dynamically to section '{section_name}'")
                         except Exception as exc:
                             reason = str(exc)
-                            slog.log_warn(f"[INGEST] Skipping dynamic section '{section_name}': {reason}")
+                            ingest_log.warn(f"Skipping dynamic section '{section_name}': {reason}")
                             self._record_skipped(section_name, reason)
                             parsed._ingest_meta["skipped_sections"].append(
                                 {"section": section_name, "reason": reason}
@@ -196,7 +195,7 @@ class JsonParser:
             else:
                 if self.error_on_unknown_sections or self.strict_sections:
                     raise KeyError(f"Unknown section(s) not in schema: {unknown}")
-                slog.log_warn(f"[INGEST] JSON contains section(s) not in schema (ignored): {unknown}")
+                ingest_log.warn(f"JSON contains section(s) not in schema (ignored): {unknown}")
 
         if parsed._ingest_meta["applied_dynamic_sections"]:
             parsed["_dynamic_sections"] = list(parsed._ingest_meta["applied_dynamic_sections"])

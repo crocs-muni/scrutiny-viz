@@ -12,19 +12,22 @@ from scrutiny import logging as slog
 from .comparators.registry import get_plugin as get_comparator_plugin
 from scrutiny.reporting.reporting import assemble_report
 
+log = slog.get_logger("VERIFY")
+ingest_log = slog.get_logger("INGEST")
+
 
 def _load_schema(path: str):
-    slog.log_step("Loading schema:", path)
+    log.step("Loading schema:", path)
     loader = SchemaLoader(path)
     schema = loader.load()
-    slog.log_ok(f"Schema loaded with {len(schema)} section(s).")
+    log.ok(f"Schema loaded with {len(schema)} section(s).")
     return schema
 
 
 def _load_json(parser: JsonParser, title: str, path: str):
-    slog.log_step(f"Reading {title} JSON:", path)
+    log.step(f"Reading {title} JSON:", path)
     data = parser.parse(path)
-    slog.log_ok(f"{title} loaded.")
+    log.ok(f"{title} loaded.")
     return data
 
 
@@ -46,10 +49,10 @@ def _normalize_skipped(source: str, items: List[Dict[str, Any]]) -> List[Dict[st
         if not isinstance(item, dict):
             continue
         out.append({
-                "source": source,
-                "section": item.get("section"),
-                "reason": item.get("reason"),
-            })
+            "source": source,
+            "section": item.get("section"),
+            "reason": item.get("reason"),
+        })
     return out
 
 
@@ -116,7 +119,7 @@ def _build_effective_schema(
 
         cfg = dynamic_cfgs.get(section)
         if not isinstance(cfg, dict):
-            slog.log_warn(f"[INGEST] Dynamic section '{section}' was parsed but has no resolved config; skipping")
+            ingest_log.warn(f"Dynamic section '{section}' was parsed but has no resolved config; skipping")
             continue
 
         effective_schema[section] = cfg
@@ -151,11 +154,11 @@ def run_verification(
 
     ingest_meta = _collect_ingest_meta(schema, data_ref, data_tst)
     if ingest_meta["applied_dynamic_sections"]:
-        slog.log_info(f"[INGEST] Applied dynamic sections: {', '.join(ingest_meta['applied_dynamic_sections'])}")
+        ingest_log.info(f"Applied dynamic sections: {', '.join(ingest_meta['applied_dynamic_sections'])}")
     if ingest_meta["skipped_sections"]:
-        slog.log_warn(f"[INGEST] Skipped sections: {len(ingest_meta['skipped_sections'])}")
+        ingest_log.warn(f"Skipped sections: {len(ingest_meta['skipped_sections'])}")
         for item in ingest_meta["skipped_sections"]:
-            slog.log_warn(
+            ingest_log.warn(
                 f"    - {item.get('source', '?')}: {item.get('section', '?')} ({item.get('reason', 'unknown reason')})"
             )
 
@@ -169,7 +172,7 @@ def run_verification(
         comp_name = (comp_cfg.get("comparator") or "basic").lower()
         match_key = comp_cfg.get("match_key")
         if not match_key:
-            slog.log_err(f"[{section}] missing component.match_key in schema")
+            log.err(f"[{section}] missing component.match_key in schema")
             return _fail(2, f"[{section}] missing component.match_key in schema")
 
         show_key = comp_cfg.get("show_key", match_key)
@@ -177,7 +180,7 @@ def run_verification(
         try:
             comparator = get_comparator_plugin(comp_name)
         except KeyError:
-            slog.log_warn(f"[{section}] comparator '{comp_name}' not found; falling back to 'basic'")
+            log.warn(f"[{section}] comparator '{comp_name}' not found; falling back to 'basic'")
             comparator = get_comparator_plugin("basic")
 
         ref_rows = data_ref.get(section, []) or []
@@ -192,7 +195,7 @@ def run_verification(
             **(cfg.get("target") or {}),
         }
 
-        slog.log_step("Comparing section:", f"[{section}] comparator={comparator.spec.name}")
+        log.step("Comparing section:", f"[{section}] comparator={comparator.spec.name}")
         res = comparator.compare(
             section=section,
             key_field=match_key,
@@ -202,32 +205,31 @@ def run_verification(
             tested=tst_rows,
         )
 
-        # Allow specialized comparators to force the old-style section verdict.
         override_result = str(res.get("override_result", "") or "").upper().strip()
         if override_result:
             res["result"] = override_result
             res["section_result"] = override_result
-            slog.log_info(f"    • {section}: forced result {override_result}")
+            log.info(f"    • {section}: forced result {override_result}")
 
         counts = res.get("counts", {"compared": 0, "changed": 0})
-        slog.log_info(f"    • {section}: diffs {counts.get('changed', 0)}/{counts.get('compared', 0)}")
+        if not override_result:
+            log.info(f"    • {section}: diffs {counts.get('changed', 0)}/{counts.get('compared', 0)}")
 
         diffs = res.get("diffs", []) or []
         to_print = min(print_diffs, len(diffs)) if print_diffs and diffs else 0
         for i in range(to_print):
             d = diffs[i]
             line = f"       - {d.get('key', '')}.{d.get('field', '')}: {d.get('ref', '')} {d.get('op', '!=')} {d.get('test', '')}"
-            slog.log_info(line)
+            log.info(line)
 
         if print_matches and res.get("matches"):
             mprint = min(print_matches, len(res["matches"]))
             for i in range(mprint):
                 m = res["matches"][i]
                 line = f"       = {m.get('key', '')}.{m.get('field', '')}: {m.get('value', '')}"
-                slog.log_info(line)
+                log.info(line)
 
         all_results[section] = res
-
 
     reference_label = Path(reference_path).stem
     profile_label = Path(profile_path).stem
@@ -243,12 +245,12 @@ def run_verification(
 
     output_path = Path(output_file).resolve()
 
-    slog.log_step("Writing output JSON:", str(output_path))
+    log.step("Writing output JSON:", str(output_path))
     try:
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(final_json, f, indent=2, ensure_ascii=False)
     except Exception as e:
-        slog.log_err(f"Failed to write verification JSON: {e}")
+        log.err(f"Failed to write verification JSON: {e}")
         return _fail(1, f"Failed to write verification JSON: {e}")
 
     overall = str(final_json.get("overall", "WARN")).upper()
@@ -256,7 +258,7 @@ def run_verification(
     report_zip_path: str | None = None
 
     if report:
-        slog.log_step("Generating HTML report", "comparison.html")
+        log.step("Generating HTML report", "comparison.html")
         try:
             from report.service import run_report_html
 
@@ -267,14 +269,11 @@ def run_verification(
                 no_zip=False,
             )
             if not report_result.get("ok", False):
-                return _fail(
-                    int(report_result.get("exit_code", 1)),
-                    report_result.get("error", "Failed to build HTML report"),
-                )
+                return _fail(int(report_result.get("exit_code", 1)), report_result.get("error", "Failed to build HTML report"))
             report_html_path = report_result.get("html_path")
             report_zip_path = report_result.get("zip_path")
         except Exception as e:
-            slog.log_err(f"Error while generating HTML report: {e}")
+            log.err(f"Error while generating HTML report: {e}")
             return _fail(1, f"Error while generating HTML report: {e}")
 
     return {

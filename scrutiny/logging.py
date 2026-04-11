@@ -16,15 +16,62 @@ _ANSI = {
 }
 
 _COLOR_ENABLED: bool = False
-_LOGGER = _logging.getLogger("scrutiny.verify")
+_LOGGER = _logging.getLogger("scrutiny")
+
+
+class _ComponentAdapter(_logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        extra = kwargs.setdefault("extra", {})
+        extra.setdefault("component", self.extra["component"])
+        return msg, kwargs
+
+
+class ComponentLogger:
+    def __init__(self, component: str):
+        self.component = str(component or "APP").upper()
+        self._adapter = _ComponentAdapter(_LOGGER, {"component": self.component})
+
+    def info(self, msg: str) -> None:
+        self._adapter.info(msg)
+
+    def debug(self, msg: str) -> None:
+        self._adapter.debug(msg)
+
+    def warn(self, msg: str) -> None:
+        self._adapter.warning(msg)
+
+    def err(self, msg: str) -> None:
+        self._adapter.error(msg)
+
+    def ok(self, msg: str) -> None:
+        self._adapter.info(msg)
+
+    def step(self, label: str, value: str = "") -> None:
+        gray = c(value, "gray") if value else ""
+        self._adapter.info(f"{label}{(' ' + gray) if gray else ''}")
+
+
+def get_logger(component: str) -> ComponentLogger:
+    return ComponentLogger(component)
+
 
 def _supports_color() -> bool:
     return sys.stdout.isatty() and (os.environ.get("TERM") not in (None, "dumb"))
+
 
 def c(text: str, color: str) -> str:
     if not _COLOR_ENABLED:
         return text
     return f"{_ANSI.get(color, '')}{text}{_ANSI['reset']}"
+
+
+class _ComponentFormatter(_logging.Formatter):
+    def format(self, record):
+        if not hasattr(record, "component"):
+            record.component = "APP"
+        record.levelname = record.levelname.upper()
+        return super().format(record)
+
 
 def setup_logging(verbosity: int = 0, log_file: str | None = None) -> None:
     """Configure console logging. Verbosity: 0→WARNING, 1→INFO, 2+→DEBUG."""
@@ -39,8 +86,9 @@ def setup_logging(verbosity: int = 0, log_file: str | None = None) -> None:
 
     _LOGGER.handlers.clear()
     _LOGGER.setLevel(level)
+    _LOGGER.propagate = False
 
-    fmt = _logging.Formatter("%(message)s")
+    fmt = _ComponentFormatter("[%(component)s][%(levelname)s] %(message)s")
 
     sh = _logging.StreamHandler(stream=sys.stdout)
     sh.setLevel(level)
@@ -53,22 +101,26 @@ def setup_logging(verbosity: int = 0, log_file: str | None = None) -> None:
         fh.setFormatter(fmt)
         _LOGGER.addHandler(fh)
 
+
 def log_info(msg: str) -> None:
-    _LOGGER.info(msg)
+    get_logger("APP").info(msg)
+
 
 def log_debug(msg: str) -> None:
-    _LOGGER.debug(msg)
+    get_logger("APP").debug(msg)
+
 
 def log_warn(msg: str) -> None:
-    _LOGGER.warning(f"{c('⚠', 'yellow')} {msg}")
+    get_logger("APP").warn(msg)
+
 
 def log_err(msg: str) -> None:
-    _LOGGER.error(f"{c('✖', 'red')} {msg}")
+    get_logger("APP").err(msg)
+
 
 def log_ok(msg: str) -> None:
-    _LOGGER.info(f"{c('✓', 'green')} {msg}")
+    get_logger("APP").ok(msg)
+
 
 def log_step(label: str, value: str = "") -> None:
-    arrow = c("→", "cyan")
-    gray  = c(value, "gray") if value else ""
-    _LOGGER.info(f"{arrow} {label}{(' ' + gray) if gray else ''}")
+    get_logger("APP").step(label, value)

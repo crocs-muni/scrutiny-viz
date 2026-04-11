@@ -38,6 +38,7 @@ def add_full_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--exclude-style-and-scripts", action="store_true", help="Link CSS/JS instead of inlining them into the HTML")
     parser.add_argument("--no-zip", action="store_true", help="Disable zip creation for the report output")
 
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Single entry point for scrutiny-viz workflows.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -79,6 +80,7 @@ def _mapped_output_path(*, input_path: Path, mapped_dir: Optional[str], role: st
 
 
 def _ensure_json_input(*, input_path: str, role: str, mapper_type: Optional[str], mapped_dir: Optional[str], delimiter: str, exclude_file: Optional[str]) -> tuple[Path, bool]:
+    log = slog.get_logger("FULL")
     src = Path(input_path).resolve()
     suffix = src.suffix.lower()
 
@@ -93,17 +95,17 @@ def _ensure_json_input(*, input_path: str, role: str, mapper_type: Optional[str]
 
     out_path = _mapped_output_path(input_path=src, mapped_dir=mapped_dir, role=role)
 
-    slog.log_step(f"Mapping {role} CSV", str(src))
+    log.step(f"Mapping {role} CSV", str(src))
     written = map_single_file(file_path=src, mapper_type=mapper_type, delimiter=delimiter, exclude_file=exclude_file, output_path=out_path)
     if written is None:
         raise SystemExit(f"Failed to map {role} CSV: {src}")
 
-    slog.log_ok(f"{role.capitalize()} mapped to {written}")
+    log.ok(f"{role.capitalize()} mapped to {written}")
     return Path(written).resolve(), True
-
 
 def run_full_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(getattr(args, "verbose", 0))
+    log = slog.get_logger("FULL")
 
     ref_input = Path(args.reference).resolve()
     prof_input = Path(args.profile).resolve()
@@ -128,7 +130,7 @@ def run_full_from_namespace(args: argparse.Namespace) -> int:
         exclude_file=args.exclude_file,
     )
 
-    slog.log_step("Running verification", args.schema)
+    log.step("Running verification", args.schema)
     verify_result = run_verification(
         schema_path=args.schema,
         reference_path=str(reference_json),
@@ -144,26 +146,28 @@ def run_full_from_namespace(args: argparse.Namespace) -> int:
 
     verification_json = Path(verify_result["output_json_path"]).resolve()
 
-    slog.log_step("Rendering final report", str(verification_json))
+    log.step("Rendering final report", str(verification_json))
     report_result = run_report_html(
         verification_profile=str(verification_json),
         output_file=args.report_output,
-        exclude_style_and_scripts=args.exclude_style_and_scripts,
+        exclude_style_and_scripts=args.exclude_style_and_scrips if hasattr(args, "exclude_style_and_scrips") else args.exclude_style_and_scripts,
         no_zip=args.no_zip,
     )
     if not report_result.get("ok", False):
         return int(report_result.get("exit_code", 1))
 
     lines = [
-        f"Full completed successfully.\nVerification JSON written to: {verify_result['output_json_path']}. \nReport written to: {report_result['html_path']}."
+        f"Full completed successfully. Verification JSON written to: {verify_result['output_json_path']}. Report written to: {report_result['html_path']}."
     ]
     if report_result.get("zip_path"):
-        lines.append(f"Report zip written to: {report_result['zip_path']}\n")
+        lines.append(f"Report zip written to: {report_result['zip_path']}")
     if reference_was_mapped:
-        lines.append(f"Mapped reference JSON: {reference_json}\n")
+        lines.append(f"Mapped reference JSON: {reference_json}")
     if profile_was_mapped:
-        lines.append(f"Mapped profile JSON: {profile_json}\n")
-    print("\n".join(lines))
+        lines.append(f"Mapped profile JSON: {profile_json}")
+
+    for line in lines:
+        log.info(line)
 
     return 0
 

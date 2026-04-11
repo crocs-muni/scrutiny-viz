@@ -1,0 +1,347 @@
+{
+  "reference_name": "traceclassifier_stub",
+  "profile_name": "traceclassifier_result",
+  "theme": "dark",
+  "overall": "MATCH",
+  "sections": {
+    "TRACE_CLASSIFIER": {
+      "result": "MATCH",
+      "stats": {
+        "compared": 4,
+        "changed": 0,
+        "matched": 4,
+        "only_ref": 0,
+        "only_test": 0
+      },
+      "stats_display": {
+        "compared": 4,
+        "changed": 0,
+        "matched": 4,
+        "only_ref": 0,
+        "only_test": 0
+      },
+      "key_labels": {
+        "ALG_SECURE_RANDOM_128B": "ALG_SECURE_RANDOM_128B",
+        "ALG_AES_BLOCK_128_CBC_NOPAD_LENGTH_AES_256": "ALG_AES_BLOCK_128_CBC_NOPAD_LENGTH_AES_256",
+        "ALG_DES_CBC_NOPAD_LENGTH_DES3_3KEY": "ALG_DES_CBC_NOPAD_LENGTH_DES3_3KEY",
+        "ALG_SHA_256": "ALG_SHA_256"
+      },
+      "diffs": [],
+      "matches": [
+        {
+          "key": "ALG_SECURE_RANDOM_128B",
+          "field": "classification_state",
+          "value": "MATCH"
+        },
+        {
+          "key": "ALG_AES_BLOCK_128_CBC_NOPAD_LENGTH_AES_256",
+          "field": "classification_state",
+          "value": "MATCH"
+        },
+        {
+          "key": "ALG_DES_CBC_NOPAD_LENGTH_DES3_3KEY",
+          "field": "classification_state",
+          "value": "MATCH"
+        },
+        {
+          "key": "ALG_SHA_256",
+          "field": "classification_state",
+          "value": "MATCH"
+        }
+      ],
+      "chart_rows": [],
+      "radar_rows": [],
+      "report": {
+        "types": [
+          {
+            "type": "table",
+            "variant": "traceclassifier"
+          }
+        ],
+        "theme": "dark",
+        "doc": null,
+        "doc_text": null
+      },
+      "artifacts": {
+        "cards": [
+          {
+            "card_code": "FEITIAN_JAVACOS",
+            "card_state": "MATCH",
+            "operations": [
+              {
+                "operation_code": "ALG_SECURE_RANDOM_128B",
+                "operation_found": true,
+                "interval_count": 22,
+                "best_similarity_value": 41.08971330246711,
+                "similarity_value_type": "DISTANCE",
+                "classification_state": "MATCH",
+                "visualized_operations": "FEITIAN_JAVACOS_card_ALG_SECURE_RANDOM_128B_operation_trace_to_classify.png",
+                "similarity_intervals": [
+                  {
+                    "similarity_value": 41.08971330246711,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 294.68025,
+                    "time_to": 298.53595,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 41.114627363054474,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 44.68,
+                    "time_to": 48.535700000000006,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 44.52725147551694,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 220.57525,
+                    "time_to": 224.43095000000002,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 45.35442269439572,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 8.385,
+                    "time_to": 12.2407,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 45.37619934333307,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 258.38525,
+                    "time_to": 262.24095,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 46.06741336134657,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 236.80525,
+                    "time_to": 240.66095,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 46.12331336948135,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 290.78525,
+                    "time_to": 294.64095000000003,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 46.18963009008411,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 40.785000000000004,
+                    "time_to": 44.6407,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 46.55974272743726,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 183.78525000000002,
+                    "time_to": 187.64095,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 47.594855666899534,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 243.58525,
+                    "time_to": 247.44095000000002,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 47.813783169633645,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 141.41500000000002,
+                    "time_to": 145.2707,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 48.118856314967225,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 134.76000000000002,
+                    "time_to": 138.6157,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 48.1884247966129,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 190.33525,
+                    "time_to": 194.19095000000002,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 48.32383910125391,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 165.71,
+                    "time_to": 169.56570000000002,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 48.615753041042474,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 128.08,
+                    "time_to": 131.9357,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 49.28693733799088,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 116.655,
+                    "time_to": 120.5107,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 51.39406338201584,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 335.24525,
+                    "time_to": 339.10095,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 51.41236565295915,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 85.245,
+                    "time_to": 89.1007,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 51.71006422481161,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 172.27,
+                    "time_to": 176.1257,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 52.35260871359967,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 176.99525,
+                    "time_to": 180.85095,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 52.82585033809469,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 161.07000000000002,
+                    "time_to": 164.9257,
+                    "indexes_compared": 77114
+                  },
+                  {
+                    "similarity_value": 53.57920815764512,
+                    "similarity_value_type": "DISTANCE",
+                    "time_from": 210.98025,
+                    "time_to": 214.83595,
+                    "indexes_compared": 77114
+                  }
+                ]
+              },
+              {
+                "operation_code": "ALG_AES_BLOCK_128_CBC_NOPAD_LENGTH_AES_256",
+                "operation_found": false,
+                "interval_count": 0,
+                "best_similarity_value": null,
+                "similarity_value_type": "",
+                "classification_state": "MATCH",
+                "visualized_operations": "",
+                "similarity_intervals": []
+              },
+              {
+                "operation_code": "ALG_DES_CBC_NOPAD_LENGTH_DES3_3KEY",
+                "operation_found": false,
+                "interval_count": 0,
+                "best_similarity_value": null,
+                "similarity_value_type": "",
+                "classification_state": "MATCH",
+                "visualized_operations": "",
+                "similarity_intervals": []
+              },
+              {
+                "operation_code": "ALG_SHA_256",
+                "operation_found": false,
+                "interval_count": 0,
+                "best_similarity_value": null,
+                "similarity_value_type": "",
+                "classification_state": "MATCH",
+                "visualized_operations": "",
+                "similarity_intervals": []
+              }
+            ]
+          }
+        ]
+      },
+      "source_rows": {
+        "reference": [],
+        "tested": [
+          {
+            "card_code": "FEITIAN_JAVACOS",
+            "operation_code": "ALG_SECURE_RANDOM_128B",
+            "operation_found": true,
+            "interval_count": 22,
+            "best_similarity_value": 41.08971330246711,
+            "similarity_value_type": "DISTANCE",
+            "visualized_operations": "FEITIAN_JAVACOS_card_ALG_SECURE_RANDOM_128B_operation_trace_to_classify.png",
+            "similarity_intervals_json": "[{\"similarity_value\":41.08971330246711,\"similarity_value_type\":\"DISTANCE\",\"time_from\":294.68025,\"time_to\":298.53595,\"indexes_compared\":77114},{\"similarity_value\":41.114627363054474,\"similarity_value_type\":\"DISTANCE\",\"time_from\":44.68,\"time_to\":48.535700000000006,\"indexes_compared\":77114},{\"similarity_value\":44.52725147551694,\"similarity_value_type\":\"DISTANCE\",\"time_from\":220.57525,\"time_to\":224.43095000000002,\"indexes_compared\":77114},{\"similarity_value\":45.35442269439572,\"similarity_value_type\":\"DISTANCE\",\"time_from\":8.385,\"time_to\":12.2407,\"indexes_compared\":77114},{\"similarity_value\":45.37619934333307,\"similarity_value_type\":\"DISTANCE\",\"time_from\":258.38525,\"time_to\":262.24095,\"indexes_compared\":77114},{\"similarity_value\":46.06741336134657,\"similarity_value_type\":\"DISTANCE\",\"time_from\":236.80525,\"time_to\":240.66095,\"indexes_compared\":77114},{\"similarity_value\":46.12331336948135,\"similarity_value_type\":\"DISTANCE\",\"time_from\":290.78525,\"time_to\":294.64095000000003,\"indexes_compared\":77114},{\"similarity_value\":46.18963009008411,\"similarity_value_type\":\"DISTANCE\",\"time_from\":40.785000000000004,\"time_to\":44.6407,\"indexes_compared\":77114},{\"similarity_value\":46.55974272743726,\"similarity_value_type\":\"DISTANCE\",\"time_from\":183.78525000000002,\"time_to\":187.64095,\"indexes_compared\":77114},{\"similarity_value\":47.594855666899534,\"similarity_value_type\":\"DISTANCE\",\"time_from\":243.58525,\"time_to\":247.44095000000002,\"indexes_compared\":77114},{\"similarity_value\":47.813783169633645,\"similarity_value_type\":\"DISTANCE\",\"time_from\":141.41500000000002,\"time_to\":145.2707,\"indexes_compared\":77114},{\"similarity_value\":48.118856314967225,\"similarity_value_type\":\"DISTANCE\",\"time_from\":134.76000000000002,\"time_to\":138.6157,\"indexes_compared\":77114},{\"similarity_value\":48.1884247966129,\"similarity_value_type\":\"DISTANCE\",\"time_from\":190.33525,\"time_to\":194.19095000000002,\"indexes_compared\":77114},{\"similarity_value\":48.32383910125391,\"similarity_value_type\":\"DISTANCE\",\"time_from\":165.71,\"time_to\":169.56570000000002,\"indexes_compared\":77114},{\"similarity_value\":48.615753041042474,\"similarity_value_type\":\"DISTANCE\",\"time_from\":128.08,\"time_to\":131.9357,\"indexes_compared\":77114},{\"similarity_value\":49.28693733799088,\"similarity_value_type\":\"DISTANCE\",\"time_from\":116.655,\"time_to\":120.5107,\"indexes_compared\":77114},{\"similarity_value\":51.39406338201584,\"similarity_value_type\":\"DISTANCE\",\"time_from\":335.24525,\"time_to\":339.10095,\"indexes_compared\":77114},{\"similarity_value\":51.41236565295915,\"similarity_value_type\":\"DISTANCE\",\"time_from\":85.245,\"time_to\":89.1007,\"indexes_compared\":77114},{\"similarity_value\":51.71006422481161,\"similarity_value_type\":\"DISTANCE\",\"time_from\":172.27,\"time_to\":176.1257,\"indexes_compared\":77114},{\"similarity_value\":52.35260871359967,\"similarity_value_type\":\"DISTANCE\",\"time_from\":176.99525,\"time_to\":180.85095,\"indexes_compared\":77114},{\"similarity_value\":52.82585033809469,\"similarity_value_type\":\"DISTANCE\",\"time_from\":161.07000000000002,\"time_to\":164.9257,\"indexes_compared\":77114},{\"similarity_value\":53.57920815764512,\"similarity_value_type\":\"DISTANCE\",\"time_from\":210.98025,\"time_to\":214.83595,\"indexes_compared\":77114}]"
+          },
+          {
+            "card_code": "FEITIAN_JAVACOS",
+            "operation_code": "ALG_AES_BLOCK_128_CBC_NOPAD_LENGTH_AES_256",
+            "operation_found": false,
+            "interval_count": 0,
+            "best_similarity_value": null,
+            "similarity_value_type": null,
+            "visualized_operations": "",
+            "similarity_intervals_json": "[]"
+          },
+          {
+            "card_code": "FEITIAN_JAVACOS",
+            "operation_code": "ALG_DES_CBC_NOPAD_LENGTH_DES3_3KEY",
+            "operation_found": false,
+            "interval_count": 0,
+            "best_similarity_value": null,
+            "similarity_value_type": null,
+            "visualized_operations": "",
+            "similarity_intervals_json": "[]"
+          },
+          {
+            "card_code": "FEITIAN_JAVACOS",
+            "operation_code": "ALG_SHA_256",
+            "operation_found": false,
+            "interval_count": 0,
+            "best_similarity_value": null,
+            "similarity_value_type": null,
+            "visualized_operations": "",
+            "similarity_intervals_json": "[]"
+          }
+        ]
+      }
+    }
+  },
+  "dashboard": {
+    "overall_state_counts": {
+      "MATCH": 1,
+      "WARN": 0,
+      "SUSPICIOUS": 0,
+      "TOTAL": 1
+    },
+    "by_section": {
+      "TRACE_CLASSIFIER": {
+        "MATCH": 1,
+        "WARN": 0,
+        "SUSPICIOUS": 0,
+        "TOTAL": 1
+      }
+    }
+  },
+  "meta": {
+    "generated_by": "assemble_report",
+    "schema_title": null,
+    "ingest": {
+      "dynamic_sections_enabled": false,
+      "strict_sections": false,
+      "allow_missing_sections": true,
+      "applied_dynamic_sections": [],
+      "applied_dynamic_sections_reference": [],
+      "applied_dynamic_sections_profile": [],
+      "skipped_sections": [],
+      "skipped_sections_count": 0
+    }
+  }
+}

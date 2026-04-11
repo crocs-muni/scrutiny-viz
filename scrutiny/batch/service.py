@@ -19,6 +19,7 @@ from verification.service import run_verification
 
 
 _slug_pat = re.compile(r"[^A-Za-z0-9._-]+")
+log = slog.get_logger("BATCH")
 
 
 def _slug(value: str) -> str:
@@ -222,7 +223,7 @@ def run_batch_verification(
 ) -> dict[str, Any]:
     profile_inputs = _discover_profile_inputs(profiles=profiles or [], profiles_dir=profiles_dir)
     if not profile_inputs:
-        slog.log_err("No profile inputs found.")
+        log.err("No profile inputs found.")
         return {"ok": False, "exit_code": 1, "error": "No profile inputs found."}
 
     batch_name = _slug(batch_id or _default_batch_id())
@@ -239,7 +240,7 @@ def run_batch_verification(
     ref_mapper_type = _resolve_mapper_type(shared_type, reference_type)
     prof_mapper_type = _resolve_mapper_type(shared_type, profile_type)
 
-    slog.log_step("Batch reference", str(ref_input_path))
+    log.step("Batch reference", str(ref_input_path))
     try:
         reference_json_path, _resolved_ref_mapper = _map_input_to_json(
             input_path=ref_input_path,
@@ -249,7 +250,7 @@ def run_batch_verification(
             delimiter=delimiter,
         )
     except Exception as e:
-        slog.log_err(f"Failed to prepare reference input: {e}")
+        log.err(f"Failed to prepare reference input: {e}")
         return {"ok": False, "exit_code": 1, "error": f"Failed to prepare reference input: {e}"}
 
     summary_rows: list[dict[str, Any]] = []
@@ -259,7 +260,7 @@ def run_batch_verification(
         label = _label_from_input(profile_input)
         out_stem = _unique_output_stem(label, used_stems)
 
-        slog.log_step("Batch profile", str(profile_input))
+        log.step("Batch profile", str(profile_input))
         verify_json_path = verify_dir / f"{out_stem}.verify.json"
         html_report_path: Path | None = None
         normalized_profile_path: Path | None = None
@@ -303,7 +304,7 @@ def run_batch_verification(
 
         except Exception as e:
             error_message = str(e)
-            slog.log_err(f"[{label}] {e}")
+            log.err(f"[{label}] {e}")
 
         summary_rows.append(
             {

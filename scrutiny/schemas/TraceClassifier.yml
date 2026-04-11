@@ -1,0 +1,48 @@
+schema_version: "0.13"
+
+ingest:
+  dynamic_sections: false
+  strict_sections: false
+  allow_missing_sections: true
+
+defaults:
+  data:
+    type: list
+  component:
+    comparator: basic
+    match_key: operation_code
+    show_key: operation_code
+    include_matches: true
+    threshold_ratio: 0.0
+    threshold_count: 0
+  report:
+    theme: dark
+    types: ["table"]
+  target: {}
+
+sections:
+  TRACE_CLASSIFIER:
+    data:
+      record_schema:
+        card_code:                 { dtype: string,  required: true,  category: nominal }
+        operation_code:            { dtype: string,  required: true,  category: nominal }
+        operation_found:           { dtype: boolean, required: false, category: binary }
+        interval_count:            { dtype: number,  required: false, category: continuous }
+        best_similarity_value:     { dtype: number,  required: false, category: continuous }
+        similarity_value_type:     { dtype: string,  required: false, category: nominal }
+        visualized_operations:     { dtype: string,  required: false, category: nominal }
+        similarity_intervals_json: { dtype: string,  required: false, category: nominal }
+    component:
+      comparator: traceclassifier
+      match_key: operation_code
+      show_key: operation_code
+      include_matches: true
+    target:
+      match_distance_max: 45.0
+      warn_distance_max: 55.0
+      match_similarity_min: 0.98
+      warn_similarity_min: 0.95
+    report:
+      types:
+        - type: table
+          variant: traceclassifier

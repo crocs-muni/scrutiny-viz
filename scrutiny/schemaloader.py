@@ -9,6 +9,8 @@ import yaml
 
 from scrutiny import logging as slog
 
+log = slog.get_logger("SCHEMA")
+
 _ALLOWED_CATEGORIES = {"ordinal", "nominal", "continuous", "binary", "set"}
 _SUPPORTED_SCHEMA_VERSIONS = {"0.11", "0.12", "0.13"}
 
@@ -68,9 +70,9 @@ class SchemaLoader:
 
     def _warn_or_raise(self, msg: str, *, fatal: bool = False) -> None:
         if fatal or self.strict:
-            slog.log_err(msg)
+            log.err(msg)
             raise ValueError(msg)
-        slog.log_warn(msg)
+        log.warn(msg)
 
     def _validate_category(self, field_name: str, cat: Optional[str], section: str) -> None:
         if cat and cat not in _ALLOWED_CATEGORIES:
