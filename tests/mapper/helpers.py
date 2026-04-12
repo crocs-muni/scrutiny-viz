@@ -253,12 +253,6 @@ def assert_verify_workflow_ok(proc: subprocess.CompletedProcess[str], out_json: 
     assert proc.returncode == 0, f"verify failed for {csv_path.name}\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}\n"
     assert out_json.exists(), f"verify did not produce output JSON: {out_json}"
 
-def run_verify_and_report_workflow(schema: Path, profile_path: Path, tmp_dir: Path) -> tuple[subprocess.CompletedProcess[str], Path, Path]:
-    proc, out_json = run_verify_workflow(schema, profile_path, tmp_dir, report=True)
-    out_html = expected_report_output_path(tmp_dir)
-    return proc, out_json, out_html
-
-
 def assert_verify_and_report_workflow_ok(proc: subprocess.CompletedProcess[str], out_json: Path, out_html: Path, *, source_path: Path) -> None:
     assert_verify_workflow_ok(proc, out_json, csv_path=source_path)
     assert out_html.exists(), f"report did not produce HTML: {out_html}"
@@ -271,14 +265,3 @@ def run_verify_and_report_workflow(
     proc, out_json = run_verify_workflow(schema, profile_path, tmp_dir, report=True)
     out_html = expected_report_output_path(tmp_dir)
     return proc, out_json, out_html
-
-
-def assert_verify_and_report_workflow_ok(
-    proc: subprocess.CompletedProcess[str],
-    out_json: Path,
-    out_html: Path,
-    *,
-    source_path: Path,
-) -> None:
-    assert_verify_workflow_ok(proc, out_json, csv_path=source_path)
-    assert out_html.exists(), f"report did not produce HTML: {out_html}"

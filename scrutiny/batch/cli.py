@@ -14,9 +14,11 @@ def add_batch_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-r", "--reference", required=True, help="Reference input (JSON, raw file, or mapper-supported directory)")
     parser.add_argument("-t", "--type", dest="shared_type", help="Shared mapper type for both reference and profiles when raw inputs need mapping")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase log verbosity (-v, -vv)")
+
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--profiles-dir", help="Directory containing profile inputs")
     group.add_argument("--profiles", nargs="+", help="Explicit list of profile inputs")
+
     parser.add_argument("--reference-type", help="Mapper type for the reference input when raw mapping is needed")
     parser.add_argument("--profile-type", help="Mapper type for profile inputs when raw mapping is needed")
     parser.add_argument("--batch-id", help="Optional batch identifier; default is timestamp-based")
@@ -31,9 +33,7 @@ def add_batch_args(parser: argparse.ArgumentParser) -> None:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Batch verification: compare one reference against many profiles."
-    )
+    parser = argparse.ArgumentParser(description="Batch verification: compare one reference against many profiles.")
     add_batch_args(parser)
     return parser
 
@@ -41,6 +41,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def run_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(args.verbose)
     log = slog.get_logger("BATCH")
+
     result = run_batch_verification(
         schema_path=args.schema,
         reference_input=args.reference,
@@ -58,11 +59,7 @@ def run_from_namespace(args: argparse.Namespace) -> int:
     exit_code = int(result.get("exit_code", 0 if result.get("ok", False) else 1))
 
     if result.get("summary_json_path"):
-        if result.get("profile_errors", 0):
-            status = "batch-verify completed with errors."
-        else:
-            status = "batch-verify completed."
-
+        status = "batch-verify completed with errors." if result.get("profile_errors", 0) else "batch-verify completed."
         log.info(
             f"{status} "
             f"Summary written to: {result['summary_json_path']}. "
@@ -72,7 +69,6 @@ def run_from_namespace(args: argparse.Namespace) -> int:
         )
         log.info(f"Verification outputs: {result['verify_dir']}")
         log.info(f"Report outputs: {result['report_dir']}")
-        return exit_code
 
     return exit_code
 

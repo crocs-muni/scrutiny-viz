@@ -737,3 +737,25 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 })();
+
+/**
+ * Heatmap tabs
+ */
+function heatmapShow(base, mode, btn) {
+  var panes = ["delta", "ref", "profile"];
+  for (var i = 0; i < panes.length; i++) {
+    var p = panes[i];
+    var pane = document.getElementById(base + "_pane_" + p);
+    var legend = document.getElementById(base + "_legend_" + p);
+    if (pane) pane.style.display = (p === mode ? "block" : "none");
+    if (legend) legend.style.display = (p === mode ? "block" : "none");
+  }
+
+  if (!btn || !btn.parentElement) return;
+
+  var buttons = btn.parentElement.querySelectorAll(".heatmap-tab");
+  for (var j = 0; j < buttons.length; j++) {
+    buttons[j].classList.remove("active");
+  }
+  btn.classList.add("active");
+}

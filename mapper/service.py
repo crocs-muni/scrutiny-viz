@@ -23,13 +23,27 @@ def _directory_mode_output_path(source_path: Path, output_hint: Optional[str]) -
     if not output_hint:
         return _default_output_path(source_path)
 
-    out = Path(output_hint).resolve()
-    if out.exists() and out.is_dir():
-        return out / f"{source_path.name}.json"
-    if not out.suffix:
-        out.mkdir(parents=True, exist_ok=True)
-        return out / f"{source_path.name}.json"
-    return out
+    output_path = Path(output_hint).resolve()
+    if output_path.exists() and output_path.is_dir():
+        return output_path / f"{source_path.name}.json"
+
+    if not output_path.suffix:
+        output_path.mkdir(parents=True, exist_ok=True)
+        return output_path / f"{source_path.name}.json"
+
+    return output_path
+
+
+def _write_json_output(out_path: Path, result: dict) -> Optional[Path]:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with open(out_path, "w", encoding="utf-8") as handle:
+            json.dump(result, handle, indent=4, ensure_ascii=False)
+        log.info(f"Result saved to {out_path}")
+        return out_path
+    except Exception as exc:
+        log.err(f"Failed to write output to {out_path}: {exc}")
+        return None
 
 
 def process_source(
@@ -40,49 +54,24 @@ def process_source(
     output_path: Optional[Path] = None,
 ) -> Optional[Path]:
     plugin = registry.get_plugin(mapper_type)
-    canon = registry.normalize_type(mapper_type)
+    canonical_type = registry.normalize_type(mapper_type)
 
     src_path = Path(source_path).resolve()
-    log.info(f"Processing source: {src_path} (type={canon})")
+    log.info(f"Processing source: {src_path} (type={canonical_type})")
 
     context = build_context(delimiter=delimiter, excluded_properties=excluded_properties)
 
     try:
         final_result = plugin.map_path(src_path, context)
-    except Exception as e:
-        log.err(f"Failed to map source {src_path}: {e}")
+    except Exception as exc:
+        log.err(f"Failed to map source {src_path}: {exc}")
         return None
 
     if excluded_properties:
         final_result = mapper_utils.apply_exclusions(final_result, excluded_properties)
 
-    out_path = output_path.resolve() if output_path else _default_output_path(src_path)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-    try:
-        with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(final_result, f, indent=4, ensure_ascii=False)
-        log.info(f"Result saved to {out_path}")
-        return out_path
-    except Exception as e:
-        log.err(f"Failed to write output for {src_path}: {e}")
-        return None
-
-
-def process_file(
-    file_path: str | Path,
-    mapper_type: str,
-    delimiter: str = ";",
-    excluded_properties: Optional[Set[str]] = None,
-    output_path: Optional[Path] = None,
-) -> Optional[Path]:
-    return process_source(
-        source_path=file_path,
-        mapper_type=mapper_type,
-        delimiter=delimiter,
-        excluded_properties=excluded_properties,
-        output_path=output_path,
-    )
+    final_output_path = output_path.resolve() if output_path else _default_output_path(src_path)
+    return _write_json_output(final_output_path, final_result)
 
 
 def process_files(
@@ -95,18 +84,21 @@ def process_files(
 ) -> list[Path]:
     outputs: list[Path] = []
 
+    resolved_source_base = source_base.resolve() if source_base else None
+
     for file_path in file_paths:
         src_path = Path(file_path).resolve()
 
         out_path: Optional[Path] = None
         if output_dir:
-            if source_base:
+            if resolved_source_base:
                 try:
-                    rel_path = src_path.relative_to(source_base.resolve())
+                    rel_path = src_path.relative_to(resolved_source_base)
                 except ValueError:
                     rel_path = Path(src_path.name)
             else:
                 rel_path = Path(src_path.name)
+
             out_path = (output_dir.resolve() / rel_path).with_suffix(".json")
 
         written = process_source(
@@ -150,11 +142,7 @@ def process_folder(
         )
         return [written] if written is not None else []
 
-    output_path = (
-        Path(output_folder).resolve()
-        if output_folder
-        else (Path.cwd() / f"{source_path.name}_parsed")
-    )
+    output_path = Path(output_folder).resolve() if output_folder else (Path.cwd() / f"{source_path.name}_parsed")
 
     csv_files = list(source_path.rglob("*.csv"))
     if not csv_files:
@@ -164,7 +152,7 @@ def process_folder(
     output_path.mkdir(parents=True, exist_ok=True)
 
     return process_files(
-        [str(p) for p in csv_files],
+        [str(path) for path in csv_files],
         mapper_type=mapper_type,
         delimiter=delimiter,
         excluded_properties=excluded_properties,

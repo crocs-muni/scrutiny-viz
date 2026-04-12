@@ -15,7 +15,7 @@ _ANSI = {
     "gray": "\x1b[90m",
 }
 
-_COLOR_ENABLED: bool = False
+_COLOR_ENABLED = False
 _LOGGER = _logging.getLogger("scrutiny")
 
 
@@ -26,16 +26,24 @@ class _ComponentAdapter(_logging.LoggerAdapter):
         return msg, kwargs
 
 
+class _ComponentFormatter(_logging.Formatter):
+    def format(self, record):
+        if not hasattr(record, "component"):
+            record.component = "APP"
+        record.levelname = record.levelname.upper()
+        return super().format(record)
+
+
 class ComponentLogger:
     def __init__(self, component: str):
         self.component = str(component or "APP").upper()
         self._adapter = _ComponentAdapter(_LOGGER, {"component": self.component})
 
-    def info(self, msg: str) -> None:
-        self._adapter.info(msg)
-
     def debug(self, msg: str) -> None:
         self._adapter.debug(msg)
+
+    def info(self, msg: str) -> None:
+        self._adapter.info(msg)
 
     def warn(self, msg: str) -> None:
         self._adapter.warning(msg)
@@ -47,8 +55,8 @@ class ComponentLogger:
         self._adapter.info(msg)
 
     def step(self, label: str, value: str = "") -> None:
-        gray = c(value, "gray") if value else ""
-        self._adapter.info(f"{label}{(' ' + gray) if gray else ''}")
+        suffix = f" {c(value, 'gray')}" if value else ""
+        self._adapter.info(f"{label}{suffix}")
 
 
 def get_logger(component: str) -> ComponentLogger:
@@ -56,7 +64,7 @@ def get_logger(component: str) -> ComponentLogger:
 
 
 def _supports_color() -> bool:
-    return sys.stdout.isatty() and (os.environ.get("TERM") not in (None, "dumb"))
+    return sys.stdout.isatty() and os.environ.get("TERM") not in (None, "dumb")
 
 
 def c(text: str, color: str) -> str:
@@ -65,12 +73,12 @@ def c(text: str, color: str) -> str:
     return f"{_ANSI.get(color, '')}{text}{_ANSI['reset']}"
 
 
-class _ComponentFormatter(_logging.Formatter):
-    def format(self, record):
-        if not hasattr(record, "component"):
-            record.component = "APP"
-        record.levelname = record.levelname.upper()
-        return super().format(record)
+def _verbosity_to_level(verbosity: int) -> int:
+    if verbosity >= 2:
+        return _logging.DEBUG
+    if verbosity == 1:
+        return _logging.INFO
+    return _logging.WARNING
 
 
 def setup_logging(verbosity: int = 0, log_file: str | None = None) -> None:
@@ -78,36 +86,32 @@ def setup_logging(verbosity: int = 0, log_file: str | None = None) -> None:
     global _COLOR_ENABLED
     _COLOR_ENABLED = _supports_color()
 
-    level = _logging.WARNING
-    if verbosity >= 2:
-        level = _logging.DEBUG
-    elif verbosity == 1:
-        level = _logging.INFO
+    level = _verbosity_to_level(verbosity)
 
     _LOGGER.handlers.clear()
     _LOGGER.setLevel(level)
     _LOGGER.propagate = False
 
-    fmt = _ComponentFormatter("[%(component)s][%(levelname)s] %(message)s")
+    formatter = _ComponentFormatter("[%(component)s][%(levelname)s] %(message)s")
 
-    sh = _logging.StreamHandler(stream=sys.stdout)
-    sh.setLevel(level)
-    sh.setFormatter(fmt)
-    _LOGGER.addHandler(sh)
+    stream_handler = _logging.StreamHandler(stream=sys.stdout)
+    stream_handler.setLevel(level)
+    stream_handler.setFormatter(formatter)
+    _LOGGER.addHandler(stream_handler)
 
     if log_file:
-        fh = _logging.FileHandler(log_file, encoding="utf-8")
-        fh.setLevel(level)
-        fh.setFormatter(fmt)
-        _LOGGER.addHandler(fh)
-
-
-def log_info(msg: str) -> None:
-    get_logger("APP").info(msg)
+        file_handler = _logging.FileHandler(log_file, encoding="utf-8")
+        file_handler.setLevel(level)
+        file_handler.setFormatter(formatter)
+        _LOGGER.addHandler(file_handler)
 
 
 def log_debug(msg: str) -> None:
     get_logger("APP").debug(msg)
+
+
+def log_info(msg: str) -> None:
+    get_logger("APP").info(msg)
 
 
 def log_warn(msg: str) -> None:

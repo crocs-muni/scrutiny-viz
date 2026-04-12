@@ -11,26 +11,25 @@ from urllib.parse import unquote, urlparse
 
 from scrutiny import logging as slog
 
-
-_name_pat = re.compile(r"[^A-Za-z0-9._-]+")
+_NAME_PATTERN = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 def _safe_name(value: str, *, fallback: str = "item") -> str:
-    s = _name_pat.sub("_", str(value or "").strip())
-    return s.strip("._") or fallback
+    sanitized = _NAME_PATTERN.sub("_", str(value or "").strip())
+    return sanitized.strip("._") or fallback
 
 
 def _is_tracecompare_table_section(section: Dict[str, Any]) -> bool:
-    rep = section.get("report") or {}
-    raw_types = rep.get("types") or []
+    report_cfg = section.get("report") or {}
+    raw_types = report_cfg.get("types") or []
 
     for item in raw_types:
-        if isinstance(item, dict):
-            tp = str(item.get("type") or "").strip().lower()
-            variant = str(item.get("variant") or "").strip().lower()
-            if tp == "table" and variant == "tracescompare":
-                return True
-
+        if not isinstance(item, dict):
+            continue
+        type_name = str(item.get("type") or "").strip().lower()
+        variant = str(item.get("variant") or "").strip().lower()
+        if type_name == "table" and variant == "tracescompare":
+            return True
     return False
 
 
@@ -46,21 +45,13 @@ def _file_uri_to_path(uri: str) -> Optional[Path]:
     netloc = unquote(parsed.netloc or "")
     path = unquote(parsed.path or "")
 
-    # Windows drive letter form: /C:/path -> C:/path
     if path.startswith("/") and len(path) >= 3 and path[2] == ":":
         path = path[1:]
 
-    # UNC path: file://server/share/path
     if netloc:
-        if path:
-            path = f"//{netloc}{path}"
-        else:
-            path = f"//{netloc}"
+        path = f"//{netloc}{path}" if path else f"//{netloc}"
 
-    if not path:
-        return None
-
-    return Path(path)
+    return Path(path) if path else None
 
 
 def _asset_ref_to_local_path(raw_ref: str, *, base_dir: Path) -> Optional[Path]:
@@ -69,23 +60,18 @@ def _asset_ref_to_local_path(raw_ref: str, *, base_dir: Path) -> Optional[Path]:
         return None
 
     if raw_ref.lower().startswith("file://"):
-        p = _file_uri_to_path(raw_ref)
-        if p is not None and p.exists():
-            return p.resolve()
-        return None
+        file_path = _file_uri_to_path(raw_ref)
+        return file_path.resolve() if file_path is not None and file_path.exists() else None
 
     parsed = urlparse(raw_ref)
     if parsed.scheme and parsed.scheme.lower() != "file":
         return None
 
-    p = Path(raw_ref)
-    if not p.is_absolute():
-        p = (base_dir / p).resolve()
+    path = Path(raw_ref)
+    if not path.is_absolute():
+        path = (base_dir / path).resolve()
 
-    if p.exists():
-        return p.resolve()
-
-    return None
+    return path.resolve() if path.exists() else None
 
 
 def _ensure_unique_path(path: Path) -> Path:
@@ -96,12 +82,12 @@ def _ensure_unique_path(path: Path) -> Path:
     suffix = path.suffix
     parent = path.parent
 
-    i = 2
+    counter = 2
     while True:
-        candidate = parent / f"{stem}_{i}{suffix}"
+        candidate = parent / f"{stem}_{counter}{suffix}"
         if not candidate.exists():
             return candidate
-        i += 1
+        counter += 1
 
 
 def _copy_asset(
@@ -122,9 +108,9 @@ def _copy_asset(
     dst_dir = assets_root / rel_dir
     dst_dir.mkdir(parents=True, exist_ok=True)
 
-    preferred = Path(image_name).name if str(image_name or "").strip() else src.name
-    preferred_stem = _safe_name(Path(preferred).stem, fallback=src.stem or "image")
-    preferred_suffix = Path(preferred).suffix or src.suffix or ".png"
+    preferred_name = Path(image_name).name if str(image_name or "").strip() else src.name
+    preferred_stem = _safe_name(Path(preferred_name).stem, fallback=src.stem or "image")
+    preferred_suffix = Path(preferred_name).suffix or src.suffix or ".png"
 
     dst = _ensure_unique_path(dst_dir / f"{preferred_stem}{preferred_suffix}")
     shutil.copy2(src, dst)
@@ -137,13 +123,6 @@ def prepare_report_bundle(
     source_report_path: str | Path,
     html_output_path: str | Path,
 ) -> Dict[str, Any]:
-    """
-    Prepare a portable report bundle for tracecompare sections only.
-
-    - copies local trace PNGs into a report-local assets folder
-    - rewrites image_path values in a copied report object to relative paths
-    - writes a bundled JSON copy next to the HTML output
-    """
     source_report = Path(source_report_path).resolve()
     html_output = Path(html_output_path).resolve()
     html_dir = html_output.parent
@@ -152,41 +131,33 @@ def prepare_report_bundle(
     report_copy: Dict[str, Any] = copy.deepcopy(report)
     assets_root = html_dir / f"{html_output.stem}_assets"
 
-    any_tracecompare = False
+    tracecompare_detected = False
     copied_assets = 0
     missing_assets = 0
     rewritten_paths = 0
 
-    sections = report_copy.get("sections") or {}
-    for section_name, section in sections.items():
-        if not isinstance(section, dict):
-            continue
-        if not _is_tracecompare_table_section(section):
+    for section_name, section in (report_copy.get("sections") or {}).items():
+        if not isinstance(section, dict) or not _is_tracecompare_table_section(section):
             continue
 
-        any_tracecompare = True
-
-        artifacts = section.get("artifacts") or {}
-        operations = artifacts.get("operations") or []
+        tracecompare_detected = True
+        operations = (section.get("artifacts") or {}).get("operations") or []
         for operation in operations:
             if not isinstance(operation, dict):
                 continue
-
             operation_code = str(operation.get("operation_code") or "")
-            pipeline_results = operation.get("comparison_results") or []
-            for pipeline in pipeline_results:
+
+            for pipeline in operation.get("comparison_results") or []:
                 if not isinstance(pipeline, dict):
                     continue
-
                 pipeline_code = str(pipeline.get("pipeline_code") or "")
-                comparisons = pipeline.get("comparison_results") or []
-                for comparison in comparisons:
+
+                for comparison in pipeline.get("comparison_results") or []:
                     if not isinstance(comparison, dict):
                         continue
 
                     raw_ref = str(comparison.get("image_path") or "").strip()
                     image_name = str(comparison.get("image_name") or "").strip()
-
                     src = _asset_ref_to_local_path(raw_ref, base_dir=source_report_dir)
                     if src is None:
                         missing_assets += 1
@@ -201,8 +172,8 @@ def prepare_report_bundle(
                             pipeline_code=pipeline_code,
                             image_name=image_name,
                         )
-                    except Exception as e:
-                        slog.log_warn(f"[BUNDLE] Failed to copy trace image '{src}': {e}")
+                    except Exception as exc:
+                        slog.log_warn(f"[BUNDLE] Failed to copy trace image '{src}': {exc}")
                         missing_assets += 1
                         continue
 
@@ -212,7 +183,7 @@ def prepare_report_bundle(
                         rewritten_paths += 1
                     copied_assets += 1
 
-    if not any_tracecompare:
+    if not tracecompare_detected:
         return {
             "report": report,
             "bundled_json_path": None,
@@ -223,19 +194,11 @@ def prepare_report_bundle(
             "tracecompare_detected": False,
         }
 
-    if not assets_root.exists():
-        assets_root.mkdir(parents=True, exist_ok=True)
-
+    assets_root.mkdir(parents=True, exist_ok=True)
     bundled_json_path = html_dir / f"{html_output.stem}.bundled.json"
-    bundled_json_path.write_text(
-        json.dumps(report_copy, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
+    bundled_json_path.write_text(json.dumps(report_copy, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    # If nothing was copied, do not pretend there is a usable assets folder
     assets_dir: Optional[Path] = assets_root if copied_assets > 0 else None
-
-    # Best-effort cleanup of empty root dir
     if assets_dir is None:
         try:
             if assets_root.exists() and not any(assets_root.rglob("*")):

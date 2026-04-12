@@ -166,16 +166,35 @@ th.sort-desc::after { content:" ▼"; opacity:0.6; }
    Buttons + Back-to-top
    ============================ */
 button{
-  background-color:#4CAF50;
-  border:none;
-  border-radius:50px;
-  color:white;
-  padding:10px 15px;
+  background:rgba(25,52,65,0.10);
+  color:var(--main-color);
+  border:1px solid rgba(25,52,65,0.18);
+  border-radius:9999px;
+  padding:6px 10px;
   display:inline-block;
-  font-size:16px;
+  font-size:13px;
+  cursor:pointer;
+  box-shadow:0 1px 2px rgba(0,0,0,0.04);
 }
-button:hover{ background-color:#3e9b41; }
-button:focus{ outline:none; }
+
+button:hover{
+  background:rgba(25,52,65,0.16);
+  border-color:rgba(25,52,65,0.24);
+}
+
+button:focus{
+  outline:none;
+}
+
+body[data-theme="dark"] button{
+  background:rgba(255,255,255,0.10);
+  border-color:rgba(255,255,255,0.18);
+  box-shadow:none;
+}
+
+body[data-theme="dark"] button:hover{
+  background:rgba(255,255,255,0.14);
+}
 
 .floatingbutton{
   display:none;

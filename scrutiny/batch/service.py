@@ -55,14 +55,12 @@ def _input_kind(path: Path) -> str:
 
 
 def _resolve_mapper_type(shared_type: str | None, specific_type: str | None) -> str | None:
-    if specific_type:
-        return specific_type
-    return shared_type
+    return specific_type or shared_type
 
 
 def _discover_profile_inputs(*, profiles: list[str], profiles_dir: str | None) -> list[Path]:
     if profiles:
-        return [Path(p).resolve() for p in profiles]
+        return [Path(profile).resolve() for profile in profiles]
 
     root = Path(profiles_dir or "").resolve()
     if not root.exists():
@@ -89,13 +87,13 @@ def _unique_output_stem(label: str, used: set[str]) -> str:
         used.add(base)
         return base
 
-    i = 2
+    index = 2
     while True:
-        candidate = f"{base}_{i}"
+        candidate = f"{base}_{index}"
         if candidate not in used:
             used.add(candidate)
             return candidate
-        i += 1
+        index += 1
 
 
 def _map_input_to_json(
@@ -124,20 +122,20 @@ def _map_input_to_json(
         )
 
     plugin = mapper_registry.get_plugin(mapper_type)
-    ctx = build_context(delimiter=delimiter)
+    context = build_context(delimiter=delimiter)
 
     if kind == "directory":
         if not getattr(plugin, "accepts_directories", False):
             raise ValueError(f"Mapper '{mapper_type}' does not support directory input: {input_path}")
-        payload = plugin.map_path(input_path, ctx)
+        payload = plugin.map_path(input_path, context)
     else:
         try:
-            payload = plugin.map_path(input_path, ctx)
+            payload = plugin.map_path(input_path, context)
         except Exception:
             groups = mapper_utils.load_file(str(input_path))
             if groups is None:
                 raise ValueError(f"Failed to load raw input file: {input_path}")
-            payload = plugin.map_groups(groups, ctx)
+            payload = plugin.map_groups(groups, context)
 
     mapped_label = mapped_stem or _label_from_input(input_path)
     out_name = f"{_slug(role)}_{_slug(mapped_label)}.json"
@@ -148,17 +146,17 @@ def _map_input_to_json(
 
 def _aggregate_verify_counts(report_json: dict[str, Any]) -> dict[str, int]:
     sections = report_json.get("sections", {}) or {}
-    out = {"compared": 0, "changed": 0, "matched": 0, "only_ref": 0, "only_test": 0}
+    totals = {"compared": 0, "changed": 0, "matched": 0, "only_ref": 0, "only_test": 0}
 
-    for sec in sections.values():
-        stats = (sec.get("stats") or sec.get("counts") or {})
-        out["compared"] += int(stats.get("compared", 0) or 0)
-        out["changed"] += int(stats.get("changed", 0) or 0)
-        out["matched"] += int(stats.get("matched", 0) or 0)
-        out["only_ref"] += int(stats.get("only_ref", 0) or 0)
-        out["only_test"] += int(stats.get("only_test", 0) or 0)
+    for section in sections.values():
+        stats = section.get("stats") or section.get("counts") or {}
+        totals["compared"] += int(stats.get("compared", 0) or 0)
+        totals["changed"] += int(stats.get("changed", 0) or 0)
+        totals["matched"] += int(stats.get("matched", 0) or 0)
+        totals["only_ref"] += int(stats.get("only_ref", 0) or 0)
+        totals["only_test"] += int(stats.get("only_test", 0) or 0)
 
-    return out
+    return totals
 
 
 def _should_generate_report(overall: str, report_mode: str) -> bool:
@@ -187,24 +185,27 @@ def _generate_report_into_batch(
     report_dir: Path,
     output_stem: str,
 ) -> Path:
-    tmp_name = f"batch_tmp_{output_stem}_{datetime.now().strftime('%H%M%S%f')}.html"
+    temp_name = f"batch_tmp_{output_stem}_{datetime.now().strftime('%H%M%S%f')}.html"
     report_result = run_report_html(
         verification_profile=str(verify_json_path),
-        output_file=tmp_name,
+        output_file=temp_name,
         exclude_style_and_scripts=False,
         no_zip=True,
     )
     if not report_result.get("ok", False):
-        raise RuntimeError(f"Failed to build HTML report for {verify_json_path}: {report_result.get('error', 'unknown error')}")
+        raise RuntimeError(
+            f"Failed to build HTML report for {verify_json_path}: "
+            f"{report_result.get('error', 'unknown error')}"
+        )
 
-    src = Path(report_result["html_path"]).resolve()
-    if not src.exists():
-        raise FileNotFoundError(f"Expected generated report not found: {src}")
+    source = Path(report_result["html_path"]).resolve()
+    if not source.exists():
+        raise FileNotFoundError(f"Expected generated report not found: {source}")
 
-    dst = report_dir / f"{output_stem}.html"
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(src), str(dst))
-    return dst
+    destination = report_dir / f"{output_stem}.html"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(source), str(destination))
+    return destination
 
 
 def run_batch_verification(
@@ -236,22 +237,22 @@ def run_batch_verification(
     verify_dir.mkdir(parents=True, exist_ok=True)
     report_dir.mkdir(parents=True, exist_ok=True)
 
-    ref_input_path = Path(reference_input).resolve()
-    ref_mapper_type = _resolve_mapper_type(shared_type, reference_type)
-    prof_mapper_type = _resolve_mapper_type(shared_type, profile_type)
+    reference_input_path = Path(reference_input).resolve()
+    reference_mapper_type = _resolve_mapper_type(shared_type, reference_type)
+    profile_mapper_type = _resolve_mapper_type(shared_type, profile_type)
 
-    log.step("Batch reference", str(ref_input_path))
+    log.step("Batch reference", str(reference_input_path))
     try:
-        reference_json_path, _resolved_ref_mapper = _map_input_to_json(
-            input_path=ref_input_path,
+        reference_json_path, _ = _map_input_to_json(
+            input_path=reference_input_path,
             role="reference",
-            mapper_type=ref_mapper_type,
+            mapper_type=reference_mapper_type,
             mapped_dir=mapped_dir,
             delimiter=delimiter,
         )
-    except Exception as e:
-        log.err(f"Failed to prepare reference input: {e}")
-        return {"ok": False, "exit_code": 1, "error": f"Failed to prepare reference input: {e}"}
+    except Exception as exc:
+        log.err(f"Failed to prepare reference input: {exc}")
+        return {"ok": False, "exit_code": 1, "error": f"Failed to prepare reference input: {exc}"}
 
     summary_rows: list[dict[str, Any]] = []
     used_stems: set[str] = set()
@@ -269,10 +270,10 @@ def run_batch_verification(
         error_message = ""
 
         try:
-            normalized_profile_path, _resolved_prof_mapper = _map_input_to_json(
+            normalized_profile_path, _ = _map_input_to_json(
                 input_path=profile_input,
                 role="profile",
-                mapper_type=prof_mapper_type,
+                mapper_type=profile_mapper_type,
                 mapped_dir=mapped_dir,
                 delimiter=delimiter,
                 mapped_stem=out_stem,
@@ -289,7 +290,12 @@ def run_batch_verification(
                 report=False,
             )
             if not verify_result.get("ok", False):
-                raise RuntimeError(verify_result.get("error", f"Verification failed with exit code {verify_result.get('exit_code', 1)}"))
+                raise RuntimeError(
+                    verify_result.get(
+                        "error",
+                        f"Verification failed with exit code {verify_result.get('exit_code', 1)}",
+                    )
+                )
 
             verify_json = _read_json(verify_json_path)
             overall = str(verify_json.get("overall", "WARN")).upper()
@@ -302,16 +308,19 @@ def run_batch_verification(
                     output_stem=out_stem,
                 )
 
-        except Exception as e:
-            error_message = str(e)
-            log.err(f"[{label}] {e}")
+        except Exception as exc:
+            error_message = str(exc)
+            log.err(f"[{label}] {exc}")
 
         summary_rows.append(
             {
                 "profile_name": label,
                 "input_path": str(profile_input),
                 "normalized_input_path": _relative_str(normalized_profile_path, batch_root),
-                "verify_json_path": _relative_str(verify_json_path if verify_json_path.exists() else None, batch_root),
+                "verify_json_path": _relative_str(
+                    verify_json_path if verify_json_path.exists() else None,
+                    batch_root,
+                ),
                 "html_report_path": _relative_str(html_report_path, batch_root),
                 "overall": overall,
                 "compared": counts["compared"],
@@ -329,14 +338,14 @@ def run_batch_verification(
     inputs_payload = {
         "batch_id": batch_name,
         "schema_path": str(Path(schema_path).resolve()),
-        "reference_input": str(ref_input_path),
+        "reference_input": str(reference_input_path),
         "reference_json_path": _relative_str(reference_json_path, batch_root),
-        "reference_type": ref_mapper_type or "",
-        "profile_type": prof_mapper_type or "",
+        "reference_type": reference_mapper_type or "",
+        "profile_type": profile_mapper_type or "",
         "shared_type": shared_type or "",
         "report_mode": report_mode,
         "delimiter": delimiter,
-        "profiles": [str(p) for p in profile_inputs],
+        "profiles": [str(path) for path in profile_inputs],
     }
     _write_json(batch_root / "inputs.json", inputs_payload)
     _write_json(batch_root / "summary.json", {"batch_id": batch_name, "rows": summary_rows})
@@ -358,10 +367,9 @@ def run_batch_verification(
     with (batch_root / "summary.csv").open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=csv_fields)
         writer.writeheader()
-        for row in summary_rows:
-            writer.writerow(row)
+        writer.writerows(summary_rows)
 
-    generated_reports = sum(1 for row in summary_rows if row.get("html_report_path"))
+    reports_generated = sum(1 for row in summary_rows if row.get("html_report_path"))
     profile_errors = sum(1 for row in summary_rows if row.get("error"))
     match_profiles = sum(1 for row in summary_rows if row.get("overall") == "MATCH")
     nonmatch_profiles = sum(1 for row in summary_rows if row.get("overall") != "MATCH")
@@ -375,7 +383,7 @@ def run_batch_verification(
         "verify_dir": str(verify_dir.resolve()),
         "report_dir": str(report_dir.resolve()),
         "profiles_processed": len(summary_rows),
-        "reports_generated": generated_reports,
+        "reports_generated": reports_generated,
         "profile_errors": profile_errors,
         "match_profiles": match_profiles,
         "nonmatch_profiles": nonmatch_profiles,

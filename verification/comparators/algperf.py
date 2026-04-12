@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from .contracts import ComparatorPlugin, ComparatorSpec, CompareResult
+from .utility import build_row_map, get_display_label, sort_mixed_keys, to_float
 
 
 class AlgPerfComparator(ComparatorPlugin):
@@ -19,17 +20,10 @@ class AlgPerfComparator(ComparatorPlugin):
     KEY_ERR = "error"
 
     @staticmethod
-    def _num(val: Any) -> float | None:
-        try:
-            return float(val)
-        except Exception:
-            return None
-
-    @staticmethod
-    def _op(rv: float, tv: float) -> str:
-        if rv == tv:
+    def _op(ref_value: float, test_value: float) -> str:
+        if ref_value == test_value:
             return "=="
-        return "<" if rv < tv else ">"
+        return "<" if ref_value < test_value else ">"
 
     def compare(
         self,
@@ -41,154 +35,177 @@ class AlgPerfComparator(ComparatorPlugin):
         reference: List[Dict[str, Any]],
         tested: List[Dict[str, Any]],
     ) -> CompareResult:
-        ref_map = {r.get(key_field): r for r in reference if isinstance(r, dict) and r.get(key_field) is not None}
-        tst_map = {r.get(key_field): r for r in tested if isinstance(r, dict) and r.get(key_field) is not None}
-        keys = sorted(set(ref_map.keys()) | set(tst_map.keys()), key=lambda x: (str(type(x)), str(x)))
+        ref_map = build_row_map(reference, key_field)
+        test_map = build_row_map(tested, key_field)
+        keys = sort_mixed_keys(set(ref_map.keys()) | set(test_map.keys()))
 
+        include_matches = bool(metadata.get("include_matches", False))
         diffs: List[Dict[str, Any]] = []
-        matches: List[Dict[str, Any]] = [] if bool(metadata.get("include_matches", False)) else []
+        matches: List[Dict[str, Any]] = [] if include_matches else []
         labels: Dict[str, str] = {}
         chart_rows: List[Dict[str, Any]] = []
 
         compared = changed = matched = only_ref = only_test = 0
 
-        for k in keys:
-            r = ref_map.get(k)
-            t = tst_map.get(k)
+        for key in keys:
+            ref_row = ref_map.get(key)
+            test_row = test_map.get(key)
 
-            if r is None or t is None:
-                if r is not None and t is None:
+            if ref_row is None or test_row is None:
+                if ref_row is not None:
                     only_ref += 1
-                    diffs.append({"key": str(k), "field": "__presence__", "ref": True, "op": "!=", "test": False})
-                    chart_rows.append({
-                        "key": str(k),
-                        "status": "missing",
-                        "ref_avg": self._num(r.get(self.KEY_AVG)) if r else None,
+                    diffs.append({"key": str(key), "field": "__presence__", "ref": True, "op": "!=", "test": False})
+                    chart_rows.append(
+                        {
+                            "key": str(key),
+                            "status": "missing",
+                            "ref_avg": to_float(ref_row.get(self.KEY_AVG)),
+                            "test_avg": None,
+                            "delta_ms": None,
+                            "delta_pct": None,
+                            "note": "present only in reference",
+                        }
+                    )
+                else:
+                    only_test += 1
+                    diffs.append({"key": str(key), "field": "__presence__", "ref": False, "op": "!=", "test": True})
+                    chart_rows.append(
+                        {
+                            "key": str(key),
+                            "status": "extra",
+                            "ref_avg": None,
+                            "test_avg": to_float(test_row.get(self.KEY_AVG)) if test_row else None,
+                            "delta_ms": None,
+                            "delta_pct": None,
+                            "note": "present only in profile",
+                        }
+                    )
+                continue
+
+            labels[str(key)] = get_display_label(ref_row, key_field, show_field)
+
+            ref_error = ref_row.get(self.KEY_ERR)
+            test_error = test_row.get(self.KEY_ERR)
+            compared += 1
+
+            if ref_error != test_error:
+                changed += 1
+                diffs.append({"key": str(key), "field": self.KEY_ERR, "ref": ref_error, "op": "!=", "test": test_error})
+                chart_rows.append(
+                    {
+                        "key": str(key),
+                        "status": "error_mismatch",
+                        "ref_avg": None,
                         "test_avg": None,
                         "delta_ms": None,
                         "delta_pct": None,
-                        "note": "present only in reference",
-                    })
-                elif t is not None and r is None:
-                    only_test += 1
-                    diffs.append({"key": str(k), "field": "__presence__", "ref": False, "op": "!=", "test": True})
-                    chart_rows.append({
-                        "key": str(k),
-                        "status": "extra",
+                        "note": f"error ref={ref_error} vs prof={test_error}",
+                    }
+                )
+                continue
+
+            if ref_error is not None:
+                matched += 1
+                if include_matches:
+                    matches.append({"key": str(key), "field": self.KEY_ERR, "value": ref_error})
+                chart_rows.append(
+                    {
+                        "key": str(key),
+                        "status": "error",
                         "ref_avg": None,
-                        "test_avg": self._num(t.get(self.KEY_AVG)) if t else None,
+                        "test_avg": None,
                         "delta_ms": None,
                         "delta_pct": None,
-                        "note": "present only in profile",
-                    })
+                        "note": f"both failed: {ref_error}",
+                    }
+                )
                 continue
 
-            lbl = r.get(show_field or key_field, r.get(key_field, k))
-            labels[str(k)] = str(lbl)
+            ref_avg = to_float(ref_row.get(self.KEY_AVG))
+            test_avg = to_float(test_row.get(self.KEY_AVG))
+            ref_min = to_float(ref_row.get(self.KEY_MIN))
+            ref_max = to_float(ref_row.get(self.KEY_MAX))
 
-            r_err = r.get(self.KEY_ERR, None)
-            t_err = t.get(self.KEY_ERR, None)
-
-            if r_err != t_err:
+            if ref_avg is None or test_avg is None:
                 changed += 1
-                compared += 1
-                diffs.append({"key": str(k), "field": self.KEY_ERR, "ref": r_err, "op": "!=", "test": t_err})
-                chart_rows.append({
-                    "key": str(k),
-                    "status": "error_mismatch",
-                    "ref_avg": None,
-                    "test_avg": None,
-                    "delta_ms": None,
-                    "delta_pct": None,
-                    "note": f"error ref={r_err} vs prof={t_err}",
-                })
+                diffs.append(
+                    {
+                        "key": str(key),
+                        "field": self.KEY_AVG,
+                        "ref": ref_row.get(self.KEY_AVG),
+                        "op": "!=",
+                        "test": test_row.get(self.KEY_AVG),
+                    }
+                )
+                chart_rows.append(
+                    {
+                        "key": str(key),
+                        "status": "data_error",
+                        "ref_avg": ref_avg,
+                        "test_avg": test_avg,
+                        "delta_ms": None,
+                        "delta_pct": None,
+                        "note": "missing numeric avg",
+                    }
+                )
                 continue
 
-            if r_err is not None and t_err is not None:
+            delta_ms = test_avg - ref_avg
+            delta_pct = (delta_ms / ref_avg * 100.0) if ref_avg else None
+            is_fast_op = ref_avg <= 2.0 and test_avg <= 2.0
+            is_clearkey = "clearKey()" in str(key)
+            small_op_skip = (ref_avg <= 10.0 and test_avg <= 10.0) or is_clearkey
+            ref_spread = (ref_max - ref_min) if (ref_max is not None and ref_min is not None) else 0.0
+            significant = abs(delta_ms) > ref_spread and abs(delta_ms) > 0.2 * ref_avg
+
+            if is_fast_op:
                 matched += 1
-                compared += 1
-                if matches is not None:
-                    matches.append({"key": str(k), "field": self.KEY_ERR, "value": r_err})
-                chart_rows.append({
-                    "key": str(k),
-                    "status": "error",
-                    "ref_avg": None,
-                    "test_avg": None,
-                    "delta_ms": None,
-                    "delta_pct": None,
-                    "note": f"both failed: {r_err}",
-                })
+                if include_matches:
+                    matches.append({"key": str(key), "field": f"{self.KEY_AVG} (skipped)", "value": test_avg})
+                chart_rows.append(
+                    {
+                        "key": str(key),
+                        "status": "skipped",
+                        "ref_avg": ref_avg,
+                        "test_avg": test_avg,
+                        "delta_ms": delta_ms,
+                        "delta_pct": delta_pct,
+                        "note": "both ≤ 2 ms",
+                    }
+                )
                 continue
 
-            r_avg = self._num(r.get(self.KEY_AVG))
-            t_avg = self._num(t.get(self.KEY_AVG))
-            r_min = self._num(r.get(self.KEY_MIN))
-            r_max = self._num(r.get(self.KEY_MAX))
-
-            if r_avg is None or t_avg is None:
+            if significant and not small_op_skip:
                 changed += 1
-                compared += 1
-                diffs.append({"key": str(k), "field": self.KEY_AVG, "ref": r.get(self.KEY_AVG), "op": "!=", "test": t.get(self.KEY_AVG)})
-                chart_rows.append({
-                    "key": str(k),
-                    "status": "data_error",
-                    "ref_avg": r_avg,
-                    "test_avg": t_avg,
-                    "delta_ms": None,
-                    "delta_pct": None,
-                    "note": "missing numeric avg",
-                })
+                diffs.append({"key": str(key), "field": self.KEY_AVG, "ref": ref_avg, "op": self._op(ref_avg, test_avg), "test": test_avg})
+                chart_rows.append(
+                    {
+                        "key": str(key),
+                        "status": "mismatch",
+                        "ref_avg": ref_avg,
+                        "test_avg": test_avg,
+                        "delta_ms": delta_ms,
+                        "delta_pct": delta_pct,
+                        "note": "significant diff",
+                    }
+                )
                 continue
 
-            if r_avg <= 2.0 and t_avg <= 2.0:
-                matched += 1
-                compared += 1
-                if matches is not None:
-                    matches.append({"key": str(k), "field": f"{self.KEY_AVG} (skipped)", "value": t_avg})
-                chart_rows.append({
-                    "key": str(k),
-                    "status": "skipped",
-                    "ref_avg": r_avg,
-                    "test_avg": t_avg,
-                    "delta_ms": t_avg - r_avg,
-                    "delta_pct": (t_avg - r_avg) / r_avg * 100.0 if r_avg else None,
-                    "note": "both ≤ 2 ms",
-                })
-                continue
-
-            avg_diff = abs(r_avg - t_avg)
-            ref_spread = (r_max - r_min) if (r_max is not None and r_min is not None) else 0.0
-            significant = (avg_diff > ref_spread) and (avg_diff > 0.2 * r_avg)
-            is_clearkey = ("clearKey()" in str(k))
-
-            if significant and not ((r_avg <= 10.0 and t_avg <= 10.0) or is_clearkey):
-                changed += 1
-                compared += 1
-                diffs.append({"key": str(k), "field": self.KEY_AVG, "ref": r_avg, "op": self._op(r_avg, t_avg), "test": t_avg})
-                chart_rows.append({
-                    "key": str(k),
-                    "status": "mismatch",
-                    "ref_avg": r_avg,
-                    "test_avg": t_avg,
-                    "delta_ms": t_avg - r_avg,
-                    "delta_pct": (t_avg - r_avg) / r_avg * 100.0 if r_avg else None,
-                    "note": "significant diff",
-                })
-            else:
-                matched += 1
-                compared += 1
-                field_name = self.KEY_AVG if not (r_avg <= 10.0 and t_avg <= 10.0 or is_clearkey) else f"{self.KEY_AVG} (skipped)"
-                if matches is not None:
-                    matches.append({"key": str(k), "field": field_name, "value": t_avg})
-                chart_rows.append({
-                    "key": str(k),
-                    "status": "match" if field_name == self.KEY_AVG else "skipped",
-                    "ref_avg": r_avg,
-                    "test_avg": t_avg,
-                    "delta_ms": t_avg - r_avg,
-                    "delta_pct": (t_avg - r_avg) / r_avg * 100.0 if r_avg else None,
-                    "note": "similar" if field_name == self.KEY_AVG else "fast op",
-                })
+            matched += 1
+            match_field = self.KEY_AVG if not small_op_skip else f"{self.KEY_AVG} (skipped)"
+            if include_matches:
+                matches.append({"key": str(key), "field": match_field, "value": test_avg})
+            chart_rows.append(
+                {
+                    "key": str(key),
+                    "status": "match" if match_field == self.KEY_AVG else "skipped",
+                    "ref_avg": ref_avg,
+                    "test_avg": test_avg,
+                    "delta_ms": delta_ms,
+                    "delta_pct": delta_pct,
+                    "note": "similar" if match_field == self.KEY_AVG else "fast op",
+                }
+            )
 
         counts = {
             "compared": compared,
@@ -197,17 +214,18 @@ class AlgPerfComparator(ComparatorPlugin):
             "only_ref": only_ref,
             "only_test": only_test,
         }
-
-        return {
+        result: CompareResult = {
             "section": section,
             "counts": counts,
             "stats": counts,
             "labels": labels,
             "key_labels": labels,
             "diffs": diffs,
-            **({"matches": matches} if matches else {}),
             "artifacts": {"chart_rows": chart_rows},
         }
+        if include_matches:
+            result["matches"] = matches
+        return result
 
 
 PLUGINS = [AlgPerfComparator()]

@@ -22,9 +22,7 @@ def add_verify_args(parser: argparse.ArgumentParser) -> None:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="YAML-driven verification (modular comparators + reporting)."
-    )
+    parser = argparse.ArgumentParser(description="YAML-driven verification (modular comparators + reporting).")
     add_verify_args(parser)
     return parser
 
@@ -32,6 +30,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def run_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(args.verbose)
     log = slog.get_logger("VERIFY")
+
     result = run_verification(
         schema_path=args.schema,
         reference_path=args.reference,
@@ -42,21 +41,19 @@ def run_from_namespace(args: argparse.Namespace) -> int:
         print_matches=args.print_matches,
         report=args.report,
     )
-
     if not result.get("ok", False):
         return int(result.get("exit_code", 1))
 
-    msg = (
+    message = (
         f"verify completed successfully. Output written to: {result['output_json_path']}. "
         f"Overall result: {result['overall']}."
     )
     if result.get("report_html_path"):
-        msg += f" Report written to: {result['report_html_path']}."
-    log.info(msg)
+        message += f" Report written to: {result['report_html_path']}."
+    log.info(message)
 
     if result.get("report_zip_path"):
         log.info(f"Report zip written to: {result['report_zip_path']}")
-
     return 0
 
 
@@ -68,7 +65,8 @@ def main(argv: Optional[list[str]] = None) -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except Exception as e:
+    except Exception as exc:
         from scrutiny import logging as slog
-        slog.get_logger("VERIFY").err(f"Error: {e}")
+
+        slog.get_logger("VERIFY").err(f"Error: {exc}")
         raise SystemExit(1)

@@ -6,6 +6,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, FrozenSet, Optional
 
+try:
+    from .. import mapper_utils
+except ImportError:
+    import mapper_utils  # type: ignore
+
 
 @dataclass(frozen=True)
 class MapperSpec:
@@ -40,14 +45,8 @@ class MapperPlugin(ABC):
     def ingest(self, source_path: Path) -> Any:
         """
         Default ingest for grouped-text mappers.
-        RSABias-style mappers should override this.
         """
-        try:
-            from .. import mapper_utils
-        except ImportError:
-            import mapper_utils  # type: ignore
-
-        groups = mapper_utils.load_file(str(source_path))
+        groups = mapper_utils.load_file(source_path)
         if groups is None:
             raise FileNotFoundError(f"Failed to load grouped text input from: {source_path}")
         return groups
@@ -55,7 +54,6 @@ class MapperPlugin(ABC):
     def map_source(self, source: Any, context: MappingContext) -> dict[str, Any]:
         """
         Default source mapping for grouped-text mappers.
-        Directory/JSON bundle mappers should override this.
         """
         if not isinstance(source, list):
             raise TypeError(

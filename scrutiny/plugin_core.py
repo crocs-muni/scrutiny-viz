@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from importlib import import_module
 import pkgutil
-from typing import Dict, Generic, Iterable, Iterator, Optional, Protocol, TypeVar
+from typing import Dict, Generic, Iterable, Iterator, Protocol, TypeVar
 
 
 @dataclass(frozen=True)
@@ -53,14 +53,15 @@ class PluginRegistry(Generic[PluginT]):
         self._aliases[canonical] = canonical
 
         for alias in spec.aliases:
-            norm_alias = self._norm(alias)
-            if not norm_alias:
+            normalized_alias = self._norm(alias)
+            if not normalized_alias:
                 continue
-            if norm_alias in self._aliases and self._aliases[norm_alias] != canonical:
+            existing = self._aliases.get(normalized_alias)
+            if existing is not None and existing != canonical:
                 raise ValueError(
-                    f"Alias '{alias}' already points to '{self._aliases[norm_alias]}' and cannot also point to '{canonical}'"
+                    f"Alias '{alias}' already points to '{existing}' and cannot also point to '{canonical}'"
                 )
-            self._aliases[norm_alias] = canonical
+            self._aliases[normalized_alias] = canonical
 
     def normalize_name(self, name: str) -> str:
         key = self._norm(name)
@@ -98,9 +99,9 @@ def discover_package_plugins(package_name: str) -> list[SupportsSpec]:
             continue
         if not isinstance(module_plugins, Iterable):
             raise TypeError(f"{module_name}.PLUGINS must be iterable")
+
         for plugin in module_plugins:
-            spec = getattr(plugin, "spec", None)
-            if spec is None:
+            if getattr(plugin, "spec", None) is None:
                 raise TypeError(f"Plugin exported by {module_name} does not expose .spec")
             discovered.append(plugin)
 

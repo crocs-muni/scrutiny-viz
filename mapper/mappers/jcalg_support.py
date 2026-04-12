@@ -161,11 +161,3 @@ class JcAlgSupportMapper(MapperPlugin):
 
 PLUGIN = JcAlgSupportMapper()
 PLUGINS = [PLUGIN]
-
-
-def convert_to_map_jcalgsupport(groups: list[list[str]], delimiter: str) -> dict:
-    return PLUGIN.map_groups(groups, MappingContext(delimiter=delimiter))
-
-
-convert_to_map = convert_to_map_jcalgsupport
-convert_to_map_jcalg_support = convert_to_map_jcalgsupport
