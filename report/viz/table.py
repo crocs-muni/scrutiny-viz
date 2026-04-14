@@ -99,6 +99,71 @@ def render_rsabias_confusion_top_table(section: Dict[str, Any], ref_name: str, p
     headers = ["True group", "Predicted group", f"{ref_name} share", f"{prof_name} share", "Δ share"]
     return render_table_block(headers, rows)
 
+def render_rsabias_accuracy_table(section: Dict[str, Any], ref_name: str, prof_name: str):
+    ref_map, test_map = source_maps(section, "group")
+    keys = sorted(
+        set(ref_map.keys()) | set(test_map.keys()),
+        key=lambda value: (0, int(value)) if str(value).isdigit() else (1, value),
+    )
+
+    rows: List[List[Any]] = []
+    for key in keys:
+        ref_row = ref_map.get(key, {})
+        test_row = test_map.get(key, {})
+        ref_value = ref_row.get("accuracy_pct")
+        test_value = test_row.get("accuracy_pct")
+        delta = (float(test_value) - float(ref_value)) if (ref_value is not None and test_value is not None) else None
+
+        rows.append([
+            key,
+            ref_row.get("correct", ""),
+            ref_row.get("wrong", ""),
+            ref_row.get("total", ""),
+            format_percent(ref_value),
+            test_row.get("correct", ""),
+            test_row.get("wrong", ""),
+            test_row.get("total", ""),
+            format_percent(test_value),
+            format_pp(delta),
+        ])
+
+    headers = [
+        "Group",
+        f"{ref_name} correct",
+        f"{ref_name} wrong",
+        f"{ref_name} total",
+        f"{ref_name} accuracy",
+        f"{prof_name} correct",
+        f"{prof_name} wrong",
+        f"{prof_name} total",
+        f"{prof_name} accuracy",
+        "Δ accuracy",
+    ]
+    return render_table_block(headers, rows)
+
+
+def render_rsabias_confusion_top_table(section: Dict[str, Any], ref_name: str, prof_name: str):
+    ref_map, test_map = source_maps(section, "edge_id")
+    rows: List[List[Any]] = []
+
+    for key in sorted(set(ref_map.keys()) | set(test_map.keys())):
+        ref_row = ref_map.get(key, {})
+        test_row = test_map.get(key, {})
+        ref_value = ref_row.get("share_pct")
+        test_value = test_row.get("share_pct")
+        delta = (float(test_value) - float(ref_value)) if (ref_value is not None and test_value is not None) else None
+
+        rows.append([
+            ref_row.get("true_group", test_row.get("true_group", "")),
+            ref_row.get("pred_group", test_row.get("pred_group", "")),
+            format_percent(ref_value),
+            format_percent(test_value),
+            format_pp(delta),
+        ])
+
+    headers = ["True group", "Predicted group", f"{ref_name} share", f"{prof_name} share", "Δ share"]
+    return render_table_block(headers, rows)
+
 
 def render_rsabias_matrix_top_table(section: Dict[str, Any], ref_name: str, prof_name: str):
     artifacts = section.get("artifacts") or {}

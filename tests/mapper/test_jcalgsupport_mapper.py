@@ -1,4 +1,3 @@
-# scrutiny-viz/tests/mapper/test_jcalgsupport_mapper.py
 from __future__ import annotations
 
 from tests.mapper.helpers import iter_bucket_csvs, run_mapper
@@ -13,18 +12,31 @@ def _payload():
 def _algo_sections(payload: dict) -> list[str]:
     return [
         k for k in payload.keys()
-        if k not in {"Basic information", "JCSystem", "CPLC"} and not str(k).startswith("_")
+        if k not in {"JCSystem", "CPLC"} and not str(k).startswith("_")
     ]
 
 
-def test_jcalgsupport_mapper_emits_basic_information_and_algo_sections():
+def test_jcalgsupport_mapper_emits_meta_and_algo_sections():
     payload = _payload()
 
     assert isinstance(payload, dict)
-    assert "Basic information" in payload
+    assert "_META" in payload
+    assert isinstance(payload["_META"], list)
+    assert payload["_META"], "Expected non-empty _META"
 
     sections = _algo_sections(payload)
     assert sections, "Expected algorithm support sections"
+
+
+def test_jcalgsupport_mapper_meta_rows_have_name_and_value():
+    payload = _payload()
+
+    rows = payload.get("_META", [])
+    assert rows, "Expected _META rows"
+
+    for row in rows:
+        assert "name" in row, f"_META row missing name: {row}"
+        assert "value" in row, f"_META row missing value: {row}"
 
 
 def test_jcalgsupport_mapper_rows_have_algorithm_name_and_support_flag():

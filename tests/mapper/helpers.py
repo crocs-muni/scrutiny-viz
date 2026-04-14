@@ -118,15 +118,28 @@ def assert_non_empty_profile(payload: dict[str, Any], *, csv_path: Path) -> None
 # ----------------- bucket-specific invariants -----------------
 
 def assert_jcalgsupport(payload: dict[str, Any], *, csv_path: Path) -> None:
-    assert "Basic information" in payload, f"{csv_path.name}: missing 'Basic information'"
-    algo_sections = [k for k in payload.keys() if k not in {"Basic information", "JCSystem", "CPLC"} and not str(k).startswith("_")]
+    assert "_META" in payload, f"{csv_path.name}: missing '_META'"
+    assert isinstance(payload["_META"], list), f"{csv_path.name}: _META is not a list"
+    assert payload["_META"], f"{csv_path.name}: _META is empty"
+
+    for rec in payload["_META"]:
+        assert isinstance(rec, dict), f"{csv_path.name}: _META contains non-dict row: {rec!r}"
+        assert "name" in rec, f"{csv_path.name}: _META row missing name: {rec}"
+        assert "value" in rec, f"{csv_path.name}: _META row missing value: {rec}"
+
+    algo_sections = [
+        k for k in payload.keys()
+        if k not in {"JCSystem", "CPLC"} and not str(k).startswith("_")
+    ]
     assert algo_sections, f"{csv_path.name}: no algorithm sections found"
+
     found_alg_row = False
     for sec in algo_sections:
         for rec in payload.get(sec, []):
             if "algorithm_name" in rec:
                 found_alg_row = True
                 assert "is_supported" in rec, f"{csv_path.name}: {sec} algorithm row missing is_supported: {rec}"
+
     assert found_alg_row, f"{csv_path.name}: did not find any algorithm rows with 'algorithm_name'"
 
 
