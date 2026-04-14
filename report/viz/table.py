@@ -52,6 +52,7 @@ def render_cplc_table(section: Dict[str, Any], ref_name: str, prof_name: str):
             or test_value == "Missing"
             or first_token(ref_value) != first_token(test_value)
         )
+
         if mismatch:
             rows.append([
                 key,
@@ -62,51 +63,19 @@ def render_cplc_table(section: Dict[str, Any], ref_name: str, prof_name: str):
             rows.append([key, ref_value, test_value])
 
     headers = ["CPLC Field", f"{ref_name} (reference)", f"{prof_name} (profiled)"]
-    return render_table_block(headers, rows)
 
+    container = tags.div()
+    with container:
+        with toggle_block(
+            block_id="cplc_table",
+            title="CPLC table",
+            button_text="Table",
+            button_title="Show/hide table: CPLC",
+            hide=False,
+        ):
+            render_table_block(headers, rows)
 
-def render_rsabias_accuracy_table(section: Dict[str, Any], ref_name: str, prof_name: str):
-    ref_map, test_map = source_maps(section, "group")
-    keys = sorted(
-        set(ref_map.keys()) | set(test_map.keys()),
-        key=lambda value: (0, int(value)) if str(value).isdigit() else (1, value),
-    )
-
-    rows: List[List[Any]] = []
-    for key in keys:
-        ref_row = ref_map.get(key, {})
-        test_row = test_map.get(key, {})
-        ref_value = ref_row.get("accuracy_pct")
-        test_value = test_row.get("accuracy_pct")
-        delta = (float(test_value) - float(ref_value)) if (ref_value is not None and test_value is not None) else None
-
-        rows.append([
-            key,
-            ref_row.get("correct", ""),
-            ref_row.get("wrong", ""),
-            ref_row.get("total", ""),
-            format_percent(ref_value),
-            test_row.get("correct", ""),
-            test_row.get("wrong", ""),
-            test_row.get("total", ""),
-            format_percent(test_value),
-            format_pp(delta),
-        ])
-
-    headers = [
-        "Group",
-        f"{ref_name} correct",
-        f"{ref_name} wrong",
-        f"{ref_name} total",
-        f"{ref_name} accuracy",
-        f"{prof_name} correct",
-        f"{prof_name} wrong",
-        f"{prof_name} total",
-        f"{prof_name} accuracy",
-        "Δ accuracy",
-    ]
-    return render_table_block(headers, rows)
-
+    return container
 
 def render_rsabias_confusion_top_table(section: Dict[str, Any], ref_name: str, prof_name: str):
     ref_map, test_map = source_maps(section, "edge_id")
@@ -363,89 +332,142 @@ def render_tracescompare_table(section: Dict[str, Any], ref_name: str, prof_name
 
 def render_traceclassifier_table(section: Dict[str, Any], ref_name: str, prof_name: str):
     artifacts = section.get("artifacts") or {}
-    cards = artifacts.get("cards") or []
-    if not cards:
+    operations = artifacts.get("operations") or []
+
+    # fallback to legacy cards structure if needed
+    if not operations:
+        cards = artifacts.get("cards") or []
+        if not cards:
+            return None
+
+        operations = []
+        for card in cards:
+            for operation in card.get("operations") or []:
+                image_path = str(operation.get("visualized_operations", "") or "")
+                image_name = image_path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1] if image_path else ""
+                operations.append(
+                    {
+                        "operation_code": operation.get("operation_code", ""),
+                        "operation_present": operation.get("operation_found", False),
+                        "comparison_results": [
+                            {
+                                "pipeline_code": "traceclassifier",
+                                "match_bound": 0.0,
+                                "warn_bound": 0.0,
+                                "metric_type": str(operation.get("similarity_value_type", "")).lower(),
+                                "comparison_state": str(operation.get("classification_state", "MATCH")),
+                                "comparison_results": (
+                                    [{
+                                        "distance_value": operation.get("best_similarity_value", 0.0) or 0.0,
+                                        "image_path": image_path,
+                                        "image_name": image_name,
+                                        "comparison_state": str(operation.get("classification_state", "MATCH")),
+                                    }]
+                                    if image_path else []
+                                ),
+                                "similarity_intervals": operation.get("similarity_intervals") or [],
+                            }
+                        ],
+                        "exec_time_match_lower_bound": 0.0,
+                        "exec_time_match_upper_bound": 0.0,
+                        "exec_time_warn_lower_bound": 0.0,
+                        "exec_time_warn_upper_bound": 0.0,
+                        "exec_times": [],
+                        "comparison_state": str(operation.get("classification_state", "MATCH")),
+                        "interval_count": int(operation.get("interval_count", 0) or 0),
+                        "best_similarity_value": operation.get("best_similarity_value"),
+                        "similarity_value_type": operation.get("similarity_value_type", ""),
+                        "similarity_intervals": operation.get("similarity_intervals") or [],
+                        "image_path": image_path,
+                        "image_name": image_name,
+                    }
+                )
+
+    if not operations:
         return None
 
     container = tags.div(_class="table-container")
     with container:
         tags.h3("Classifier summary")
+
         summary_rows: List[List[Any]] = []
-        for card in cards:
-            operations = card.get("operations") or []
-            found_count = sum(1 for op in operations if op.get("operation_found"))
+        for operation in operations:
+            best_value = operation.get("best_similarity_value")
             summary_rows.append([
-                card.get("card_code", ""),
-                str(len(operations)),
-                str(found_count),
-                state_badge(str(card.get("card_state", "MATCH"))),
+                operation.get("operation_code", ""),
+                "yes" if operation.get("operation_present", False) else "no",
+                str(operation.get("interval_count", 0)),
+                "" if best_value is None else format_number(best_value, precision=4, trim=True),
+                operation.get("similarity_value_type", ""),
+                state_badge(str(operation.get("comparison_state", "MATCH"))),
             ])
-        container.add(render_table_block(["Card", "Operations", "Found", "State"], summary_rows))
 
-        for card in cards:
-            card_code = str(card.get("card_code", ""))
-            operations = card.get("operations") or []
-            tags.h3(f"Card: {card_code}")
+        container.add(
+            render_table_block(
+                ["Operation", "Found", "Intervals", "Best similarity", "Type", "State"],
+                summary_rows,
+            )
+        )
 
-            op_rows: List[List[Any]] = []
-            for operation in operations:
-                best_value = operation.get("best_similarity_value")
-                op_rows.append([
-                    operation.get("operation_code", ""),
-                    "yes" if operation.get("operation_found", False) else "no",
-                    str(operation.get("interval_count", 0)),
-                    "" if best_value is None else format_number(best_value, precision=4, trim=True),
-                    operation.get("similarity_value_type", ""),
-                    state_badge(str(operation.get("classification_state", "MATCH"))),
-                ])
-            container.add(
-                render_table_block(
-                    ["Operation", "Found", "Intervals", "Best similarity", "Type", "State"],
-                    op_rows,
-                )
+        for operation_idx, operation in enumerate(operations):
+            if not operation.get("operation_present", False):
+                continue
+
+            operation_code = str(operation.get("operation_code", ""))
+            best_value = operation.get("best_similarity_value")
+            intervals = operation.get("similarity_intervals") or []
+            pipeline_results = operation.get("comparison_results") or []
+
+            tags.h4(f"Operation: {operation_code}")
+            tags.p(
+                f"Detected intervals: {len(intervals)} | "
+                f"Best similarity: {'' if best_value is None else format_number(best_value, precision=4, trim=True)} | "
+                f"Type: {str(operation.get('similarity_value_type', ''))} | "
+                f"State: {str(operation.get('comparison_state', 'MATCH'))}"
             )
 
-            for operation in operations:
-                if not operation.get("operation_found", False):
-                    continue
+            comparisons: List[Dict[str, Any]] = []
+            for pipeline in pipeline_results:
+                comparisons.extend(pipeline.get("comparison_results") or [])
 
-                operation_code = str(operation.get("operation_code", ""))
-                best_value = operation.get("best_similarity_value")
-                intervals = operation.get("similarity_intervals") or []
-                tags.h4(f"Operation: {operation_code}")
-                tags.p(
-                    f"Detected intervals: {len(intervals)} | "
-                    f"Best similarity: {'' if best_value is None else format_number(best_value, precision=4, trim=True)} | "
-                    f"Type: {str(operation.get('similarity_value_type', ''))} | "
-                    f"State: {str(operation.get('classification_state', 'MATCH'))}"
-                )
-
-                image_path = str(operation.get("visualized_operations", "") or "")
-                if image_path:
-                    tags.img(
-                        src=image_path,
-                        alt=image_path,
-                        style="display:block;width:100%;margin:8px 0 12px 0;border:1px solid var(--table-border);border-radius:8px;",
-                    )
-
-                if intervals:
-                    interval_rows: List[List[Any]] = []
-                    for interval in intervals:
-                        interval_rows.append([
-                            format_number(interval.get("time_from"), precision=4, trim=True),
-                            format_number(interval.get("time_to"), precision=4, trim=True),
-                            str(interval.get("similarity_value_type", "") or ""),
-                            format_number(interval.get("similarity_value"), precision=4, trim=True),
-                            int(interval.get("indexes_compared", 0) or 0),
-                        ])
-
-                    container.add(
-                        render_table_block(
-                            ["Time from", "Time to", "Comparison type", "Comparison value", "Indexes compared"],
-                            interval_rows,
+            if comparisons:
+                photo_block_id = f"traceclassifier_photo_{operation_idx}"
+                with toggle_block(
+                    block_id=photo_block_id,
+                    title="Classifier photo",
+                    button_text="Photo",
+                    button_title="Show/hide classifier image",
+                    hide=False,
+                ):
+                    with tags.div(_class="trace-grid", **{"data-trace-grid": photo_block_id}):
+                        first = comparisons[0]
+                        tags.div().add(
+                            _image_block(
+                                str(first.get("image_path", "")),
+                                str(first.get("image_name", "")),
+                                str(first.get("comparison_state", "")),
+                                first.get("distance_value", 0.0),
+                            )
                         )
+
+            if intervals:
+                interval_rows: List[List[Any]] = []
+                for interval in intervals:
+                    interval_rows.append([
+                        format_number(interval.get("time_from"), precision=4, trim=True),
+                        format_number(interval.get("time_to"), precision=4, trim=True),
+                        str(interval.get("similarity_value_type", "") or ""),
+                        format_number(interval.get("similarity_value"), precision=4, trim=True),
+                        int(interval.get("indexes_compared", 0) or 0),
+                    ])
+
+                container.add(
+                    render_table_block(
+                        ["Time from", "Time to", "Comparison type", "Comparison value", "Indexes compared"],
+                        interval_rows,
                     )
-                    tags.br()
+                )
+                tags.br()
 
     return container
 

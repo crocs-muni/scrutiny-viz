@@ -9,7 +9,7 @@ defaults:
   data:
     type: list
   report:
-    theme: light
+    theme: dark
     types: ["table"]
   component:
     comparator: basic
@@ -19,16 +19,6 @@ defaults:
   target: {}
 
 sections:
-  Basic information:
-    data:
-      record_schema:
-        name:  { dtype: string, required: true, category: nominal }
-        value: { dtype: string, category: nominal }
-    component:
-      comparator: basic
-      match_key: name
-      show_key: name
-
   Package AID:
     data:
       record_schema:

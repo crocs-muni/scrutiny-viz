@@ -13,7 +13,7 @@ defaults:
     match_key: __override__
   target: {}
   report:
-    theme: dark
+    theme: light
 
 sections:
   ATR:

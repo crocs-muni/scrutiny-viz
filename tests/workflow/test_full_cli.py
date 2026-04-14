@@ -23,8 +23,8 @@ def test_full_cli_csv_to_verify_and_report_jcaid(tmp_path):
 def test_full_cli_json_passthrough_tpm_examples(tmp_path):
     schema = find_schema_for_bucket("TPMAlgTest")
     assert schema is not None
-    ref_json = repo_path("examples", "tpm_example1.json")
-    prof_json = repo_path("examples", "tpm_example2.json")
+    ref_json = repo_path("examples", "TPM", "tpm_example1.json")
+    prof_json = repo_path("examples", "TPM", "tpm_example2.json")
     assert ref_json.exists()
     assert prof_json.exists()
     out_json = tmp_path / "tpm.verify.json"

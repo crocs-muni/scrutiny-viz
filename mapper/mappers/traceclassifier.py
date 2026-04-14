@@ -67,8 +67,9 @@ class TraceClassifierMapper(MapperPlugin):
                 intervals = self._sanitize_intervals(op.get("similarity_intervals") or [])
                 best_value, best_type = self._best_interval(intervals)
 
-                raw_image = str(op.get("visualized_operations") or "")
-                resolved_image = mapper_utils.resolve_asset_path(source_dir, raw_image)
+                raw_image = str(op.get("visualized_operations") or "").strip()
+                resolved_image = mapper_utils.resolve_asset_path(source_dir, raw_image) if raw_image else ""
+                image_name = Path(raw_image).name if raw_image else ""
 
                 rows.append(
                     {
@@ -78,7 +79,9 @@ class TraceClassifierMapper(MapperPlugin):
                         "interval_count": len(intervals),
                         "best_similarity_value": best_value,
                         "similarity_value_type": best_type,
-                        "visualized_operations": resolved_image,
+                        "visualized_operations_path": resolved_image,
+                        "visualized_operations_name": image_name,
+                        "visualized_operations_raw_path": raw_image,
                         "similarity_intervals_json": mapper_utils.compact_json(intervals),
                     }
                 )

@@ -4,13 +4,13 @@ from __future__ import annotations
 from typing import Any, Optional
 
 try:
-    from ..mapper_utils import flatten_groups,parse_name_value_attributes_filtered
+    from ..mapper_utils import flatten_groups, parse_name_value_attributes_filtered
 except ImportError:  # pragma: no cover
     from mapper_utils import flatten_groups, parse_name_value_attributes_filtered
 
 from .contracts import MapperPlugin, MapperSpec, MappingContext
 
-BASIC_INFO = "Basic information"
+META_KEY = "_META"
 
 SECTION_CARD_INFO = "***** Card info"
 SECTION_CARD_DATA = "***** CARD DATA"
@@ -194,7 +194,9 @@ class JcAidMapper(MapperPlugin):
             elif current_section == "full_package_aid":
                 full_package_lines.append(line)
 
-        result[BASIC_INFO] = parse_basic_info(basic_lines, context.delimiter)
+        meta = parse_basic_info(basic_lines, context.delimiter)
+        if meta:
+            result[META_KEY] = meta
 
         if key_lines:
             result["_key_info"] = parse_key_info(key_lines)

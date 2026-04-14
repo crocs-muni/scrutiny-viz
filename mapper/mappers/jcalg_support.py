@@ -10,7 +10,7 @@ except ImportError:  # pragma: no cover
 
 from .contracts import MapperPlugin, MapperSpec, MappingContext
 
-BASIC_INFO = "Basic information"
+META_KEY = "_META"
 END_OF_BASIC_INFO = "JavaCard support version"
 
 
@@ -107,9 +107,9 @@ class JcAlgSupportMapper(MapperPlugin):
     )
 
     def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict:
-        result: dict[str, Any] = {"_type": "javacard-alg-support"}
         basic_attrs: list[dict] = []
         finished_basic = False
+        remaining_groups: list[list[str]] = []
 
         for group in groups:
             if not group:
@@ -122,8 +122,18 @@ class JcAlgSupportMapper(MapperPlugin):
                     attr = _parse_basic_line(line, context.delimiter)
                     if attr:
                         basic_attrs.append(attr)
+
+                if finished_basic:
+                    remaining_groups.append(group)
                 continue
 
+            remaining_groups.append(group)
+
+        result: dict[str, Any] = {"_type": "javacard-alg-support"}
+        if basic_attrs:
+            result[META_KEY] = basic_attrs
+
+        for group in remaining_groups:
             section, data_lines = _detect_section_name(group, context.delimiter)
             if not section:
                 continue
@@ -153,11 +163,7 @@ class JcAlgSupportMapper(MapperPlugin):
             if out_rows:
                 result.setdefault(section, []).extend(out_rows)
 
-        if basic_attrs:
-            result[BASIC_INFO] = basic_attrs
-
         return result
-
 
 PLUGIN = JcAlgSupportMapper()
 PLUGINS = [PLUGIN]

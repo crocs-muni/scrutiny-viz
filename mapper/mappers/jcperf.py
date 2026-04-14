@@ -8,14 +8,23 @@ try:
         build_perf_record,
         flush_block,
         parse_kv_pairs,
+        parse_name_value_attributes_filtered,
         to_float,
         to_int,
     )
 except ImportError:  # pragma: no cover
-    from mapper_utils import build_perf_record, flush_block, parse_kv_pairs, to_float, to_int
+    from mapper_utils import (
+        build_perf_record,
+        flush_block,
+        parse_kv_pairs,
+        parse_name_value_attributes_filtered,
+        to_float,
+        to_int,
+    )
 
 from .contracts import MapperPlugin, MapperSpec, MappingContext
 
+META_KEY = "_META"
 END_OF_BASIC_INFO = "JCSystem.getVersion()"
 
 SECTION_MARKERS = [
@@ -165,10 +174,30 @@ class JcPerfMapper(MapperPlugin):
         result: dict[str, Any] = {"_type": "jcperf"}
 
         start_index = 0
+        meta_lines: list[str] = []
+        found_boundary = False
+
         for index, group in enumerate(groups):
-            if any(END_OF_BASIC_INFO in (line or "") for line in group):
-                start_index = index + 1
+            for line in group:
+                stripped = (line or "").strip()
+                if not stripped:
+                    continue
+                if END_OF_BASIC_INFO in stripped:
+                    start_index = index + 1
+                    found_boundary = True
+                    break
+                meta_lines.append(stripped)
+            if found_boundary:
                 break
+
+        if meta_lines:
+            meta = parse_name_value_attributes_filtered(
+                meta_lines,
+                context.delimiter,
+                allow_single_value=True,
+            )
+            if meta:
+                result[META_KEY] = meta
 
         current_section: Optional[str] = None
         current_lines: list[str] = []

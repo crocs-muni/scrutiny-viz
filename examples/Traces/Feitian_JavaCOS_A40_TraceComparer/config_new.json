@@ -1,0 +1,37 @@
+{
+    "operations":
+    [
+        {
+            "operation_code":"ALG_SECURE_RANDOM_128B",
+            "file_paths":
+            [
+                "extracted_new_b0_1.csv",
+                "extracted_new_b0_2.csv"
+            ]
+        },
+        {
+            "operation_code":"ALG_AES_BLOCK_128_CBC_NOPAD_LENGTH_AES_256",
+            "file_paths":
+            [
+                "extracted_new_b3_1.csv",
+                "extracted_new_b3_2.csv"
+            ]
+        },
+        {
+            "operation_code":"ALG_DES_CBC_NOPAD_LENGTH_DES3_3KEY",
+            "file_paths":
+            [
+                "extracted_new_b4_1.csv",
+                "extracted_new_b4_2.csv"
+            ]
+        },
+        {
+            "operation_code":"ALG_SHA_256",
+            "file_paths":
+            [
+                "extracted_new_b6_1.csv",
+                "extracted_new_b6_2.csv"
+            ]
+        }
+    ]
+}
