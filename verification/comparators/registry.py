@@ -5,7 +5,7 @@ from importlib import import_module
 import pkgutil
 from typing import Dict
 
-from .contracts import ComparatorPlugin
+from .contracts import ComparatorPlugin, ComparatorSpec
 
 
 _COMPARATORS: Dict[str, ComparatorPlugin] = {}
@@ -90,6 +90,11 @@ def get_plugin(name: str) -> ComparatorPlugin:
 def list_types() -> list[str]:
     discover_builtin_comparators()
     return sorted(_COMPARATORS)
+
+
+def list_specs() -> list[ComparatorSpec]:
+    discover_builtin_comparators()
+    return [plugin.spec for _, plugin in sorted(_COMPARATORS.items())]
 
 
 def available_plugins() -> Dict[str, ComparatorPlugin]:

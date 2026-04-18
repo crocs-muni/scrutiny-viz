@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 try:
     from ..mapper_utils import (
+        build_perf_record,
         compact_config,
         parse_colon_pairs_line,
         parse_kv_pairs,
@@ -14,6 +15,7 @@ try:
     )
 except ImportError:  # pragma: no cover
     from mapper_utils import (
+        build_perf_record,
         compact_config,
         parse_colon_pairs_line,
         parse_kv_pairs,
@@ -40,11 +42,11 @@ TPM_CONFIG_KEYS: dict[str, list[str]] = {
 
 
 def is_tpm_op_header(line: str) -> bool:
-    s = (line or "").strip()
-    return s.startswith("TPM2_") and ";" not in s
+    stripped = (line or "").strip()
+    return stripped.startswith("TPM2_") and ";" not in stripped
 
 
-def parse_group_as_record(group: list[str], delimiter: str, op: str) -> Optional[dict]:
+def parse_group_as_record(group: list[str], delimiter: str, op: str) -> Optional[dict[str, Any]]:
     if not group:
         return None
 
@@ -53,10 +55,11 @@ def parse_group_as_record(group: list[str], delimiter: str, op: str) -> Optional
     info: dict[str, str] = {}
 
     for line in group[1:]:
-        s = (line or "").strip()
-        if not s:
+        stripped = (line or "").strip()
+        if not stripped:
             continue
-        parts = s.split(delimiter)
+
+        parts = stripped.split(delimiter)
         head = (parts[0] or "").strip().lower()
         if head.startswith("operation stats"):
             stats.update(parse_kv_pairs(parts, start=1))
@@ -66,38 +69,31 @@ def parse_group_as_record(group: list[str], delimiter: str, op: str) -> Optional
     keys = TPM_CONFIG_KEYS.get(op, list(cfg.keys()))
     measurement_config = compact_config(cfg, keys)
 
-    dlen = to_int(cfg.get("Data length (bytes)")) or to_int(info.get("data length"))
-    avg = to_float(stats.get("avg op")) or to_float(stats.get("avg"))
-    mn = to_float(stats.get("min op")) or to_float(stats.get("min"))
-    mx = to_float(stats.get("max op")) or to_float(stats.get("max"))
+    data_length = to_int(cfg.get("Data length (bytes)")) or to_int(info.get("data length"))
+    avg_ms = to_float(stats.get("avg op")) or to_float(stats.get("avg"))
+    min_ms = to_float(stats.get("min op")) or to_float(stats.get("min"))
+    max_ms = to_float(stats.get("max op")) or to_float(stats.get("max"))
+    total_iterations = to_int(info.get("total iterations"))
+    total_invocations = to_int(info.get("successful")) or to_int(info.get("total invocations"))
 
-    rec: dict[str, Any] = {
-        "algorithm": op + (f"|{measurement_config.replace(';', '|')}" if measurement_config else ""),
-        "op_name": op,
-    }
-    if measurement_config:
-        rec["measurement_config"] = measurement_config
-    if dlen is not None:
-        rec["data_length"] = dlen
-    if avg is not None:
-        rec["avg_ms"] = avg
-    if mn is not None:
-        rec["min_ms"] = mn
-    if mx is not None:
-        rec["max_ms"] = mx
+    error = (info.get("error") or "").strip()
+    if error.lower() == "none":
+        error = ""
 
-    iters = to_int(info.get("total iterations"))
-    inv = to_int(info.get("successful")) or to_int(info.get("total invocations"))
-    if iters is not None:
-        rec["total_iterations"] = iters
-    if inv is not None:
-        rec["total_invocations"] = inv
+    algorithm = op + (f"|{measurement_config.replace(';', '|')}" if measurement_config else "")
 
-    err = (info.get("error") or "").strip()
-    if err and err.lower() != "none":
-        rec["error"] = err
-
-    return rec
+    return build_perf_record(
+        op_name=op,
+        algorithm=algorithm,
+        measurement_config=measurement_config,
+        data_length=data_length,
+        avg_ms=avg_ms,
+        min_ms=min_ms,
+        max_ms=max_ms,
+        total_iterations=total_iterations,
+        total_invocations=total_invocations,
+        error=error or None,
+    )
 
 
 class TpmMapper(MapperPlugin):
@@ -107,18 +103,22 @@ class TpmMapper(MapperPlugin):
         description="TPM performance CSV mapper",
     )
 
-    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict:
+    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict[str, Any]:
         result: dict[str, Any] = {"_type": "tpm-perf"}
         current_op: Optional[str] = None
 
-        for i, group in enumerate(groups):
+        for index, group in enumerate(groups):
             if not group:
                 continue
 
             first = (group[0] or "").strip()
 
-            if i == 0:
-                result[TPM_INFO] = parse_name_value_attributes(group, context.delimiter, allow_single_value=True)
+            if index == 0:
+                result[TPM_INFO] = parse_name_value_attributes(
+                    group,
+                    context.delimiter,
+                    allow_single_value=True,
+                )
                 continue
 
             if is_tpm_op_header(first):
@@ -138,7 +138,3 @@ class TpmMapper(MapperPlugin):
 
 PLUGIN = TpmMapper()
 PLUGINS = [PLUGIN]
-
-
-def convert_to_map_tpm(groups: list[list[str]], delimiter: str) -> dict:
-    return PLUGIN.map_groups(groups, MappingContext(delimiter=delimiter))

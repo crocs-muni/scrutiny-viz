@@ -16,25 +16,27 @@ from verification.service import run_verification
 from report.cli import add_report_args, run_from_namespace as run_report_from_namespace
 from report.service import run_report_html
 
+from scrutiny.batch.cli import add_batch_args, run_from_namespace as run_batch_from_namespace
+
 
 def add_full_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-s", "--schema", required=True, help="Path to structure.yml")
     parser.add_argument("-r", "--reference", required=True, help="Reference input (.json or .csv)")
     parser.add_argument("-p", "--profile", required=True, help="Profile/test input (.json or .csv)")
     parser.add_argument("-t", "--type", dest="shared_type", default=None, help="Shared mapper type for CSV inputs (used for both reference and profile unless overridden)")
+    parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase log verbosity (-v, -vv)")
     parser.add_argument("--reference-type", dest="reference_type", default=None, help="Mapper type for reference CSV input")
     parser.add_argument("--profile-type", dest="profile_type", default=None, help="Mapper type for profile CSV input")
-    parser.add_argument("-m", "--mapped-dir", dest="mapped_dir", default=None, help="Directory for mapped intermediate JSON files")
-    parser.add_argument("-d", "--delimiter", default=";", help="Delimiter to use for CSV mapping (default: ;)")
-    parser.add_argument("-x", "--exclude-file", default=None, help="File with attribute names to exclude during mapping")
-    parser.add_argument("-vo", "--verify-output", dest="verify_output", default="verification.json", help="Output JSON path for verification result")
+    parser.add_argument("--mapped-dir", dest="mapped_dir", default=None, help="Directory for mapped intermediate JSON files")
+    parser.add_argument("--delimiter", default=";", help="Delimiter to use for CSV mapping (default: ;)")
+    parser.add_argument("--exclude-file", default=None, help="File with attribute names to exclude during mapping")
+    parser.add_argument("--verify-output", dest="verify_output", default="verification.json", help="Output JSON path for verification result")
     parser.add_argument("--emit-matches", action="store_true", help="Pass through to verification")
     parser.add_argument("--print-diffs", type=int, default=3, metavar="N", help="Print up to N diffs per section (default: 3, 0 to disable)")
     parser.add_argument("--print-matches", type=int, default=0, metavar="N", help="Print up to N matches per section (default: 0)")
-    parser.add_argument("-ro", "--report-output", dest="report_output", default="comparison.html", help="Output HTML filename/path for final report")
-    parser.add_argument("-e", "--exclude-style-and-scripts", action="store_true", help="Link CSS/JS instead of inlining them into the HTML")
-    parser.add_argument("-nz", "--no-zip", action="store_true", help="Disable zip creation for the report output")
-    parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase log verbosity (-v, -vv)")
+    parser.add_argument("--report-output", dest="report_output", default="comparison.html", help="Output HTML filename/path for final report")
+    parser.add_argument("--exclude-style-and-scripts", action="store_true", help="Link CSS/JS instead of inlining them into the HTML")
+    parser.add_argument("--no-zip", action="store_true", help="Disable zip creation for the report output")
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -52,6 +54,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
     full_parser = sub.add_parser("full", help="Map CSV inputs if needed, run verification, then render HTML report")
     add_full_args(full_parser)
+
+    batch_parser = sub.add_parser("batch-verify", help="Compare one reference against many profiles")
+    add_batch_args(batch_parser)
 
     return parser
 
@@ -74,12 +79,13 @@ def _mapped_output_path(*, input_path: Path, mapped_dir: Optional[str], role: st
     return out_dir / f"{input_path.stem}_{role}.json"
 
 
-def _ensure_json_input(*, input_path: str, role: str, mapper_type: Optional[str], mapped_dir: Optional[str], delimiter: str, exclude_file: Optional[str]) -> Path:
+def _ensure_json_input(*, input_path: str, role: str, mapper_type: Optional[str], mapped_dir: Optional[str], delimiter: str, exclude_file: Optional[str]) -> tuple[Path, bool]:
+    log = slog.get_logger("FULL")
     src = Path(input_path).resolve()
     suffix = src.suffix.lower()
 
     if suffix == ".json":
-        return src
+        return src, False
 
     if suffix != ".csv":
         raise SystemExit(f"{role} input must be .json or .csv, got '{src.suffix}' for '{src}'.")
@@ -89,17 +95,17 @@ def _ensure_json_input(*, input_path: str, role: str, mapper_type: Optional[str]
 
     out_path = _mapped_output_path(input_path=src, mapped_dir=mapped_dir, role=role)
 
-    slog.log_step(f"Mapping {role} CSV", str(src))
-    written = map_single_file(file_path=src, csv_type=mapper_type, delimiter=delimiter, exclude_file=exclude_file, output_path=out_path)
+    log.step(f"Mapping {role} CSV", str(src))
+    written = map_single_file(file_path=src, mapper_type=mapper_type, delimiter=delimiter, exclude_file=exclude_file, output_path=out_path)
     if written is None:
         raise SystemExit(f"Failed to map {role} CSV: {src}")
 
-    slog.log_ok(f"{role.capitalize()} mapped to {written}")
-    return Path(written).resolve()
-
+    log.ok(f"{role.capitalize()} mapped to {written}")
+    return Path(written).resolve(), True
 
 def run_full_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(getattr(args, "verbose", 0))
+    log = slog.get_logger("FULL")
 
     ref_input = Path(args.reference).resolve()
     prof_input = Path(args.profile).resolve()
@@ -107,22 +113,62 @@ def run_full_from_namespace(args: argparse.Namespace) -> int:
     ref_type = _resolve_mapper_type(explicit_type=args.reference_type, shared_type=args.shared_type, path=ref_input, role="reference")
     prof_type = _resolve_mapper_type(explicit_type=args.profile_type, shared_type=args.shared_type, path=prof_input, role="profile")
 
-    reference_json = _ensure_json_input(input_path=str(ref_input), role="reference", mapper_type=ref_type, mapped_dir=args.mapped_dir, delimiter=args.delimiter, exclude_file=args.exclude_file)
-    profile_json = _ensure_json_input(input_path=str(prof_input), role="profile", mapper_type=prof_type, mapped_dir=args.mapped_dir, delimiter=args.delimiter, exclude_file=args.exclude_file)
+    reference_json, reference_was_mapped = _ensure_json_input(
+        input_path=str(ref_input),
+        role="reference",
+        mapper_type=ref_type,
+        mapped_dir=args.mapped_dir,
+        delimiter=args.delimiter,
+        exclude_file=args.exclude_file,
+    )
+    profile_json, profile_was_mapped = _ensure_json_input(
+        input_path=str(prof_input),
+        role="profile",
+        mapper_type=prof_type,
+        mapped_dir=args.mapped_dir,
+        delimiter=args.delimiter,
+        exclude_file=args.exclude_file,
+    )
 
-    slog.log_step("Running verification", args.schema)
-    rc = run_verification(schema_path=args.schema, reference_path=str(reference_json), profile_path=str(profile_json), output_file=args.verify_output, emit_matches=args.emit_matches, print_diffs=args.print_diffs, print_matches=args.print_matches, report=False)
-    if rc != 0:
-        return int(rc)
+    log.step("Running verification", args.schema)
+    verify_result = run_verification(
+        schema_path=args.schema,
+        reference_path=str(reference_json),
+        profile_path=str(profile_json),
+        output_file=args.verify_output,
+        emit_matches=args.emit_matches,
+        print_diffs=args.print_diffs,
+        print_matches=args.print_matches,
+        report=False,
+    )
+    if not verify_result.get("ok", False):
+        return int(verify_result.get("exit_code", 1))
 
-    verification_json = Path(args.verify_output).resolve()
+    verification_json = Path(verify_result["output_json_path"]).resolve()
 
-    slog.log_step("Rendering final report", str(verification_json))
-    rc = run_report_html(verification_profile=str(verification_json), output_file=args.report_output, exclude_style_and_scripts=args.exclude_style_and_scripts, no_zip=args.no_zip)
-    if rc != 0:
-        return int(rc)
+    log.step("Rendering final report", str(verification_json))
+    report_result = run_report_html(
+        verification_profile=str(verification_json),
+        output_file=args.report_output,
+        exclude_style_and_scripts=args.exclude_style_and_scrips if hasattr(args, "exclude_style_and_scrips") else args.exclude_style_and_scripts,
+        no_zip=args.no_zip,
+    )
+    if not report_result.get("ok", False):
+        return int(report_result.get("exit_code", 1))
 
-    slog.log_ok(f"Full pipeline finished. Verification: {verification_json}")
+    lines = [
+        f"Full completed successfully. Verification JSON written to: {verify_result['output_json_path']}. Report written to: {report_result['html_path']}."
+    ]
+    if report_result.get("zip_path"):
+        lines.append(f"Report zip written to: {report_result['zip_path']}")
+    if reference_was_mapped:
+        lines.append(f"Mapped reference JSON: {reference_json}")
+    if profile_was_mapped:
+        lines.append(f"Mapped profile JSON: {profile_json}")
+
+    for line in lines:
+        log.info(line)
+
     return 0
 
 
@@ -141,6 +187,9 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     if args.command == "full":
         return int(run_full_from_namespace(args))
+
+    if args.command == "batch-verify":
+        return int(run_batch_from_namespace(args))
 
     parser.error(f"Unknown command: {args.command}")
     return 2

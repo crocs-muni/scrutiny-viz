@@ -7,40 +7,32 @@ from dominate import tags
 from dominate.util import raw
 
 from .contracts import VizPlugin, VizSpec
+from .utility import format_number, to_float
 
 
-def _num(v: Any) -> Optional[float]:
-    try:
-        if v is None:
-            return None
-        return float(v)
-    except Exception:
-        return None
+def _truncate(text: str, max_chars: int = 42) -> str:
+    text = text or ""
+    if len(text) <= max_chars:
+        return text
+    return text[: max_chars - 1] + "…"
 
 
-def _fmt_num(v: Any) -> str:
-    if v is None:
-        return ""
-    try:
-        fv = float(v)
-        s = f"{fv:.6g}"
-        if s.endswith(".0"):
-            s = s[:-2]
-        return s
-    except Exception:
-        return str(v)
-
-
-def _trunc(s: str, max_chars: int = 42) -> str:
-    s = s or ""
-    if len(s) <= max_chars:
-        return s
-    return s[: max_chars - 1] + "…"
+def _chart_values(rows: List[Dict[str, Any]]) -> List[float]:
+    values: List[float] = []
+    for row in rows:
+        ref_avg = to_float(row.get("ref_avg"))
+        test_avg = to_float(row.get("test_avg"))
+        if ref_avg is not None:
+            values.append(ref_avg)
+        if test_avg is not None:
+            values.append(test_avg)
+    return values
 
 
 def render_bar_pair_block(section_name: str, section: Dict[str, Any], idx: int):
     rows: List[Dict[str, Any]] = section.get("chart_rows", []) or []
-    if not rows:
+    values = _chart_values(rows)
+    if not values:
         return tags.div()
 
     pad_x = 14
@@ -56,74 +48,53 @@ def render_bar_pair_block(section_name: str, section: Dict[str, Any], idx: int):
 
     width = 900
     x_bars = pad_x + label_w
-    inner_w = width - label_w - 2 * pad_x - value_pad
-    if inner_w < 1:
-        inner_w = 1
+    inner_w = max(1, width - label_w - 2 * pad_x - value_pad)
     x_max_text = x_bars + inner_w + value_pad - 6
-
-    values: List[float] = []
-    for r in rows:
-        ra = _num(r.get("ref_avg"))
-        ta = _num(r.get("test_avg"))
-        if ra is not None:
-            values.append(ra)
-        if ta is not None:
-            values.append(ta)
-    if not values:
-        return tags.div()
-
-    vmax = max(values)
-    if vmax <= 0:
-        vmax = 1.0
+    vmax = max(values) if max(values) > 0 else 1.0
 
     height = pad_y * 2 + len(rows) * row_total + legend_h
-    parts: List[str] = []
-    parts.append(f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" class="barpair">')
+    parts: List[str] = [
+        f'<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" class="barpair">'
+    ]
 
     y = pad_y
-    for r in rows:
-        full_key = str(r.get("key", "") or "")
-        short_key = _trunc(full_key, max_chars=44)
-        ref_v = _num(r.get("ref_avg"))
-        tst_v = _num(r.get("test_avg"))
+    for row in rows:
+        full_key = str(row.get("key", "") or "")
+        short_key = _truncate(full_key, max_chars=44)
+        ref_avg = to_float(row.get("ref_avg"))
+        test_avg = to_float(row.get("test_avg"))
 
         label_y = y + bar_h + bar_gap / 2.0
-        x_label = x_bars - 8
         parts.append(
-            f'<text x="{x_label}" y="{label_y + bar_h/2}" '
+            f'<text x="{x_bars - 8}" y="{label_y + bar_h/2}" '
             f'class="chart-label" text-anchor="end" dominant-baseline="middle">'
-            f'<title>{html.escape(full_key)}</title>'
-            f'{html.escape(short_key)}'
-            f'</text>'
+            f'<title>{html.escape(full_key)}</title>{html.escape(short_key)}</text>'
         )
 
-        if ref_v is not None:
-            w = max(0.0, (ref_v / vmax) * inner_w)
-            parts.append(f'<rect x="{x_bars}" y="{y}" width="{w}" height="{bar_h}" class="bar-ref"></rect>')
-            x_text = min(x_bars + w + 4, x_max_text)
+        if ref_avg is not None:
+            ref_width = max(0.0, (ref_avg / vmax) * inner_w)
+            parts.append(f'<rect x="{x_bars}" y="{y}" width="{ref_width}" height="{bar_h}" class="bar-ref"></rect>')
             parts.append(
-                f'<text x="{x_text}" y="{y + bar_h/2}" '
-                f'class="bar-value" dominant-baseline="middle">{html.escape(_fmt_num(ref_v))}</text>'
+                f'<text x="{min(x_bars + ref_width + 4, x_max_text)}" y="{y + bar_h/2}" '
+                f'class="bar-value" dominant-baseline="middle">{html.escape(format_number(ref_avg, precision=6, trim=True))}</text>'
             )
 
-        yt = y + bar_h + bar_gap
-        if tst_v is not None:
-            w = max(0.0, (tst_v / vmax) * inner_w)
-            parts.append(f'<rect x="{x_bars}" y="{yt}" width="{w}" height="{bar_h}" class="bar-test"></rect>')
-            x_text = min(x_bars + w + 4, x_max_text)
+        test_y = y + bar_h + bar_gap
+        if test_avg is not None:
+            test_width = max(0.0, (test_avg / vmax) * inner_w)
+            parts.append(f'<rect x="{x_bars}" y="{test_y}" width="{test_width}" height="{bar_h}" class="bar-test"></rect>')
             parts.append(
-                f'<text x="{x_text}" y="{yt + bar_h/2}" '
-                f'class="bar-value" dominant-baseline="middle">{html.escape(_fmt_num(tst_v))}</text>'
+                f'<text x="{min(x_bars + test_width + 4, x_max_text)}" y="{test_y + bar_h/2}" '
+                f'class="bar-value" dominant-baseline="middle">{html.escape(format_number(test_avg, precision=6, trim=True))}</text>'
             )
 
         y += row_total
 
     leg_y = height - pad_y - legend_h / 2
-    leg_x = x_bars
-    parts.append(f'<rect x="{leg_x}" y="{leg_y - 5}" width="12" height="6" class="bar-ref"></rect>')
-    parts.append(f'<text x="{leg_x + 18}" y="{leg_y + 2}" class="legend-text" dominant-baseline="middle">reference</text>')
-    parts.append(f'<rect x="{leg_x + 110}" y="{leg_y - 5}" width="12" height="6" class="bar-test"></rect>')
-    parts.append(f'<text x="{leg_x + 128}" y="{leg_y + 2}" class="legend-text" dominant-baseline="middle">profile</text>')
+    parts.append(f'<rect x="{x_bars}" y="{leg_y - 5}" width="12" height="6" class="bar-ref"></rect>')
+    parts.append(f'<text x="{x_bars + 18}" y="{leg_y + 2}" class="legend-text" dominant-baseline="middle">reference</text>')
+    parts.append(f'<rect x="{x_bars + 110}" y="{leg_y - 5}" width="12" height="6" class="bar-test"></rect>')
+    parts.append(f'<text x="{x_bars + 128}" y="{leg_y + 2}" class="legend-text" dominant-baseline="middle">profile</text>')
     parts.append("</svg>")
 
     container = tags.div(_class="chart-container", id=f"chart-{idx}")
@@ -141,18 +112,18 @@ def render_chart_table_block(section_name: str, section: Dict[str, Any], idx: in
     with table:
         with tags.thead():
             with tags.tr():
-                for h in headers:
-                    tags.th(h)
+                for header in headers:
+                    tags.th(header)
         with tags.tbody():
-            for r in rows:
+            for row in rows:
                 with tags.tr():
-                    tags.td(str(r.get("key", "")))
-                    tags.td(_fmt_num(r.get("ref_avg")))
-                    tags.td(_fmt_num(r.get("test_avg")))
-                    tags.td(_fmt_num(r.get("delta_ms")))
-                    tags.td(_fmt_num(r.get("delta_pct")))
-                    tags.td(str(r.get("status", "")))
-                    tags.td(str(r.get("note", "")))
+                    tags.td(str(row.get("key", "")))
+                    tags.td(format_number(row.get("ref_avg"), precision=6, trim=True))
+                    tags.td(format_number(row.get("test_avg"), precision=6, trim=True))
+                    tags.td(format_number(row.get("delta_ms"), precision=6, trim=True))
+                    tags.td(format_number(row.get("delta_pct"), precision=6, trim=True))
+                    tags.td(str(row.get("status", "")))
+                    tags.td(str(row.get("note", "")))
     return table
 
 

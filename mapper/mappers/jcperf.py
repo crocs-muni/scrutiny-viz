@@ -4,12 +4,27 @@ from __future__ import annotations
 from typing import Any, Optional
 
 try:
-    from ..mapper_utils import flush_block, parse_kv_pairs, to_float, to_int
+    from ..mapper_utils import (
+        build_perf_record,
+        flush_block,
+        parse_kv_pairs,
+        parse_name_value_attributes_filtered,
+        to_float,
+        to_int,
+    )
 except ImportError:  # pragma: no cover
-    from mapper_utils import flush_block, parse_kv_pairs, to_float, to_int
+    from mapper_utils import (
+        build_perf_record,
+        flush_block,
+        parse_kv_pairs,
+        parse_name_value_attributes_filtered,
+        to_float,
+        to_int,
+    )
 
 from .contracts import MapperPlugin, MapperSpec, MappingContext
 
+META_KEY = "_META"
 END_OF_BASIC_INFO = "JCSystem.getVersion()"
 
 SECTION_MARKERS = [
@@ -42,22 +57,19 @@ KEY_SECTIONS = [
 
 
 def section_name(line: str) -> str:
-    s = (line or "").strip()
-    if s.endswith(" - variable data - BEGIN"):
-        s = s[: -len(" - variable data - BEGIN")]
-    return s.strip()
+    stripped = (line or "").strip()
+    if stripped.endswith(" - variable data - BEGIN"):
+        stripped = stripped[: -len(" - variable data - BEGIN")]
+    return stripped.strip()
 
 
 def is_section_begin(line: str) -> bool:
-    name = section_name(line)
-    return name in SECTION_MARKERS or name in KEY_SECTIONS
+    return section_name(line) in SECTION_MARKERS or section_name(line) in KEY_SECTIONS
 
 
 def section_key(line: str) -> str:
     name = section_name(line)
-    if name in KEY_SECTIONS:
-        return name
-    return name.replace(" ", "_")
+    return name if name in KEY_SECTIONS else name.replace(" ", "_")
 
 
 def is_section_end(line: str) -> bool:
@@ -68,89 +80,87 @@ def is_method(line: str) -> bool:
     return (line or "").startswith("method name:")
 
 
-def parse_method_block(lines: list[str], delimiter: str) -> Optional[dict]:
+def _parse_method_line(line: str, delimiter: str) -> tuple[Optional[str], Optional[int]]:
+    parts = line.split(delimiter)
+    method_name = parts[1].strip() if len(parts) > 1 else None
+    method_dlen = int(parts[2].strip()) if len(parts) > 2 and parts[2].strip().isdigit() else None
+    return method_name, method_dlen
+
+
+def parse_method_block(lines: list[str], delimiter: str) -> Optional[dict[str, Any]]:
     method_name: Optional[str] = None
     method_dlen: Optional[int] = None
     measurement_config: Optional[str] = None
 
     stats: dict[str, float] = {}
     info: dict[str, int] = {}
-    no_such = False
+    no_such_algorithm = False
 
     for raw in lines:
-        s = (raw or "").strip()
-        if not s:
+        stripped = (raw or "").strip()
+        if not stripped:
             continue
 
-        if s.startswith("method name:"):
-            parts = s.split(delimiter)
-            if len(parts) > 1:
-                method_name = parts[1].strip()
-            if len(parts) > 2 and parts[2].strip().isdigit():
-                method_dlen = int(parts[2].strip())
+        if stripped.startswith("method name:"):
+            method_name, method_dlen = _parse_method_line(stripped, delimiter)
             continue
 
-        if s.startswith("measurement config:"):
-            parts = [p.strip() for p in s.split(delimiter)[1:] if p.strip()]
+        if stripped.startswith("measurement config:"):
+            parts = [part.strip() for part in stripped.split(delimiter)[1:] if part.strip()]
             measurement_config = delimiter.join(parts)
             continue
 
-        if s == "NO_SUCH_ALGORITHM":
-            no_such = True
+        if stripped == "NO_SUCH_ALGORITHM":
+            no_such_algorithm = True
             continue
 
-        if s.startswith("operation stats"):
-            parts = s.split(delimiter)
-            kv = parse_kv_pairs(parts, start=1)
+        if stripped.startswith("operation stats"):
+            kv = parse_kv_pairs(stripped.split(delimiter), start=1)
             avg = to_float(kv.get("avg op"))
-            mn = to_float(kv.get("min op"))
-            mx = to_float(kv.get("max op"))
+            min_value = to_float(kv.get("min op"))
+            max_value = to_float(kv.get("max op"))
             if avg is not None:
                 stats["avg_ms"] = avg
-            if mn is not None:
-                stats["min_ms"] = mn
-            if mx is not None:
-                stats["max_ms"] = mx
+            if min_value is not None:
+                stats["min_ms"] = min_value
+            if max_value is not None:
+                stats["max_ms"] = max_value
             continue
 
-        if s.startswith("operation info:"):
-            parts = s.split(delimiter)
-            kv = parse_kv_pairs(parts, start=1)
-            dlen = to_int(kv.get("data length"))
-            iters = to_int(kv.get("total iterations"))
-            inv = to_int(kv.get("total invocations"))
-            if dlen is not None:
-                info["data_length"] = dlen
-            if iters is not None:
-                info["total_iterations"] = iters
-            if inv is not None:
-                info["total_invocations"] = inv
-            continue
+        if stripped.startswith("operation info:"):
+            kv = parse_kv_pairs(stripped.split(delimiter), start=1)
+            data_length = to_int(kv.get("data length"))
+            total_iterations = to_int(kv.get("total iterations"))
+            total_invocations = to_int(kv.get("total invocations"))
+            if data_length is not None:
+                info["data_length"] = data_length
+            if total_iterations is not None:
+                info["total_iterations"] = total_iterations
+            if total_invocations is not None:
+                info["total_invocations"] = total_invocations
 
     if not method_name:
         return None
 
-    rec: dict[str, Any] = {"algorithm": method_name, "op_name": method_name}
-    if measurement_config:
-        rec["measurement_config"] = measurement_config
+    if no_such_algorithm:
+        return build_perf_record(
+            op_name=method_name,
+            algorithm=method_name,
+            measurement_config=measurement_config,
+            error="NO_SUCH_ALGORITHM",
+        )
 
-    if no_such:
-        rec["error"] = "NO_SUCH_ALGORITHM"
-        return rec
-
-    rec.update(stats)
-
-    if "data_length" in info:
-        rec["data_length"] = info["data_length"]
-    elif method_dlen is not None:
-        rec["data_length"] = method_dlen
-
-    if "total_iterations" in info:
-        rec["total_iterations"] = info["total_iterations"]
-    if "total_invocations" in info:
-        rec["total_invocations"] = info["total_invocations"]
-
-    return rec
+    return build_perf_record(
+        op_name=method_name,
+        algorithm=method_name,
+        measurement_config=measurement_config,
+        data_length=info.get("data_length", method_dlen),
+        avg_ms=stats.get("avg_ms"),
+        min_ms=stats.get("min_ms"),
+        max_ms=stats.get("max_ms"),
+        total_iterations=info.get("total_iterations"),
+        total_invocations=info.get("total_invocations"),
+    )
 
 
 class JcPerfMapper(MapperPlugin):
@@ -160,41 +170,79 @@ class JcPerfMapper(MapperPlugin):
         description="JavaCard performance CSV mapper",
     )
 
-    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict:
+    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict[str, Any]:
         result: dict[str, Any] = {"_type": "jcperf"}
 
-        start = 0
-        for i, group in enumerate(groups):
-            if any(END_OF_BASIC_INFO in (line or "") for line in group):
-                start = i + 1
+        start_index = 0
+        meta_lines: list[str] = []
+        found_boundary = False
+
+        for index, group in enumerate(groups):
+            for line in group:
+                stripped = (line or "").strip()
+                if not stripped:
+                    continue
+                if END_OF_BASIC_INFO in stripped:
+                    start_index = index + 1
+                    found_boundary = True
+                    break
+                meta_lines.append(stripped)
+            if found_boundary:
                 break
+
+        if meta_lines:
+            meta = parse_name_value_attributes_filtered(
+                meta_lines,
+                context.delimiter,
+                allow_single_value=True,
+            )
+            if meta:
+                result[META_KEY] = meta
 
         current_section: Optional[str] = None
         current_lines: list[str] = []
 
-        for i in range(start, len(groups)):
-            for line in groups[i]:
-                s = (line or "").strip()
-                if not s:
+        for group in groups[start_index:]:
+            for line in group:
+                stripped = (line or "").strip()
+                if not stripped:
                     continue
 
-                if is_section_begin(s):
-                    current_lines = flush_block(result, current_section, current_lines, parse_method_block, context.delimiter)
-                    current_section = section_key(s)
+                if is_section_begin(stripped):
+                    current_lines = flush_block(
+                        result,
+                        current_section,
+                        current_lines,
+                        parse_method_block,
+                        context.delimiter,
+                    )
+                    current_section = section_key(stripped)
                     result.setdefault(current_section, [])
                     continue
 
-                if is_section_end(s):
-                    current_lines = flush_block(result, current_section, current_lines, parse_method_block, context.delimiter)
+                if is_section_end(stripped):
+                    current_lines = flush_block(
+                        result,
+                        current_section,
+                        current_lines,
+                        parse_method_block,
+                        context.delimiter,
+                    )
                     continue
 
-                if is_method(s):
-                    current_lines = flush_block(result, current_section, current_lines, parse_method_block, context.delimiter)
-                    current_lines = [s]
+                if is_method(stripped):
+                    current_lines = flush_block(
+                        result,
+                        current_section,
+                        current_lines,
+                        parse_method_block,
+                        context.delimiter,
+                    )
+                    current_lines = [stripped]
                     continue
 
                 if current_section:
-                    current_lines.append(s)
+                    current_lines.append(stripped)
 
         flush_block(result, current_section, current_lines, parse_method_block, context.delimiter)
         return result
@@ -202,7 +250,3 @@ class JcPerfMapper(MapperPlugin):
 
 PLUGIN = JcPerfMapper()
 PLUGINS = [PLUGIN]
-
-
-def convert_to_map_jcperf(groups: list[list[str]], delimiter: str) -> dict:
-    return PLUGIN.map_groups(groups, MappingContext(delimiter=delimiter))

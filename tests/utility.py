@@ -28,12 +28,12 @@ def scrutinize_path() -> Path:
     return repo_path("scrutinize.py")
 
 
-# Returns production module YAML path under scrutiny/javacard/modules/.
+# Returns production module YAML path under scrutiny/schemas/*.
 def production_module_yml(name: str) -> Path:
     return repo_path("scrutiny", "schemas", name)
 
 
-# Returns the examples directory path used for fixtures (data/examples).
+# Returns the examples directory path used for fixtures (examples).
 def examples_dir() -> Path:
     return repo_path("examples")
 
@@ -44,16 +44,11 @@ def results_dir(base: Optional[Path] = None) -> Path:
     return root / "results"
 
 
-# Returns the report generator script path (report_html.py in repo root).
-def report_html_path() -> Path:
-    return repo_path("report_html.py")
-
-
 # -------------------------
 # Loaders
 # -------------------------
 
-# Loads a YAML file into a dict (fails if the root isn't a mapping).
+# Loads a YAML file into a dict.
 def load_yaml(path: Path) -> Dict[str, Any]:
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
@@ -61,7 +56,7 @@ def load_yaml(path: Path) -> Dict[str, Any]:
     return data
 
 
-# Loads a JSON file into a dict (fails if the root isn't a mapping).
+# Loads a JSON file into a dict.
 def load_json(path: Path) -> Dict[str, Any]:
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
@@ -71,18 +66,13 @@ def load_json(path: Path) -> Dict[str, Any]:
 
 # Checks whether a dict looks like the report JSON consumed by report_html.py.
 def is_report_json(d: Dict[str, Any]) -> bool:
-    return (
-        isinstance(d.get("overall"), str)
-        and isinstance(d.get("theme"), str)
-        and isinstance(d.get("sections"), dict)
-    )
+    return isinstance(d.get("overall"), str) and isinstance(d.get("theme"), str) and isinstance(d.get("sections"), dict)
 
 
 # -------------------------
 # Deep merge / schema helpers
 # -------------------------
-
-# Recursively merges dict b into dict a (returns a new dict, does not mutate inputs).
+# Recursively merges dict b into dict a
 def deep_merge(a: Dict[str, Any], b: Dict[str, Any]) -> Dict[str, Any]:
     out = deepcopy(a)
     for k, v in (b or {}).items():
@@ -103,36 +93,28 @@ def flatten_prod_schema(schema_yml: Dict[str, Any]) -> Dict[str, Dict[str, Any]]
         "target": defaults.get("target", {}) or {},
         "severity": defaults.get("severity", {}) or {},
     }
-
     sections = schema_yml.get("sections", {}) or {}
     if not isinstance(sections, dict):
         raise AssertionError("schema.sections must be a dict")
-
     out: Dict[str, Dict[str, Any]] = {}
     for name, sec_cfg in sections.items():
         sec_cfg = sec_cfg or {}
         if not isinstance(sec_cfg, dict):
             raise AssertionError(f"schema.sections.{name} must be dict")
-
         merged = deep_merge(default_section, sec_cfg)
-
-        # ---- CRITICAL OVERRIDE: record_schema replaces defaults, not merges ----
         if isinstance(sec_cfg.get("data"), dict) and "record_schema" in (sec_cfg.get("data") or {}):
             rs = (sec_cfg["data"] or {}).get("record_schema")
             if rs is not None:
                 if not isinstance(merged.get("data"), dict):
                     merged["data"] = {}
                 merged["data"]["record_schema"] = deepcopy(rs)
-
         out[name] = merged
-
     return out
 
 
 # Converts production YAML into the per-section schema shape expected by JsonParser (with invariants checked).
 def build_parser_schema_from_production_yml(schema_yml: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     flat = flatten_prod_schema(schema_yml)
-
     # Basic invariants expected by JsonParser
     for name, merged in flat.items():
         if "data" not in merged or not isinstance(merged["data"], dict):
@@ -144,7 +126,6 @@ def build_parser_schema_from_production_yml(schema_yml: Dict[str, Any]) -> Dict[
             raise AssertionError(f"{name}: component must be dict")
         if not comp.get("match_key"):
             raise AssertionError(f"{name}: missing component.match_key")
-
     return flat
 
 
@@ -153,7 +134,6 @@ def effective_types(section_cfg: Dict[str, Any]) -> List[str]:
     rep = section_cfg.get("report", {}) or {}
     types = rep.get("types")
     flat: List[str] = []
-
     if isinstance(types, list):
         for t in types:
             if isinstance(t, str):
@@ -162,7 +142,6 @@ def effective_types(section_cfg: Dict[str, Any]) -> List[str]:
                 flat.append(str(t["type"]).strip().lower())
     elif isinstance(types, str):
         flat.extend([x.strip().lower() for x in types.split(",") if x.strip()])
-
     return [x for x in flat if x]
 
 
@@ -171,14 +150,12 @@ def effective_report_types(schema_yml: Dict[str, Any], section_name: str) -> Lis
     defaults = schema_yml.get("defaults", {}) if isinstance(schema_yml.get("defaults"), dict) else {}
     drep = defaults.get("report", {}) if isinstance(defaults.get("report"), dict) else {}
     types = drep.get("types")
-
     sections = schema_yml.get("sections", {}) or {}
     sec = sections.get(section_name, {}) if isinstance(sections, dict) else {}
     if isinstance(sec, dict):
         rep = sec.get("report", {})
         if isinstance(rep, dict) and rep.get("types") is not None:
             types = rep.get("types")
-
     flat: List[str] = []
     if isinstance(types, list):
         for t in types:
@@ -188,14 +165,12 @@ def effective_report_types(schema_yml: Dict[str, Any], section_name: str) -> Lis
                 flat.append(str(t["type"]).strip().lower())
     elif isinstance(types, str):
         flat.extend([x.strip().lower() for x in types.split(",") if x.strip()])
-
     return [x for x in flat if x]
 
 
 # -------------------------
 # Raw fixture discovery for JsonParser
 # -------------------------
-
 # Checks whether a raw JSON dict includes ALL required sections as list-valued keys.
 def raw_json_matches_all_sections(raw: Dict[str, Any], section_names: Iterable[str]) -> bool:
     if not isinstance(raw, dict):
@@ -229,20 +204,16 @@ def assert_required_fields_flat_schema(flat_schema: Dict[str, Dict[str, Any]], p
         entries = parsed.get(sec_name)
         if not isinstance(entries, list):
             raise AssertionError(f"{sec_name}: parsed section must be a list")
-
         data_cfg = sec_cfg.get("data", {}) or {}
         field_defs = data_cfg.get("record_schema", {}) or {}
         comp = sec_cfg.get("component", {}) or {}
         match_key = comp.get("match_key")
-
         if not match_key:
             raise AssertionError(f"{sec_name}: missing component.match_key")
-
         required = []
         for fname, fdef in field_defs.items():
             if fname == match_key or bool((fdef or {}).get("required", False)):
                 required.append(fname)
-
         for i, entry in enumerate(entries):
             if not isinstance(entry, dict):
                 raise AssertionError(f"{sec_name}[{i}] entry must be dict")
@@ -265,15 +236,12 @@ def build_minimal_raw_json(parser_schema: Dict[str, Dict[str, Any]]) -> Dict[str
         match_key = (sec_cfg.get("component") or {}).get("match_key")
         if not match_key:
             raise AssertionError(f"{sec_name}: missing component.match_key")
-
         entry: Dict[str, Any] = {match_key: "DUMMY"}
-
         for fname, fdef in field_defs.items():
             if fname == match_key:
                 continue
             if bool((fdef or {}).get("required", False)):
                 entry[fname] = "DUMMY"
-
         raw[sec_name] = [entry]
     return raw
 
@@ -281,8 +249,6 @@ def build_minimal_raw_json(parser_schema: Dict[str, Dict[str, Any]]) -> Dict[str
 # -------------------------
 # Report HTML helpers
 # -------------------------
-
-# Returns a stable issues-first ordering of sections (WARN/SUSP first, then MATCH), preserving order within groups.
 def iter_sections_issues_first_stable(report: Dict[str, Any]) -> List[Tuple[str, Dict[str, Any]]]:
     items = list((report.get("sections") or {}).items())
     issues, matches = [], []
@@ -315,31 +281,14 @@ def run_scrutinize(args: List[str], *, cwd: Optional[Path] = None) -> subprocess
 
 
 # Runs report_html.py on a report JSON input and returns the produced results/<out_name> path.
-def run_report_html(
-    report_json: Path,
-    out_name: str,
-    *,
-    cwd: Optional[Path] = None,
-    extra_args: Optional[List[str]] = None
-) -> Path:
+def run_report_workflow(report_json: Path, out_name: str, *, cwd: Optional[Path] = None, extra_args: Optional[List[str]] = None) -> Path:
     cwd = cwd or project_root()
     extra_args = extra_args or []
-
     out_dir = results_dir(cwd)
     out_dir.mkdir(parents=True, exist_ok=True)
-
-    proc = run_scrutinize(
-        ["report", "-p", str(report_json), "-o", out_name, *extra_args],
-        cwd=cwd,
-    )
+    proc = run_scrutinize(["report", "-p", str(report_json), "-o", out_name, *extra_args], cwd=cwd)
     if proc.returncode != 0:
-        raise subprocess.CalledProcessError(
-            proc.returncode,
-            [sys.executable, str(scrutinize_path()), "report", "-p", str(report_json), "-o", out_name, *extra_args],
-            output=proc.stdout,
-            stderr=proc.stderr,
-        )
-
+        raise subprocess.CalledProcessError(proc.returncode, [sys.executable, str(scrutinize_path()), "report", "-p", str(report_json), "-o", out_name, *extra_args], output=proc.stdout, stderr=proc.stderr)
     return out_dir / out_name
 
 

@@ -30,25 +30,6 @@ defaults:
   target: {}
 
 sections:
-  "Basic information":
-    data:
-      type: list
-      record_schema:
-        name:
-          dtype: string
-          required: true
-          category: nominal
-        value:
-          dtype: string
-          category: nominal
-    report:
-      types: ["table"]
-    component:
-      comparator: basic
-      match_key: name
-      show_key: name
-      include_matches: true
-
   "CPLC":
     data:
       type: list

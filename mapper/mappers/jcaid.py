@@ -4,13 +4,13 @@ from __future__ import annotations
 from typing import Any, Optional
 
 try:
-    from ..mapper_utils import create_attribute, flatten_groups
+    from ..mapper_utils import flatten_groups, parse_name_value_attributes_filtered
 except ImportError:  # pragma: no cover
-    from mapper_utils import create_attribute, flatten_groups
+    from mapper_utils import flatten_groups, parse_name_value_attributes_filtered
 
 from .contracts import MapperPlugin, MapperSpec, MappingContext
 
-BASIC_INFO = "Basic information"
+META_KEY = "_META"
 
 SECTION_CARD_INFO = "***** Card info"
 SECTION_CARD_DATA = "***** CARD DATA"
@@ -35,49 +35,42 @@ def is_section_marker(line: str) -> Optional[str]:
 
 
 def parse_basic_info(lines: list[str], delimiter: str) -> list[dict]:
-    attributes: list[dict] = []
-
-    for line in lines:
-        s = (line or "").strip()
-        if not s or s.startswith("*****") or s.startswith("http"):
-            continue
-
-        if s.startswith(SECTION_PACKAGE_AID) or s.startswith(SECTION_FULL_PACKAGE_AID):
-            break
-
-        parts = s.split(delimiter)
-        if len(parts) >= 2:
-            name = parts[0].strip()
-            value = parts[1].strip()
-            if name:
-                attributes.append(create_attribute(name, value))
-        elif len(parts) == 1 and parts[0].strip():
-            attributes.append(create_attribute(parts[0].strip(), ""))
-
-    return attributes
+    return parse_name_value_attributes_filtered(
+        lines,
+        delimiter,
+        allow_single_value=True,
+        skip_prefixes=("*****", "http"),
+        stop_prefixes=(SECTION_PACKAGE_AID, SECTION_FULL_PACKAGE_AID),
+    )
 
 
-def parse_key_info(lines: list[str]) -> dict:
-    keys: list[dict] = []
+def parse_key_info(lines: list[str]) -> dict[str, Any]:
+    keys: list[dict[str, str]] = []
     notes: list[str] = []
 
     for line in lines:
-        s = (line or "").strip()
-        if not s:
+        stripped = (line or "").strip()
+        if not stripped:
             continue
 
-        if s.startswith("VER;"):
+        if stripped.startswith("VER;"):
             key_info: dict[str, str] = {}
-            pairs = s.split(" ")
-            for pair in pairs:
-                if ";" in pair:
-                    parts = pair.split(";")
-                    if len(parts) == 2:
-                        key_info[parts[0].strip()] = parts[1].strip()
+            for pair in stripped.split(" "):
+                if ";" not in pair:
+                    continue
+
+                parts = pair.split(";")
+                if len(parts) == 2:
+                    key = parts[0].strip()
+                    value = parts[1].strip()
+                    if key:
+                        key_info[key] = value
+
             if key_info:
                 keys.append(key_info)
-        else:
-            notes.append(s)
+            continue
+
+        notes.append(stripped)
 
     result: dict[str, Any] = {"keys": keys}
     if notes:
@@ -85,76 +78,82 @@ def parse_key_info(lines: list[str]) -> dict:
     return result
 
 
-def parse_package_aid_table(lines: list[str], delimiter: str) -> list[dict]:
-    packages: list[dict] = []
-    header_found = False
+def parse_package_aid_table(lines: list[str], delimiter: str) -> list[dict[str, str]]:
+    packages: list[dict[str, str]] = []
+    in_table = False
 
     for line in lines:
-        s = (line or "").strip()
-        if not s:
+        stripped = (line or "").strip()
+        if not stripped:
             continue
 
-        if s.startswith(SECTION_PACKAGE_AID):
-            header_found = True
+        if stripped.startswith(SECTION_PACKAGE_AID):
+            in_table = True
             continue
 
-        if s.startswith(SECTION_FULL_PACKAGE_AID) or s.startswith("*****"):
+        if stripped.startswith(SECTION_FULL_PACKAGE_AID) or stripped.startswith("*****"):
             break
 
-        if header_found:
-            parts = [p.strip() for p in s.split(delimiter)]
-            if len(parts) >= 5:
-                major = parts[1]
-                minor = parts[2]
-                version = f"{major}.{minor}"
-                packages.append(
-                    {
-                        "package_aid": parts[0],
-                        "version": version,
-                        "package_name": parts[3],
-                        "package_key": f"{parts[0]}:{version}",
-                    }
-                )
+        if not in_table:
+            continue
+
+        parts = [part.strip() for part in stripped.split(delimiter)]
+        if len(parts) < 5:
+            continue
+
+        version = f"{parts[1]}.{parts[2]}"
+        packages.append(
+            {
+                "package_aid": parts[0],
+                "version": version,
+                "package_name": parts[3],
+                "package_key": f"{parts[0]}:{version}",
+            }
+        )
 
     return packages
 
 
-def _normalize_aid(s: str) -> str:
-    return "".join(c for c in (s or "") if c.lower() in "0123456789abcdef").lower()
+def _normalize_aid(value: str) -> str:
+    return "".join(char for char in (value or "") if char.lower() in "0123456789abcdef").lower()
 
 
-def _looks_like_aid(s: str) -> bool:
-    return len(_normalize_aid(s)) >= 8
+def _looks_like_aid(value: str) -> bool:
+    return len(_normalize_aid(value)) >= 8
 
 
-def parse_full_package_aid_table(lines: list[str], delimiter: str) -> list[dict]:
-    packages: list[dict] = []
-    header_found = False
+def parse_full_package_aid_table(lines: list[str], delimiter: str) -> list[dict[str, Any]]:
+    packages: list[dict[str, Any]] = []
+    in_table = False
 
     for line in lines:
-        s = (line or "").strip()
-        if not s:
+        stripped = (line or "").strip()
+        if not stripped:
             continue
 
-        if s.startswith(SECTION_FULL_PACKAGE_AID):
-            header_found = True
+        if stripped.startswith(SECTION_FULL_PACKAGE_AID):
+            in_table = True
             continue
 
-        if header_found:
-            parts = [p.strip() for p in s.split(delimiter)]
-            if len(parts) >= 3:
-                if parts[0].upper().startswith("JC CONVERTOR VERSION"):
-                    continue
-                if parts[0] and not _looks_like_aid(parts[0]):
-                    continue
+        if not in_table:
+            continue
 
-                packages.append(
-                    {
-                        "full_package_aid": _normalize_aid(parts[0]),
-                        "supported": parts[1].strip().lower() == "yes",
-                        "package_name_version": parts[2],
-                    }
-                )
+        parts = [part.strip() for part in stripped.split(delimiter)]
+        if len(parts) < 3:
+            continue
+
+        if parts[0].upper().startswith("JC CONVERTOR VERSION"):
+            continue
+        if parts[0] and not _looks_like_aid(parts[0]):
+            continue
+
+        packages.append(
+            {
+                "full_package_aid": _normalize_aid(parts[0]),
+                "supported": parts[1].strip().lower() == "yes",
+                "package_name_version": parts[2],
+            }
+        )
 
     return packages
 
@@ -166,7 +165,7 @@ class JcAidMapper(MapperPlugin):
         description="JavaCard AID scan CSV mapper",
     )
 
-    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict:
+    def map_groups(self, groups: list[list[str]], context: MappingContext) -> dict[str, Any]:
         result: dict[str, Any] = {"_type": "javacard-aid"}
         all_lines = flatten_groups(groups)
 
@@ -175,34 +174,37 @@ class JcAidMapper(MapperPlugin):
         package_lines: list[str] = []
         full_package_lines: list[str] = []
 
-        current = "basic"
+        current_section = "basic"
         for line in all_lines:
-            s = (line or "").strip()
-            if not s:
+            stripped = (line or "").strip()
+            if not stripped:
                 continue
 
-            marker = is_section_marker(s)
+            marker = is_section_marker(stripped)
             if marker:
-                current = marker
+                current_section = marker
                 continue
 
-            if current in {"basic", "card_info", "card_data"}:
+            if current_section in {"basic", "card_info", "card_data"}:
                 basic_lines.append(line)
-            elif current == "key_info":
+            elif current_section == "key_info":
                 key_lines.append(line)
-            elif current == "package_aid":
+            elif current_section == "package_aid":
                 package_lines.append(line)
-            elif current == "full_package_aid":
+            elif current_section == "full_package_aid":
                 full_package_lines.append(line)
+
+        meta = parse_basic_info(basic_lines, context.delimiter)
+        if meta:
+            result[META_KEY] = meta
 
         if key_lines:
             result["_key_info"] = parse_key_info(key_lines)
-
-        result[BASIC_INFO] = parse_basic_info(basic_lines, context.delimiter)
-
         if package_lines:
-            result["Package AID"] = parse_package_aid_table([SECTION_PACKAGE_AID] + package_lines, context.delimiter)
-
+            result["Package AID"] = parse_package_aid_table(
+                [SECTION_PACKAGE_AID] + package_lines,
+                context.delimiter,
+            )
         if full_package_lines:
             result["Full package AID support"] = parse_full_package_aid_table(
                 [SECTION_FULL_PACKAGE_AID] + full_package_lines,
@@ -214,10 +216,3 @@ class JcAidMapper(MapperPlugin):
 
 PLUGIN = JcAidMapper()
 PLUGINS = [PLUGIN]
-
-
-def convert_to_map_aid(groups: list[list[str]], delimiter: str) -> dict:
-    return PLUGIN.map_groups(groups, MappingContext(delimiter=delimiter))
-
-
-convert_to_map_jcaid = convert_to_map_aid

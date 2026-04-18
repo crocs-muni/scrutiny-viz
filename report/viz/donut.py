@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
+
+import html
+import math
 from dominate import tags
 from dominate.util import raw
-import math
-import html
 
 from .contracts import VizPlugin, VizSpec
 
@@ -21,11 +22,18 @@ def _pct2(value: float, total: float) -> float:
     if total <= 0:
         return 0.0
     pct = (float(value) / float(total)) * 100.0
-    if pct < 0:
-        pct = 0.0
-    elif pct > 100.0:
-        pct = 100.0
+    pct = max(0.0, min(100.0, pct))
     return round(pct + 1e-12, 2)
+
+
+def _safe_segment_values(values: Dict[str, int], segments: List[str]) -> Dict[str, int]:
+    safe_vals: Dict[str, int] = {}
+    for segment in segments:
+        try:
+            safe_vals[segment] = int(values.get(segment, 0) or 0)
+        except Exception:
+            safe_vals[segment] = 0
+    return safe_vals
 
 
 def render_donut_block(
@@ -39,29 +47,22 @@ def render_donut_block(
     legend_labels: Optional[Dict[str, str]] = None,
     colors: Optional[Dict[str, str]] = None,
 ) -> tags.div:
-    segments = list(segments or values.keys())
+    ordered_segments = list(segments or values.keys())
     legend_labels = legend_labels or {}
     colors = {**_DEFAULT_COLORS, **(colors or {})}
 
-    safe_vals: Dict[str, int] = {}
-    for k in segments:
-        try:
-            safe_vals[k] = int(values.get(k, 0) or 0)
-        except Exception:
-            safe_vals[k] = 0
-
+    safe_vals = _safe_segment_values(values, ordered_segments)
     total = sum(safe_vals.values())
     if center_label is None:
         center_label = str(total)
 
-    C = 2 * math.pi * (radius - stroke / 2.0)
+    circumference = 2 * math.pi * (radius - stroke / 2.0)
     view = 2 * (radius + stroke)
     cx = cy = radius + stroke / 2.0
 
-    svg_parts: List[str] = []
-    svg_parts.append(
+    svg_parts: List[str] = [
         f'<svg width="{view}" height="{view}" viewBox="0 0 {view} {view}" class="donut">'
-    )
+    ]
 
     if total <= 0:
         svg_parts.append(
@@ -70,23 +71,22 @@ def render_donut_block(
         )
     else:
         offset = 0.0
-        for k in segments:
-            v = safe_vals[k]
-            if v <= 0:
+        for segment in ordered_segments:
+            value = safe_vals[segment]
+            if value <= 0:
                 continue
 
-            frac = v / total
-            dash = C * frac
-            col = colors.get(k, "#888")
-            pct = _pct2(v, total)
-            title_txt = f"{legend_labels.get(k, k.title())}: {v} ({pct:.2f}%)"
+            dash = circumference * (value / total)
+            color = colors.get(segment, "#888")
+            pct = _pct2(value, total)
+            title_text = f"{legend_labels.get(segment, segment.title())}: {value} ({pct:.2f}%)"
 
             svg_parts.append(
                 f'<g>'
-                f'<title>{html.escape(title_txt)}</title>'
+                f'<title>{html.escape(title_text)}</title>'
                 f'<circle cx="{cx}" cy="{cy}" r="{radius - stroke/2:.2f}" '
-                f'stroke="{col}" stroke-width="{stroke}" fill="none" '
-                f'stroke-dasharray="{dash:.3f} {C - dash:.3f}" '
+                f'stroke="{color}" stroke-width="{stroke}" fill="none" '
+                f'stroke-dasharray="{dash:.3f} {circumference - dash:.3f}" '
                 f'stroke-dashoffset="{-offset:.3f}" '
                 f'transform="rotate(-90 {cx} {cy})"></circle>'
                 f'</g>'
@@ -107,20 +107,19 @@ def render_donut_block(
     card.add(wrap)
 
     legend = tags.div(_class="donut-legend")
-    for k in segments:
-        v = safe_vals.get(k, 0)
-        pct = _pct2(v, total)
+    for segment in ordered_segments:
+        value = safe_vals.get(segment, 0)
+        pct = _pct2(value, total)
         row = tags.div(_class="legend-row")
 
         swatch = tags.span(_class="legend-swatch")
-        swatch["style"] = f"background:{colors.get(k, '#888')}"
+        swatch["style"] = f"background:{colors.get(segment, '#888')}"
         row.add(swatch)
 
-        label = legend_labels.get(k, k.title())
+        label = legend_labels.get(segment, segment.title())
         row.add(tags.span(f"{label}: ", _class="legend-text"))
-        row.add(tags.span(str(v), _class="legend-text"))
+        row.add(tags.span(str(value), _class="legend-text"))
         row.add(tags.span(f" ({pct:.2f}%)", _class="legend-text"))
-
         legend.add(row)
 
     card.add(legend)

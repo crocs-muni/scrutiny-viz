@@ -142,3 +142,5 @@ dmypy.json
 
 #Test
 test.json
+generate_example_comparisons.py
+tests/test-data/*/*.json

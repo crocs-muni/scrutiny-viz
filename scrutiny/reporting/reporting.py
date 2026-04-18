@@ -1,65 +1,44 @@
 # scrutiny-viz/scrutiny/reporting/reporting.py
 from __future__ import annotations
-from typing import Dict, Any, List, Optional
 
-from scrutiny.interfaces import ContrastState
+from typing import Any, Dict, List, Optional
 
-# --------------------------- enums & ordering ---------------------------
-
-_STATE_TO_STR = {
-    ContrastState.MATCH: "MATCH",
-    ContrastState.WARN: "WARN",
-    ContrastState.SUSPICIOUS: "SUSPICIOUS",
-}
 _ORDER = {"MATCH": 0, "WARN": 1, "SUSPICIOUS": 2}
 
 
-def _state_to_str(x) -> str:
-    if isinstance(x, ContrastState):
-        return _STATE_TO_STR[x]
-    if isinstance(x, str):
-        up = x.upper()
-        if up in _ORDER:
-            return up
-    return "WARN"
+def _max_state(left: str, right: str) -> str:
+    return left if _ORDER.get(left, 1) >= _ORDER.get(right, 1) else right
 
-
-def _max_state(a: str, b: str) -> str:
-    return a if _ORDER.get(a, 1) >= _ORDER.get(b, 1) else b
-
-
-# --------------------------- severity policy ---------------------------
 
 def compute_severity(meta: dict, changed: int, compared: int) -> str:
     """Return MATCH/WARN/SUSPICIOUS based on thresholds."""
     if compared == 0 or changed == 0:
         return "MATCH"
 
-    thr_ratio = meta.get("threshold_ratio", None)
-    thr_count = meta.get("threshold_count", None)
+    threshold_ratio = meta.get("threshold_ratio")
+    threshold_count = meta.get("threshold_count")
 
-    if isinstance(thr_ratio, (int, float, str)):
+    if isinstance(threshold_ratio, (int, float, str)):
         try:
-            thr_ratio = float(thr_ratio)
+            threshold_ratio = float(threshold_ratio)
         except Exception:
-            thr_ratio = None
-    if isinstance(thr_count, (int, float, str)):
-        try:
-            thr_count = int(thr_count)
-        except Exception:
-            thr_count = None
+            threshold_ratio = None
 
-    if isinstance(thr_ratio, float) and 0 <= thr_ratio <= 1 and compared > 0:
+    if isinstance(threshold_count, (int, float, str)):
+        try:
+            threshold_count = int(threshold_count)
+        except Exception:
+            threshold_count = None
+
+    if isinstance(threshold_ratio, float) and 0 <= threshold_ratio <= 1 and compared > 0:
         ratio = changed / float(compared)
-        return "SUSPICIOUS" if ratio >= float(thr_ratio) else "WARN"
+        return "SUSPICIOUS" if ratio >= threshold_ratio else "WARN"
 
-    if isinstance(thr_count, int) and thr_count > 0:
-        return "SUSPICIOUS" if changed >= thr_count else "WARN"
+    if isinstance(threshold_count, int) and threshold_count > 0:
+        return "SUSPICIOUS" if changed >= threshold_count else "WARN"
 
     return "WARN"
 
-
-# --------------------------- stats & thresholds ---------------------------
 
 def _tally_stats(diffs: List[Dict[str, Any]], matches: List[Dict[str, Any]]) -> Dict[str, int]:
     """
@@ -73,18 +52,18 @@ def _tally_stats(diffs: List[Dict[str, Any]], matches: List[Dict[str, Any]]) -> 
     only_test = 0
     changed = 0
 
-    for d in diffs or []:
-        fld = d.get("field")
-        if fld == "__presence__":
-            r = d.get("ref")
-            t = d.get("test")
-            if isinstance(r, bool) and isinstance(t, bool):
-                if r and not t:
-                    only_ref += 1
-                elif t and not r:
-                    only_test += 1
-                else:
-                    changed += 1
+    for diff in diffs or []:
+        if diff.get("field") != "__presence__":
+            changed += 1
+            continue
+
+        ref_value = diff.get("ref")
+        test_value = diff.get("test")
+        if isinstance(ref_value, bool) and isinstance(test_value, bool):
+            if ref_value and not test_value:
+                only_ref += 1
+            elif test_value and not ref_value:
+                only_test += 1
             else:
                 changed += 1
         else:
@@ -104,124 +83,135 @@ def _tally_stats(diffs: List[Dict[str, Any]], matches: List[Dict[str, Any]]) -> 
 def _merge_severity_meta(schema: Dict[str, Any], section_name: str, section_res: Dict[str, Any]) -> Dict[str, Any]:
     """
     Merge severity thresholds with precedence:
-      1) schema.compare[section].severity
-      2) schema.sections[section].severity
-      3) section_res.report.severity
-      4) section_res.severity
+      1) schema.sections[section].component.*
+      2) section_res.report.severity
+      3) section_res.severity
     """
-    out: Dict[str, Any] = {}
+    merged: Dict[str, Any] = {}
 
     if isinstance(schema, dict):
-        sec = schema.get(section_name, {}) or {}
-        if isinstance(sec, dict):
-            comp = sec.get("component", {}) or {}
-            if isinstance(comp, dict):
-                if comp.get("threshold_ratio") is not None:
-                    out["threshold_ratio"] = comp.get("threshold_ratio")
-                if comp.get("threshold_count") is not None:
-                    out["threshold_count"] = comp.get("threshold_count")
+        section_cfg = schema.get(section_name, {}) or {}
+        if isinstance(section_cfg, dict):
+            component_cfg = section_cfg.get("component", {}) or {}
+            if isinstance(component_cfg, dict):
+                if component_cfg.get("threshold_ratio") is not None:
+                    merged["threshold_ratio"] = component_cfg.get("threshold_ratio")
+                if component_cfg.get("threshold_count") is not None:
+                    merged["threshold_count"] = component_cfg.get("threshold_count")
 
-    rep = section_res.get("report", {})
-    if isinstance(rep, dict):
-        sev = rep.get("severity", {})
-        if isinstance(sev, dict):
-            out.update(sev)
+    report_cfg = section_res.get("report", {})
+    if isinstance(report_cfg, dict):
+        report_severity = report_cfg.get("severity", {})
+        if isinstance(report_severity, dict):
+            merged.update(report_severity)
 
-    sev2 = section_res.get("severity", {})
-    if isinstance(sev2, dict):
-        out.update(sev2)
+    severity_cfg = section_res.get("severity", {})
+    if isinstance(severity_cfg, dict):
+        merged.update(severity_cfg)
 
-    return out
+    return merged
 
 
-# --------------------------- radar helpers (bool/int/float) ---------------------------
-
-def _parse_boolish(v) -> float | None:
-    if isinstance(v, bool):
-        return 1.0 if v else 0.0
-    if isinstance(v, (int, float)):
-        return 1.0 if float(v) != 0.0 else 0.0
-    if isinstance(v, str):
-        s = v.strip().lower()
-        if s in ("yes", "true", "1"):
+def _parse_boolish(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return 1.0 if value else 0.0
+    if isinstance(value, (int, float)):
+        return 1.0 if float(value) != 0.0 else 0.0
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"yes", "true", "1"}:
             return 1.0
-        if s in ("no", "false", "0"):
+        if lowered in {"no", "false", "0"}:
             return 0.0
     return None
 
 
-def _parse_number(v) -> float | None:
-    if v is None:
+def _parse_number(value: Any) -> float | None:
+    if value is None:
         return None
-    if isinstance(v, (int, float)):
-        return float(v)
-    if isinstance(v, str):
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
         try:
-            return float(v.strip())
+            return float(value.strip())
         except Exception:
             return None
     return None
 
 
 def _collect_numeric_pairs_from_chart(chart_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    out: List[Dict[str, Any]] = []
-    for r in chart_rows or []:
-        key = str(r.get("key", ""))
-        ref_raw = _parse_number(r.get("ref_avg"))
-        tst_raw = _parse_number(r.get("test_avg"))
-        if ref_raw is None and tst_raw is None:
+    pairs: List[Dict[str, Any]] = []
+    for row in chart_rows or []:
+        ref_raw = _parse_number(row.get("ref_avg"))
+        test_raw = _parse_number(row.get("test_avg"))
+        if ref_raw is None and test_raw is None:
             continue
-        out.append({"key": key, "ref_raw": ref_raw, "test_raw": tst_raw, "kind": "numeric"})
-    return out
+        pairs.append(
+            {
+                "key": str(row.get("key", "")),
+                "ref_raw": ref_raw,
+                "test_raw": test_raw,
+                "kind": "numeric",
+            }
+        )
+    return pairs
 
 
 def _collect_pairs_from_rows(diffs: List[Dict[str, Any]], matches: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Fallback extraction (when no chart_rows):
       - Prefer explicit ref/test in diffs
-      - For matches, use value for both ref/test (they match)
+      - For matches, use value for both ref/test
       - Parse as bool first; else numeric; else drop
     """
-    buf: Dict[str, Dict[str, Any]] = {}
-    for d in diffs or []:
-        key = str(d.get("key", ""))
-        buf.setdefault(key, {})
-        buf[key]["ref_raw"] = buf[key].get("ref_raw", d.get("ref"))
-        buf[key]["test_raw"] = buf[key].get("test_raw", d.get("test"))
-    for m in matches or []:
-        key = str(m.get("key", ""))
-        v = m.get("value")
-        buf.setdefault(key, {})
-        buf[key].setdefault("ref_raw", v)
-        buf[key].setdefault("test_raw", v)
+    buffer: Dict[str, Dict[str, Any]] = {}
 
-    out: List[Dict[str, Any]] = []
-    for key, payload in buf.items():
+    for diff in diffs or []:
+        key = str(diff.get("key", ""))
+        item = buffer.setdefault(key, {})
+        item.setdefault("ref_raw", diff.get("ref"))
+        item.setdefault("test_raw", diff.get("test"))
+
+    for match in matches or []:
+        key = str(match.get("key", ""))
+        value = match.get("value")
+        item = buffer.setdefault(key, {})
+        item.setdefault("ref_raw", value)
+        item.setdefault("test_raw", value)
+
+    pairs: List[Dict[str, Any]] = []
+    for key, payload in buffer.items():
         ref_raw = payload.get("ref_raw")
-        tst_raw = payload.get("test_raw")
+        test_raw = payload.get("test_raw")
 
-        rb = _parse_boolish(ref_raw)
-        tb = _parse_boolish(tst_raw)
-        if rb is not None or tb is not None:
-            out.append({
-                "key": key,
-                "ref_raw": rb if rb is not None else 0.0,
-                "test_raw": tb if tb is not None else 0.0,
-                "kind": "bool",
-            })
+        ref_bool = _parse_boolish(ref_raw)
+        test_bool = _parse_boolish(test_raw)
+        if ref_bool is not None or test_bool is not None:
+            pairs.append(
+                {
+                    "key": key,
+                    "ref_raw": ref_bool if ref_bool is not None else 0.0,
+                    "test_raw": test_bool if test_bool is not None else 0.0,
+                    "kind": "bool",
+                }
+            )
             continue
 
-        rn = _parse_number(ref_raw)
-        tn = _parse_number(tst_raw)
-        if rn is None and tn is None:
+        ref_num = _parse_number(ref_raw)
+        test_num = _parse_number(test_raw)
+        if ref_num is None and test_num is None:
             continue
-        out.append({
+
+        pairs.append(
+            {
                 "key": key,
-                "ref_raw": rn if rn is not None else 0.0,
-                "test_raw": tn if tn is not None else 0.0,
+                "ref_raw": ref_num if ref_num is not None else 0.0,
+                "test_raw": test_num if test_num is not None else 0.0,
                 "kind": "numeric",
-            })
-    return out
+            }
+        )
+
+    return pairs
 
 
 def _normalize_pairs(pairs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -233,80 +223,91 @@ def _normalize_pairs(pairs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if not pairs:
         return []
 
-    maxv = 0.0
-    for p in pairs:
-        if p.get("kind") == "numeric":
-            for k in ("ref_raw", "test_raw"):
-                v = p.get(k)
-                if isinstance(v, (int, float)) and float(v) > maxv:
-                    maxv = float(v)
-    if maxv <= 0:
-        maxv = 1.0
+    max_value = 0.0
+    for pair in pairs:
+        if pair.get("kind") != "numeric":
+            continue
+        for field in ("ref_raw", "test_raw"):
+            value = pair.get(field)
+            if isinstance(value, (int, float)) and float(value) > max_value:
+                max_value = float(value)
 
-    out: List[Dict[str, Any]] = []
-    for p in pairs:
-        kind = p.get("kind", "numeric")
-        rr = float(p.get("ref_raw") or 0.0)
-        tr = float(p.get("test_raw") or 0.0)
+    if max_value <= 0:
+        max_value = 1.0
+
+    normalized: List[Dict[str, Any]] = []
+    for pair in pairs:
+        kind = pair.get("kind", "numeric")
+        ref_raw = float(pair.get("ref_raw") or 0.0)
+        test_raw = float(pair.get("test_raw") or 0.0)
+
         if kind == "bool":
-            ref_score = 1.0 if rr >= 0.5 else 0.0
-            test_score = 1.0 if tr >= 0.5 else 0.0
+            ref_score = 1.0 if ref_raw >= 0.5 else 0.0
+            test_score = 1.0 if test_raw >= 0.5 else 0.0
         else:
-            ref_score = rr / maxv
-            test_score = tr / maxv
-        out.append({
-            "key": str(p.get("key", "")),
-            "ref_score": ref_score,
-            "test_score": test_score,
-            "ref_raw": rr,
-            "test_raw": tr,
-            "kind": kind,
-        })
-    return out
+            ref_score = ref_raw / max_value
+            test_score = test_raw / max_value
 
+        normalized.append(
+            {
+                "key": str(pair.get("key", "")),
+                "ref_score": ref_score,
+                "test_score": test_score,
+                "ref_raw": ref_raw,
+                "test_raw": test_raw,
+                "kind": kind,
+            }
+        )
 
-# --------------------------- report config helpers ---------------------------
+    return normalized
+
 
 def _normalize_types_from_schema(explicit_types: Any) -> List[Dict[str, Any]]:
-    """SchemaLoader should already normalize this, but keep it defensive."""
     if explicit_types is None:
         return []
-    out: List[Dict[str, Any]] = []
+
+    normalized: List[Dict[str, Any]] = []
+
     if isinstance(explicit_types, list):
-        for t in explicit_types:
-            if isinstance(t, str):
-                s = t.strip().lower()
-                if s:
-                    out.append({"type": s, "variant": None})
-            elif isinstance(t, dict):
-                tp = str(t.get("type") or "").strip().lower()
-                if not tp:
+        for item in explicit_types:
+            if isinstance(item, str):
+                value = item.strip().lower()
+                if value:
+                    normalized.append({"type": value, "variant": None})
+            elif isinstance(item, dict):
+                type_name = str(item.get("type") or "").strip().lower()
+                if not type_name:
                     continue
-                v = t.get("variant")
-                v = str(v).strip().lower() if v is not None and str(v).strip() else None
-                out.append({"type": tp, "variant": v})
-    elif isinstance(explicit_types, str):
-        for x in explicit_types.split(","):
-            s = x.strip().lower()
-            if s:
-                out.append({"type": s, "variant": None})
-    return out
+                variant = item.get("variant")
+                variant = str(variant).strip().lower() if variant is not None and str(variant).strip() else None
+                normalized.append({"type": type_name, "variant": variant})
+        return normalized
+
+    if isinstance(explicit_types, str):
+        for item in explicit_types.split(","):
+            value = item.strip().lower()
+            if value:
+                normalized.append({"type": value, "variant": None})
+
+    return normalized
 
 
 def _pick_global_theme(schema: Dict[str, Any]) -> str:
-    """Find first non-null report.theme in schema, else 'light'."""
     if not isinstance(schema, dict):
         return "light"
-    for _name, sec in schema.items():
-        if not isinstance(sec, dict):
+
+    for section_cfg in schema.values():
+        if not isinstance(section_cfg, dict):
             continue
-        rep = sec.get("report") or {}
-        if isinstance(rep, dict):
-            t = rep.get("theme")
-            if isinstance(t, str) and t.strip():
-                tt = t.strip().lower()
-                if tt in {"light", "dark"}:
-                    return tt
+        report_cfg = section_cfg.get("report") or {}
+        if not isinstance(report_cfg, dict):
+            continue
+        theme = report_cfg.get("theme")
+        if isinstance(theme, str) and theme.strip():
+            normalized = theme.strip().lower()
+            if normalized in {"light", "dark"}:
+                return normalized
+
     return "light"
 
 
@@ -324,8 +325,6 @@ def _default_ingest_meta(schema: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-# --------------------------- main entrypoint ---------------------------
-
 def assemble_report(
     *,
     schema: Dict[str, Any],
@@ -335,8 +334,6 @@ def assemble_report(
     section_rows: Dict[str, Any] | None = None,
     ingest_meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Build the normalized report JSON used by the HTML layer."""
-
     sections_out: Dict[str, Any] = {}
     overall = "MATCH"
 
@@ -346,18 +343,18 @@ def assemble_report(
     theme = _pick_global_theme(schema)
     ingest_payload = dict(ingest_meta or _default_ingest_meta(schema))
 
-    for name, res in (compare_results or {}).items():
-        diffs = res.get("diffs", []) or []
-        matches = res.get("matches", []) or []
+    for section_name, result_payload in (compare_results or {}).items():
+        diffs = result_payload.get("diffs", []) or []
+        matches = result_payload.get("matches", []) or []
+        artifacts = result_payload.get("artifacts", {}) or {}
 
-        artifacts = res.get("artifacts", {}) or {}
-        chart_rows = res.get("chart_rows")
+        chart_rows = result_payload.get("chart_rows")
         if chart_rows is None:
             chart_rows = artifacts.get("chart_rows", []) or []
         if not isinstance(chart_rows, list):
             chart_rows = []
 
-        provided_stats = res.get("stats")
+        provided_stats = result_payload.get("stats")
         if isinstance(provided_stats, dict):
             stats = {
                 "compared": int(provided_stats.get("compared", 0) or 0),
@@ -371,14 +368,20 @@ def assemble_report(
         else:
             stats = _tally_stats(diffs, matches)
 
-        sev_meta = _merge_severity_meta(schema, name, res)
-        result = compute_severity(sev_meta, stats["changed"], stats["compared"])
+        override_result = str(
+            result_payload.get("result") or result_payload.get("section_result") or ""
+        ).upper().strip()
+        if override_result in _ORDER:
+            section_result = override_result
+        else:
+            severity_meta = _merge_severity_meta(schema, section_name, result_payload)
+            section_result = compute_severity(severity_meta, stats["changed"], stats["compared"])
 
-        overall_counts[result] = overall_counts.get(result, 0) + 1
-        by_section[name] = {
-            "MATCH": 1 if result == "MATCH" else 0,
-            "WARN": 1 if result == "WARN" else 0,
-            "SUSPICIOUS": 1 if result == "SUSPICIOUS" else 0,
+        overall_counts[section_result] = overall_counts.get(section_result, 0) + 1
+        by_section[section_name] = {
+            "MATCH": 1 if section_result == "MATCH" else 0,
+            "WARN": 1 if section_result == "WARN" else 0,
+            "SUSPICIOUS": 1 if section_result == "SUSPICIOUS" else 0,
             "TOTAL": 1,
         }
 
@@ -387,39 +390,38 @@ def assemble_report(
             pairs = _collect_pairs_from_rows(diffs, matches)
         radar_rows = _normalize_pairs(pairs)
 
-        schema_sec = (schema.get(name, {}) or {}) if isinstance(schema, dict) else {}
-        schema_rep = dict(schema_sec.get("report", {}) or {})
+        schema_section = (schema.get(section_name, {}) or {}) if isinstance(schema, dict) else {}
+        schema_report = dict(schema_section.get("report", {}) or {})
+        result_report = dict(result_payload.get("report") or {})
+        report_cfg = {**schema_report, **result_report}
 
-        res_rep = dict(res.get("report") or {})
-        rep_cfg = {**schema_rep, **res_rep}
+        report_cfg["types"] = _normalize_types_from_schema(report_cfg.get("types"))
+        if schema_report.get("doc_text"):
+            report_cfg["doc_text"] = schema_report.get("doc_text")
+        if report_cfg.get("theme") is None:
+            report_cfg["theme"] = theme
 
-        explicit_types = schema_rep.get("types", None)
-        rep_cfg["types"] = _normalize_types_from_schema(explicit_types)
+        source_rows = section_rows.get(section_name) if isinstance(section_rows, dict) else None
+        if source_rows is None:
+            source_rows = result_payload.get("source_rows")
 
-        if "doc_text" in schema_rep and schema_rep.get("doc_text"):
-            rep_cfg["doc_text"] = schema_rep.get("doc_text")
-
-        if rep_cfg.get("theme") is None:
-            rep_cfg["theme"] = theme
-
-        src_rows = None
-        if isinstance(section_rows, dict):
-            src_rows = section_rows.get(name)
-
-        sections_out[name] = {
-            "result": result,
+        section_output = {
+            "result": section_result,
             "stats": stats,
             "stats_display": dict(stats),
-            "key_labels": res.get("key_labels") or res.get("labels") or {},
+            "key_labels": result_payload.get("key_labels") or result_payload.get("labels") or {},
             "diffs": diffs,
             "matches": matches,
             "chart_rows": chart_rows,
             "radar_rows": radar_rows,
-            "report": rep_cfg,
-            **({"source_rows": src_rows} if src_rows is not None else {}),
+            "report": report_cfg,
+            "artifacts": artifacts,
         }
+        if source_rows is not None:
+            section_output["source_rows"] = source_rows
 
-        overall = _max_state(overall, result)
+        sections_out[section_name] = section_output
+        overall = _max_state(overall, section_result)
 
     total_sections = sum(overall_counts.values())
     dashboard = {

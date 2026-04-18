@@ -598,3 +598,164 @@ document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("table.report-table").forEach(enhanceTable);
   });
 })();
+
+/**
+ * Tracescompare filters + image preview
+ */
+(function () {
+  function applyTraceFilter(filterbar) {
+    if (!filterbar) return;
+
+    var active = (filterbar.getAttribute("data-active-filter") || "all").toLowerCase();
+    var targetId = filterbar.getAttribute("data-trace-filterbar");
+    if (!targetId) return;
+
+    var grid = document.querySelector('[data-trace-grid="' + targetId + '"]');
+    if (!grid) return;
+
+    grid.querySelectorAll(".trace-card").forEach(function (card) {
+      var state = (card.getAttribute("data-state") || "").toLowerCase();
+      var show = true;
+
+      if (active === "issues") show = (state === "warn" || state === "suspicious");
+      else if (active === "warn") show = (state === "warn");
+      else if (active === "suspicious") show = (state === "suspicious");
+      else if (active === "match") show = (state === "match");
+
+      card.style.display = show ? "" : "none";
+    });
+
+    filterbar.querySelectorAll(".trace-filter-btn").forEach(function (btn) {
+      btn.classList.toggle("active", (btn.getAttribute("data-filter") || "all") === active);
+    });
+  }
+
+  function ensureTracePreviewModal() {
+    var existing = document.getElementById("tracePreviewModal");
+    if (existing) return existing;
+
+    var modal = document.createElement("div");
+    modal.id = "tracePreviewModal";
+    modal.className = "trace-preview-modal";
+    modal.setAttribute("aria-hidden", "true");
+
+    modal.innerHTML =
+      '<div class="trace-preview-backdrop" data-trace-close="1"></div>' +
+      '<div class="trace-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="tracePreviewTitle">' +
+        '<div class="trace-preview-header">' +
+          '<div class="trace-preview-titlewrap">' +
+            '<div id="tracePreviewTitle" class="trace-preview-title"></div>' +
+            '<div id="tracePreviewSubtitle" class="trace-preview-subtitle"></div>' +
+          '</div>' +
+          '<button type="button" class="trace-preview-close" data-trace-close="1">Close</button>' +
+        '</div>' +
+        '<div class="trace-preview-body">' +
+          '<img id="tracePreviewImage" class="trace-preview-image" alt="Trace preview">' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  function openTracePreview(link) {
+    if (!link) return;
+
+    var src = link.getAttribute("data-fullsrc") || link.getAttribute("href") || "";
+    if (!src) return;
+
+    var name = link.getAttribute("data-fullname") || link.getAttribute("title") || "";
+    var state = (link.getAttribute("data-state") || "").toUpperCase();
+    var value = link.getAttribute("data-value") || "";
+
+    var modal = ensureTracePreviewModal();
+    var img = document.getElementById("tracePreviewImage");
+    var title = document.getElementById("tracePreviewTitle");
+    var subtitle = document.getElementById("tracePreviewSubtitle");
+
+    if (!img || !title || !subtitle) return;
+
+    img.src = src;
+    img.alt = name || "Trace preview";
+    title.textContent = name || "Trace preview";
+
+    var meta = [];
+    if (state) meta.push("State: " + state);
+    if (value) meta.push("Value: " + value);
+    subtitle.textContent = meta.join(" | ");
+
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeTracePreview() {
+    var modal = document.getElementById("tracePreviewModal");
+    if (!modal) return;
+
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  document.addEventListener("click", function (ev) {
+    var filterBtn = ev.target.closest(".trace-filter-btn");
+    if (filterBtn) {
+      var filterbar = filterBtn.closest(".trace-filterbar");
+      if (!filterbar) return;
+
+      filterbar.setAttribute("data-active-filter", filterBtn.getAttribute("data-filter") || "all");
+      applyTraceFilter(filterbar);
+      return;
+    }
+
+    var previewLink = ev.target.closest(".trace-preview-link");
+    if (previewLink) {
+      ev.preventDefault();
+      openTracePreview(previewLink);
+      return;
+    }
+
+    if (ev.target.closest('[data-trace-close="1"]')) {
+      ev.preventDefault();
+      closeTracePreview();
+    }
+  });
+
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape") {
+      closeTracePreview();
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".trace-filterbar").forEach(function (filterbar) {
+      if (!filterbar.getAttribute("data-active-filter")) {
+        filterbar.setAttribute("data-active-filter", "all");
+      }
+      applyTraceFilter(filterbar);
+    });
+  });
+})();
+
+/**
+ * Heatmap tabs
+ */
+function heatmapShow(base, mode, btn) {
+  var panes = ["delta", "ref", "profile"];
+  for (var i = 0; i < panes.length; i++) {
+    var p = panes[i];
+    var pane = document.getElementById(base + "_pane_" + p);
+    var legend = document.getElementById(base + "_legend_" + p);
+    if (pane) pane.style.display = (p === mode ? "block" : "none");
+    if (legend) legend.style.display = (p === mode ? "block" : "none");
+  }
+
+  if (!btn || !btn.parentElement) return;
+
+  var buttons = btn.parentElement.querySelectorAll(".heatmap-tab");
+  for (var j = 0; j < buttons.length; j++) {
+    buttons[j].classList.remove("active");
+  }
+  btn.classList.add("active");
+}
