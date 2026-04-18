@@ -29,7 +29,7 @@ defaults:         # optional but recommended
   report: ...
   target: ...
 
-sections:         # required
+sections:         # required unless the schema is intended to rely on dynamic sections
   <SECTION_NAME>: ...
 ```
 
@@ -72,7 +72,7 @@ ingest:
 Meaning:
 
 - `false`  
-  Only schema-declared sections are accepted. Should be used in strict and predictable enviroments such as CI/CD pipelines.
+  Only schema-declared sections are accepted. Should be used in strict and predictable environments such as CI/CD pipelines.
 
 - `true`  
   Unknown sections found in the input may be accepted and normalized using defaults.
@@ -229,26 +229,23 @@ defaults:
 ```yaml
 defaults:
   report:
-    types: ["table"]
-      variant: "CPLC"
+    types:
+      - type: table
+        variant: cplc
     theme: dark
 ```
 
 ### Supported keys
 
 - `types`
-- `variant`
 - `theme`
 - `doc`
-- visualization-specific rendering hints such as axis labels
 
 ### Meaning
 
 - `types`  
-  Controls which visual blocks are rendered for a section.
-
-- `variant`  
-  Used with types. Can change to a different variant of a report type.
+  Controls which visual blocks are rendered for a section.  
+  Each entry may optionally include a `variant`.
 
 - `theme`  
   Global report theme. Common values:
@@ -257,9 +254,6 @@ defaults:
 
 - `doc`  
   Optional documentation reference for section explanation.
-
-- additional report keys  
-  Some visualization types may read extra report keys, for example axis labels for charts.
 
 ### Important note about `doc`
 
@@ -271,6 +265,12 @@ Example:
 report:
   doc: docs/cplc.txt
 ```
+
+The current loader also applies a few restrictions:
+
+- the path must stay within the schema directory
+- the file must be `.txt` or `.md`
+- extremely large files are rejected
 
 ---
 
@@ -306,6 +306,8 @@ sections:
 ```
 
 A section may be fully defined, partially defined, or empty if it inherits enough from defaults.
+
+If `ingest.dynamic_sections: true`, a schema may also intentionally keep `sections` minimal or even empty and rely on defaults to construct adopted sections.
 
 ---
 
@@ -667,20 +669,16 @@ This allows report rendering to consume text directly.
 
 ---
 
-## 7.5 Visualization hints
+## 7.5 Additional report keys
 
-Some visualizations read extra keys from `report`.
+The current normalized loader primarily preserves these report keys:
 
-Example:
+- `types`
+- `theme`
+- `doc`
+- `doc_text`
 
-```yaml
-report:
-  types: ["chart", "table", "radar"]
-  x_axis: "Reference avg (ms)"
-  y_axis: "Profile avg (ms)"
-```
-
-These keys are visualization-specific and are only used by report blocks that understand them.
+If additional visualization-specific report keys are introduced in the future, they should be documented explicitly together with the loader and renderer behavior that supports them.
 
 ---
 
@@ -804,8 +802,6 @@ defaults:
 
   report:
     types: ["chart", "table", "radar"]
-    x_axis: "Reference avg (ms)"
-    y_axis: "Profile avg (ms)"
 
   target: {}
 
@@ -832,14 +828,14 @@ defaults:
   data:
     type: list
     record_schema:
-      name:  { dtype: string, required: true, category: nominal }
-      value: { dtype: string, category: binary }
+      algorithm_name: { dtype: string,  required: true, category: nominal }
+      is_supported:   { dtype: string,  category: binary }
   report:
     types: ["table", "radar"]
   component:
     comparator: basic
-    match_key: name
-    show_key: name
+    match_key: algorithm_name
+    show_key: algorithm_name
     include_matches: true
   target: {}
 

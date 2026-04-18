@@ -11,14 +11,28 @@ from . import mapper_utils, registry
 from .service import process_files, process_folder, map_single_source
 
 
+def _format_aliases(aliases: tuple[str, ...]) -> str:
+    return ", ".join(aliases) if aliases else "-"
+
+
+def _print_mapper_catalog() -> None:
+    specs = registry.list_specs()
+    print("Available mapper plugins:")
+    for spec in specs:
+        print(f"- {spec.name}")
+        print(f"  aliases: {_format_aliases(spec.aliases)}")
+        print(f"  description: {spec.description or '-'}")
+
+
 def add_mapper_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("-t", "--type", dest="mapper_type", required=True, help="Mapper type to use")
+    parser.add_argument("-t", "--type", dest="mapper_type", help="Mapper type to use")
     parser.add_argument("-o", "--output", dest="output_path", help="Output file path for one source, or output directory for multi-file folder mode")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase log verbosity (-v, -vv)")
     parser.add_argument("file_paths", nargs="*", default=[], help="Path(s) to source file(s)")
     parser.add_argument("--folder", dest="folder_path", help="Folder containing input files, or a source directory for directory-based mappers")
     parser.add_argument("--delimiter", default=";", help="Delimiter to use for grouped-text mappers (default: ;)")
     parser.add_argument("--exclude-file", default=None, help="File with attribute names to exclude")
+    parser.add_argument("--list-mappers", action="store_true", help="List discovered mapper plugins and exit")
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -27,6 +41,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 Examples:
+  python scrutinize.py map --list-mappers
   python scrutinize.py map -t jcperf file.csv
   python scrutinize.py map -t tpm --folder ./csvs -o ./out
   python scrutinize.py map -t rsabias --folder ./out_eval -o ./results/rsabias_old.json
@@ -53,6 +68,13 @@ def print_mapper_success(outputs: list[Path], output_hint: str | None) -> None:
 def run_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(getattr(args, "verbose", 0))
     log = slog.get_logger("MAPPER")
+
+    if args.list_mappers:
+        _print_mapper_catalog()
+        return 0
+
+    if not args.mapper_type:
+        raise SystemExit("Please provide --type to select a mapper, or use --list-mappers to inspect available plugins.")
 
     excluded = mapper_utils.load_exclusions(args.exclude_file) if args.exclude_file else None
     plugin = registry.get_plugin(args.mapper_type)

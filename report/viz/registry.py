@@ -5,7 +5,7 @@ import pkgutil
 from importlib import import_module
 from typing import Dict, List
 
-from .contracts import VizPlugin
+from .contracts import VizPlugin, VizSpec
 
 _VIZ: Dict[str, VizPlugin] = {}
 _ALIASES: Dict[str, str] = {}
@@ -79,6 +79,11 @@ def normalize_name(name: str) -> str:
 def list_types() -> List[str]:
     discover_builtin_viz()
     return sorted(_VIZ.keys())
+
+
+def list_specs() -> List[VizSpec]:
+    discover_builtin_viz()
+    return [plugin.spec for _, plugin in sorted(_VIZ.items())]
 
 
 def list_by_slot(slot: str) -> List[str]:

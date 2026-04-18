@@ -52,7 +52,7 @@ This is important because the goal is modularity **inside the project**, not thi
 
 Mapper plugins are responsible for converting source input into the normalized JSON structure used by scrutiny-viz.
 
-The most important recent change is that **ingest is now owned by the mapper plugin**, not by `service.py`. That means the mapper layer now supports both:
+The important thing to have in mind is that **ingest is owned by the mapper plugin**, not by `service.py`. That means the mapper layer now supports both:
 
 * a **default grouped-text ingest path** for existing CSV-like mappers
 * **custom ingest** for special sources such as RSABias directory bundles
@@ -90,6 +90,7 @@ mapper/
     jcalg_support.py
     tpm.py
     rsabias.py
+    ....
 ```
 
 ## 1.1.3 Mapper contract
@@ -98,27 +99,36 @@ A mapper plugin implements the mapper contract from `mapper/mappers/contracts.py
 
 Conceptually, a mapper plugin contains:
 
-* a **spec** with name and aliases
-* the actual parsing logic
-* an ingest path for its source type
-* a public method used by the rest of the system
+* a spec with its canonical name, aliases, and description
+* an ingest step that loads the source input into an internal representation
+* a mapping step that transforms that representation into the normalized JSON structure
+* a public entry point used by the rest of the system
 
-The current contract supports two practical styles:
+In the current design, the public entry point is map_path(...).
+This method represents the standard plugin interface for mapping a source path. Internally, it performs the ingest phase and then calls the mapping phase.
+
+The contract supports two practical styles:
 
 ### A. Default grouped-text mappers
 
 These mappers use the default contract behavior:
 
-* `ingest(...)` loads grouped text
-* `map_source(...)` forwards to `map_groups(...)`
+* `ingest(...)` loads grouped text as grouped text
+* `map_source(...)` forwards that grouped-text representation to `map_groups(...)`
 
-This is the normal path for the existing text/CSV-like mappers.
+This is the standard path for CSV-like and text-based mappers.
 
 ### B. Custom-source mappers
 
-These mappers override ingest behavior when the input is not just one grouped-text file.
+These mappers override `ingest(...)`, and optionally `map_source(...)`, when the source is not naturally handled as grouped text.
 
-This is the path used by RSABias, where the mapper reads a **directory** containing several result files and combines them into one normalized output.
+This is used for source types such as:
+
+directory-based inputs
+structured JSON inputs
+other non-grouped source formats
+
+Examples in the current codebase include **rsabias**, **traceclassifier**, and **tracescompare**.
 
 ## 1.1.4 Registry role
 
@@ -195,7 +205,9 @@ These still follow the grouped-text pattern and implement `map_groups(...)`.
 
 The current special-case mapper is:
 
-* `rsabias`
+* `RSABias`
+* `TraceClassifier`
+* `TraceComparer`
 
 This mapper overrides ingest because its source is a directory containing multiple JSON/text artifacts that must be combined into one normalized output.
 
@@ -212,7 +224,7 @@ Typical steps:
 5. expose the plugin from the module through `PLUGINS`
 6. run mapping through the registry name
 
-This means adding a mapper should ideally not require edits in unrelated service files.
+This means adding a mapper should ideally not require edits in unrelated service files, but may still require new schemas, tests or report-side additions.
 
 ## 1.1.10 Practical naming rule
 
@@ -251,40 +263,50 @@ The intended structure is:
 
 ```text
 verification/
+  __init__.py
   service.py
+  cli.py
   comparators/
     __init__.py
+    verification/comparators/utility.py
     contracts.py
     registry.py
     basic.py
     algperf.py
     cplc.py
+    ...
 ```
 
 ## 1.2.3 Comparator contract
 
-A comparator plugin should define:
+A comparator plugin implements the comparator contract defined in `verification/comparators/contracts.py`.
 
-* its identity through a spec
-* a compare method
-* normalized return data expected by verification and report layers
+At a practical level, a comparator plugin defines:
 
-The compare step usually receives:
+* a **spec** that provides its canonical name, aliases, and description
+* a **`compare(...)` method** that performs the actual section comparison
+* a **normalized result structure** that can be consumed by the verification and reporting layers
 
-* section name
-* key field
-* display field
-* metadata
+The `compare(...)` method receives:
+
+* the section name
+* the key field
+* the display field
+* metadata derived from schema configuration
 * reference rows
-* tested rows
+* tested/profile rows
 
-And it returns a structured result with things like:
+It returns a structured comparison result. In the current design, this typically includes:
 
-* diffs
-* matches
-* labels
-* counts/stats
-* optional visualization artifacts
+* `counts` / `stats`
+* `labels` / `key_labels`
+* `diffs`
+* optional `matches`
+* optional `artifacts`
+
+Some comparators may also return additional reporting-support fields when needed, such as source row snapshots or an explicit override of the section result.
+
+The important point is that comparator plugins should return data in a normalized shape, so the verification service and report layer do not need to know the internal comparison logic of individual comparators. 
 
 ## 1.2.4 Registry role
 
@@ -296,15 +318,21 @@ The comparator registry should:
 
 ## 1.2.5 Service role
 
-The verification service should:
+The verification service should coordinate the verification workflow.
 
-* load reference and tested JSON
-* read schema instructions
-* choose the appropriate comparator
-* collect comparison results
-* produce verification JSON
+It should handle:
 
-It should not contain comparator-specific comparison algorithms.
+* loading the schema
+* loading and parsing the reference and tested/profile JSON inputs
+* selecting the appropriate comparator based on schema configuration
+* passing normalized section rows and metadata into the comparator
+* collecting section-level comparison results
+* assembling the final verification JSON structure
+* optionally triggering report generation when requested
+
+It should **not** contain comparator-specific comparison algorithms.
+
+In other words, the verification service is responsible for orchestration, aggregation, and output generation, while the comparator plugins remain responsible for the actual section comparison logic. This separation keeps comparator behavior modular and prevents the service layer from accumulating format-specific comparison code. 
 
 ## 1.2.6 Why comparators are especially important
 
@@ -324,7 +352,7 @@ Typical steps:
 2. implement the comparator contract
 3. define spec, aliases, and compare logic
 4. expose the plugin from the module
-5. reference it by name from verification logic or schema-driven selection
+5. reference it by canonical name from the schema configuration. The verification service resolves that name through the comparator registry
 
 ---
 
@@ -354,6 +382,8 @@ The intended structure is:
 ```text
 report/
   service.py
+  cli.py
+  bundle.py
   viz/
     __init__.py
     contracts.py
@@ -362,25 +392,36 @@ report/
     radar.py
     donut.py
     table.py
+    ...
 ```
-
-Legacy files under `scrutiny/reporting/viz/...` may still exist for compatibility, but the long-term goal is that the real implementation lives in `report/viz/`.
 
 ## 1.3.3 Viz contract
 
-A viz plugin should define:
+A viz plugin implements the contract defined in `report/viz/contracts.py`.
 
-* its identity/spec
-* the slot or role if the current design uses one
-* a render method returning nodes or renderable content
+At a practical level, a viz plugin defines:
 
-A viz plugin should focus on the visualization itself.
+its identity through a spec
+its slot in the current design
+a `render(...)` method that returns renderable content
+
+In the current design, the spec contains:
+
+a canonical plugin name
+a slot
+optional aliases
+an optional description
+
+The render method is the actual plugin entry point. It receives prepared inputs from the report layer and returns content that can be inserted into the generated report.
+
+A viz plugin should focus only on the visualization itself.
 
 Examples in this project include:
 
 * chart
 * radar
 * donut
+* heatmap
 * table
 
 ## 1.3.4 Registry role
@@ -395,13 +436,19 @@ This allows the report layer to ask for a visualization by type instead of using
 
 ## 1.3.5 Service role
 
-The report service should:
+The report service should coordinate full report generation.
 
-* orchestrate full report generation
-* resolve requested viz types from the registry
-* insert the returned nodes into the document
+It should handle:
 
-It should not keep the real chart/radar/donut/table implementation logic inside itself.
+* loading the verification JSON
+* preparing any bundled assets needed by the report
+* resolving requested viz types from the registry
+* assembling the full HTML document
+* inserting the returned render blocks into the document
+* writing the final HTML output
+* optionally preparing zip output
+
+It should not keep the actual chart, radar, donut, heatmap, or table rendering logic inside itself.
 
 ## 1.3.6 What should stay outside viz
 
@@ -415,12 +462,14 @@ The following are report-level concerns rather than viz concerns:
 * file writing
 * zip creation
 * CSS/JS loading
+* report bundling
 
 So the correct modular split is:
 
-* `report/service.py` = orchestration
+* `report/service.py` = orchestration and page assembly
+* `report/bundle.py` = report asset preparation and bundling support
 * `report/viz/*` = visualization implementation
-* optional future report-specific helpers = page/rendering support
+* `report/viz/utility.py` = shared visualization helpers
 
 ## 1.3.7 How to add a new viz plugin
 
@@ -477,7 +526,7 @@ These rules help keep scrutiny-viz modular without making it overly abstract or 
 
 # 1.6 Final takeaway
 
-The plugin system in scrutiny-viz is moving toward a consistent internal architecture:
+The plugin system in scrutiny-viz is build on a consistent internal architecture:
 
 * **mappers** parse and normalize input
 * **comparators** compare normalized structures

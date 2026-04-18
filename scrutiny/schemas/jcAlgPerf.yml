@@ -63,9 +63,7 @@ defaults:
   report:
     theme: dark
     types: ["chart", "radar"]
-    x_axis: "Reference avg (ms)"
-    y_axis: "Profile avg (ms)"
-
+    
   target: {}
 
 sections: {}
