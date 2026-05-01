@@ -81,4 +81,3 @@ sections:
 
   TPM2_Create: {}
   TPM2_Sign: {}
-  TPM2_EncryptDecrypt: {}

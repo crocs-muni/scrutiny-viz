@@ -14,8 +14,10 @@ from dominate import document, tags
 from dominate.util import raw
 
 from scrutiny import logging as slog
+from scrutiny.errors import ReportError, ScrutinyError
 from scrutiny.interfaces import ContrastState
 from scrutiny.paths import REPORT_ASSETS_DIR, results_dir
+from scrutiny.validation import read_json_file
 
 from report.bundle import prepare_report_bundle
 from report.viz import registry as viz_registry
@@ -455,7 +457,7 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
                 title="Missing on profile (present in reference)",
                 button_text="Table",
                 button_title="Show/hide table: Missing on profile",
-                hide=True,
+                hide=(state == ContrastState.MATCH),
             ):
                 table(["Item", "Detail"], buckets["missing_rows"])
 
@@ -465,7 +467,7 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
                 title="Extra on profile (absent in reference)",
                 button_text="Table",
                 button_title="Show/hide table: Extra on profile",
-                hide=True,
+                hide=(state == ContrastState.MATCH),
             ):
                 table(["Item", "Detail"], buckets["extra_rows"])
 
@@ -700,12 +702,10 @@ def _load_text_file(path: Path, *, kind: str) -> str:
 
 def _load_report_json(verification_profile: str) -> Dict[str, Any] | None:
     log.step("Loading report JSON", verification_profile)
-    try:
-        with open(verification_profile, "r", encoding="utf-8") as handle:
-            return json.load(handle)
-    except Exception:
-        log.err(f"Failed to load report json from path: {verification_profile}")
-        return None
+    payload = read_json_file(verification_profile, label="Verification profile JSON", component="REPORT")
+    if not isinstance(payload, dict):
+        raise ReportError(f"Verification profile JSON must contain an object at top level: {verification_profile}")
+    return payload
 
 
 def run_report_html(
@@ -715,9 +715,10 @@ def run_report_html(
     exclude_style_and_scripts: bool = False,
     no_zip: bool = False,
 ) -> Dict[str, Any]:
-    report = _load_report_json(verification_profile)
-    if report is None:
-        return _fail(1, f"Failed to load report json from path: {verification_profile}")
+    try:
+        report = _load_report_json(verification_profile)
+    except ScrutinyError as exc:
+        return _fail(getattr(exc, "exit_code", 1), str(exc))
 
     out_dir = results_dir()
     os.makedirs(out_dir, exist_ok=True)

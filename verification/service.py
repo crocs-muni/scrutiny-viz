@@ -6,9 +6,11 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from scrutiny import logging as slog
+from scrutiny.errors import ScrutinyError
 from scrutiny.ingest import JsonParser
 from scrutiny.schemaloader import SchemaLoader
 from scrutiny.reporting.reporting import assemble_report
+from scrutiny.validation import ensure_output_parent, require_file
 
 from .comparators.registry import get_plugin as get_comparator_plugin
 
@@ -17,15 +19,17 @@ ingest_log = slog.get_logger("INGEST")
 
 
 def _load_schema(path: str):
-    log.step("Loading schema:", path)
-    schema = SchemaLoader(path).load()
+    schema_path = require_file(path, label="Schema file", component="VERIFY")
+    log.step("Loading schema:", str(schema_path))
+    schema = SchemaLoader(str(schema_path)).load()
     log.ok(f"Schema loaded with {len(schema)} section(s).")
     return schema
 
 
 def _load_json(parser: JsonParser, title: str, path: str):
-    log.step(f"Reading {title} JSON:", path)
-    data = parser.parse(path)
+    json_path = require_file(path, label=f"{title.capitalize()} JSON file", component="VERIFY")
+    log.step(f"Reading {title} JSON:", str(json_path))
+    data = parser.parse(str(json_path))
     log.ok(f"{title} loaded.")
     return data
 
@@ -140,11 +144,21 @@ def run_verification(
     print_matches: int = 0,
     report: bool = False,
 ) -> Dict[str, Any]:
-    schema = _load_schema(schema_path)
-    parser = JsonParser(schema)
+    try:
+        schema = _load_schema(schema_path)
+        parser = JsonParser(schema)
+    except ScrutinyError as exc:
+        return _fail(getattr(exc, "exit_code", 1), str(exc))
+    except Exception as exc:
+        return _fail(2, f"Failed to load schema: {exc}")
 
-    data_ref = _load_json(parser, "reference", reference_path)
-    data_test = _load_json(parser, "profile", profile_path)
+    try:
+        data_ref = _load_json(parser, "reference", reference_path)
+        data_test = _load_json(parser, "profile", profile_path)
+    except ScrutinyError as exc:
+        return _fail(getattr(exc, "exit_code", 1), str(exc))
+    except Exception as exc:
+        return _fail(2, f"Failed to load input JSON: {exc}")
 
     ingest_meta = _collect_ingest_meta(schema, data_ref, data_test)
     _log_ingest_meta(ingest_meta)
@@ -164,9 +178,13 @@ def run_verification(
         show_key = comp_cfg.get("show_key", match_key)
         try:
             comparator = get_comparator_plugin(comparator_name)
-        except KeyError:
-            log.warn(f"[{section}] comparator '{comparator_name}' not found; falling back to 'basic'")
-            comparator = get_comparator_plugin("basic")
+        except KeyError as exc:
+            return _fail(
+                2,
+                f"[{section}] unknown comparator '{comparator_name}'. "
+                "Use 'python scrutinize.py verify --list-comparators' to inspect available plugins. "
+                f"({exc})",
+            )
 
         ref_rows = data_ref.get(section, []) or []
         test_rows = data_test.get(section, []) or []
@@ -195,8 +213,15 @@ def run_verification(
             result["section_result"] = override_result
             log.info(f"    • {section}: forced result {override_result}")
         else:
-            counts = result.get("counts", {"compared": 0, "changed": 0})
-            log.info(f"    • {section}: diffs {counts.get('changed', 0)}/{counts.get('compared', 0)}")
+            counts = result.get("counts", {"compared": 0, "changed": 0, "only_ref": 0, "only_test": 0})
+            compared = counts.get("compared", 0)
+            changed = counts.get("changed", 0)
+            only_ref = counts.get("only_ref", 0)
+            only_test = counts.get("only_test", 0)
+            log.info(
+                f"    • {section}: changed {changed}/{compared}, "
+                f"missing {only_ref}, extra {only_test}"
+            )
 
         diffs = result.get("diffs", []) or []
         for diff in diffs[: max(0, min(print_diffs, len(diffs)))]:
@@ -211,7 +236,7 @@ def run_verification(
 
         all_results[section] = result
 
-    output_path = Path(output_file).resolve()
+    output_path = ensure_output_parent(output_file, label="Verification output file", component="VERIFY")
     final_json = assemble_report(
         schema=effective_schema,
         compare_results=all_results,

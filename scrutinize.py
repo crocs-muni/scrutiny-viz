@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Optional
 
 from scrutiny import logging as slog
+from scrutiny.errors import MapperError, ScrutinyError, UserInputError
+from scrutiny.validation import require_file
 
 from mapper.cli import add_mapper_args, run_from_namespace as run_mapper_from_namespace
 from mapper.service import map_single_file
@@ -67,7 +69,7 @@ def _resolve_mapper_type(*, explicit_type: Optional[str], shared_type: Optional[
     if shared_type:
         return shared_type
     if path.suffix.lower() == ".csv":
-        raise SystemExit(f"{role} input '{path}' is CSV, so a mapper type is required. Use --{role}-type or --type.")
+        raise UserInputError(f"{role} input '{path}' is CSV, so a mapper type is required. Use --{role}-type or --type.", component="FULL")
     return None
 
 
@@ -79,29 +81,53 @@ def _mapped_output_path(*, input_path: Path, mapped_dir: Optional[str], role: st
     return out_dir / f"{input_path.stem}_{role}.json"
 
 
-def _ensure_json_input(*, input_path: str, role: str, mapper_type: Optional[str], mapped_dir: Optional[str], delimiter: str, exclude_file: Optional[str]) -> tuple[Path, bool]:
+def _ensure_json_input(
+    *,
+    input_path: str,
+    role: str,
+    mapper_type: Optional[str],
+    mapped_dir: Optional[str],
+    delimiter: str,
+    exclude_file: Optional[str],
+) -> tuple[Path, bool]:
     log = slog.get_logger("FULL")
     src = Path(input_path).resolve()
     suffix = src.suffix.lower()
+    role_label = role.capitalize()
 
     if suffix == ".json":
-        return src, False
+        return require_file(src, label=f"{role_label} JSON input", component="FULL"), False
 
     if suffix != ".csv":
-        raise SystemExit(f"{role} input must be .json or .csv, got '{src.suffix}' for '{src}'.")
+        raise UserInputError(
+            f"{role} input must be .json or .csv, got '{src.suffix}' for '{src}'.",
+            component="FULL",
+        )
+
+    require_file(src, label=f"{role_label} CSV input", component="FULL")
 
     if not mapper_type:
-        raise SystemExit(f"{role} input '{src}' is CSV but no mapper type was provided. Use --{role}-type or --type.")
+        raise UserInputError(
+            f"{role} input '{src}' is CSV but no mapper type was provided. Use --{role}-type or --type.",
+            component="FULL",
+        )
 
     out_path = _mapped_output_path(input_path=src, mapped_dir=mapped_dir, role=role)
 
     log.step(f"Mapping {role} CSV", str(src))
-    written = map_single_file(file_path=src, mapper_type=mapper_type, delimiter=delimiter, exclude_file=exclude_file, output_path=out_path)
+    written = map_single_file(
+        file_path=src,
+        mapper_type=mapper_type,
+        delimiter=delimiter,
+        exclude_file=exclude_file,
+        output_path=out_path,
+    )
     if written is None:
-        raise SystemExit(f"Failed to map {role} CSV: {src}")
+        raise MapperError(f"Failed to map {role} CSV: {src}", component="FULL")
 
     log.ok(f"{role.capitalize()} mapped to {written}")
     return Path(written).resolve(), True
+
 
 def run_full_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(getattr(args, "verbose", 0))
@@ -110,8 +136,18 @@ def run_full_from_namespace(args: argparse.Namespace) -> int:
     ref_input = Path(args.reference).resolve()
     prof_input = Path(args.profile).resolve()
 
-    ref_type = _resolve_mapper_type(explicit_type=args.reference_type, shared_type=args.shared_type, path=ref_input, role="reference")
-    prof_type = _resolve_mapper_type(explicit_type=args.profile_type, shared_type=args.shared_type, path=prof_input, role="profile")
+    ref_type = _resolve_mapper_type(
+        explicit_type=args.reference_type,
+        shared_type=args.shared_type,
+        path=ref_input,
+        role="reference",
+    )
+    prof_type = _resolve_mapper_type(
+        explicit_type=args.profile_type,
+        shared_type=args.shared_type,
+        path=prof_input,
+        role="profile",
+    )
 
     reference_json, reference_was_mapped = _ensure_json_input(
         input_path=str(ref_input),
@@ -142,6 +178,7 @@ def run_full_from_namespace(args: argparse.Namespace) -> int:
         report=False,
     )
     if not verify_result.get("ok", False):
+        log.err(str(verify_result.get("error", "Verification failed.")))
         return int(verify_result.get("exit_code", 1))
 
     verification_json = Path(verify_result["output_json_path"]).resolve()
@@ -154,6 +191,7 @@ def run_full_from_namespace(args: argparse.Namespace) -> int:
         no_zip=args.no_zip,
     )
     if not report_result.get("ok", False):
+        log.err(str(report_result.get("error", "Report generation failed.")))
         return int(report_result.get("exit_code", 1))
 
     lines = [
@@ -195,5 +233,20 @@ def main(argv: Optional[list[str]] = None) -> int:
     return 2
 
 
+def _main_cli() -> int:
+    try:
+        return int(main())
+    except ScrutinyError as exc:
+        slog.setup_logging(1)
+        component = getattr(exc, "component", None) or "APP"
+        exit_code = int(getattr(exc, "exit_code", 1) or 1)
+        slog.get_logger(component).err(str(exc))
+        return exit_code
+    except Exception as exc:
+        slog.setup_logging(1)
+        slog.get_logger("APP").err(f"Unexpected error: {exc}")
+        return 1
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(_main_cli())

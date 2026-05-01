@@ -10,8 +10,20 @@ def _max_state(left: str, right: str) -> str:
     return left if _ORDER.get(left, 1) >= _ORDER.get(right, 1) else right
 
 
-def compute_severity(meta: dict, changed: int, compared: int) -> str:
-    """Return MATCH/WARN/SUSPICIOUS based on thresholds."""
+def compute_severity(
+    meta: dict,
+    changed: int,
+    compared: int,
+    only_ref: int = 0,
+    only_test: int = 0,
+) -> str:
+    """Return MATCH/WARN/SUSPICIOUS based on thresholds.
+
+    Presence-only differences are treated as SUSPICIOUS immediately.
+    """
+    if only_ref > 0 or only_test > 0:
+        return "SUSPICIOUS"
+
     if compared == 0 or changed == 0:
         return "MATCH"
 
@@ -375,7 +387,13 @@ def assemble_report(
             section_result = override_result
         else:
             severity_meta = _merge_severity_meta(schema, section_name, result_payload)
-            section_result = compute_severity(severity_meta, stats["changed"], stats["compared"])
+            section_result = compute_severity(
+                severity_meta,
+                stats["changed"],
+                stats["compared"],
+                stats["only_ref"],
+                stats["only_test"],
+            )
 
         overall_counts[section_result] = overall_counts.get(section_result, 0) + 1
         by_section[section_name] = {

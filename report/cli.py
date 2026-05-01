@@ -60,6 +60,7 @@ def run_from_namespace(args: argparse.Namespace) -> int:
     )
 
     if not result.get("ok", False):
+        log.err(result.get("error", "Report generation failed."))
         return int(result.get("exit_code", 1))
 
     message = f"report completed successfully. HTML written to: {result['html_path']}"

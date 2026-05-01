@@ -5,6 +5,7 @@ import argparse
 from typing import Optional
 
 from scrutiny import logging as slog
+from scrutiny.errors import ScrutinyError
 
 from .service import run_batch_verification
 
@@ -58,6 +59,9 @@ def run_from_namespace(args: argparse.Namespace) -> int:
 
     exit_code = int(result.get("exit_code", 0 if result.get("ok", False) else 1))
 
+    if not result.get("ok", False) and not result.get("summary_json_path"):
+        log.err(result.get("error", "batch-verify failed."))
+
     if result.get("summary_json_path"):
         status = "batch-verify completed with errors." if result.get("profile_errors", 0) else "batch-verify completed."
         log.info(
@@ -79,4 +83,11 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except ScrutinyError as exc:
+        slog.get_logger(getattr(exc, "component", "BATCH")).err(str(exc))
+        raise SystemExit(int(getattr(exc, "exit_code", 1)))
+    except Exception as exc:
+        slog.get_logger("BATCH").err(f"Unexpected error: {exc}")
+        raise SystemExit(1)

@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import Any
 
 from scrutiny import logging as slog
+from scrutiny.errors import MapperError, ReportError, ScrutinyError, UserInputError
 from scrutiny.paths import results_dir
+from scrutiny.validation import require_dir, require_file, require_path_exists
 
 from mapper import mapper_utils, registry as mapper_registry
 from mapper.mappers.contracts import build_context
@@ -45,8 +47,7 @@ def _is_json_file(path: Path) -> bool:
 
 
 def _input_kind(path: Path) -> str:
-    if not path.exists():
-        raise FileNotFoundError(f"Input path does not exist: {path}")
+    path = require_path_exists(path, label="Batch input path", component="BATCH")
     if path.is_dir():
         return "directory"
     if _is_json_file(path):
@@ -60,13 +61,9 @@ def _resolve_mapper_type(shared_type: str | None, specific_type: str | None) -> 
 
 def _discover_profile_inputs(*, profiles: list[str], profiles_dir: str | None) -> list[Path]:
     if profiles:
-        return [Path(profile).resolve() for profile in profiles]
+        return [require_path_exists(profile, label="Profile input", component="BATCH") for profile in profiles]
 
-    root = Path(profiles_dir or "").resolve()
-    if not root.exists():
-        raise FileNotFoundError(f"Profiles directory does not exist: {root}")
-    if not root.is_dir():
-        raise ValueError(f"--profiles-dir expects a directory, got: {root}")
+    root = require_dir(profiles_dir or "", label="Profiles directory", component="BATCH")
 
     items: list[Path] = []
     for child in sorted(root.iterdir(), key=lambda p: p.name.lower()):
@@ -112,21 +109,30 @@ def _map_input_to_json(
 
     if not mapper_type:
         if kind == "directory":
-            raise ValueError(
+            raise UserInputError(
                 f"{role} input '{input_path}' is a directory, so a mapper type is required. "
-                f"Use --{role}-type or --type."
+                f"Use --{role}-type or --type.",
+                component="BATCH",
             )
-        raise ValueError(
+        raise UserInputError(
             f"{role} input '{input_path}' is CSV/raw, so a mapper type is required. "
-            f"Use --{role}-type or --type."
+            f"Use --{role}-type or --type.",
+            component="BATCH",
         )
 
-    plugin = mapper_registry.get_plugin(mapper_type)
+    try:
+        plugin = mapper_registry.get_plugin(mapper_type)
+    except KeyError as exc:
+        raise UserInputError(
+            f"Unknown mapper type '{mapper_type}'. "
+            "Use 'python scrutinize.py map --list-mappers' to inspect available plugins.",
+            component="BATCH",
+        ) from exc
     context = build_context(delimiter=delimiter)
 
     if kind == "directory":
         if not getattr(plugin, "accepts_directories", False):
-            raise ValueError(f"Mapper '{mapper_type}' does not support directory input: {input_path}")
+            raise UserInputError(f"Mapper '{mapper_type}' does not support directory input: {input_path}", component="BATCH")
         payload = plugin.map_path(input_path, context)
     else:
         try:
@@ -134,7 +140,7 @@ def _map_input_to_json(
         except Exception:
             groups = mapper_utils.load_file(str(input_path))
             if groups is None:
-                raise ValueError(f"Failed to load raw input file: {input_path}")
+                raise MapperError(f"Failed to load raw input file: {input_path}", component="BATCH")
             payload = plugin.map_groups(groups, context)
 
     mapped_label = mapped_stem or _label_from_input(input_path)
@@ -193,14 +199,15 @@ def _generate_report_into_batch(
         no_zip=True,
     )
     if not report_result.get("ok", False):
-        raise RuntimeError(
+        raise ReportError(
             f"Failed to build HTML report for {verify_json_path}: "
-            f"{report_result.get('error', 'unknown error')}"
+            f"{report_result.get('error', 'unknown error')}",
+            component="BATCH",
         )
 
     source = Path(report_result["html_path"]).resolve()
     if not source.exists():
-        raise FileNotFoundError(f"Expected generated report not found: {source}")
+        raise ReportError(f"Expected generated report not found: {source}", component="BATCH")
 
     destination = report_dir / f"{output_stem}.html"
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -222,10 +229,17 @@ def run_batch_verification(
     report_mode: str = "nonmatch",
     keep_mapped: bool = False,
 ) -> dict[str, Any]:
-    profile_inputs = _discover_profile_inputs(profiles=profiles or [], profiles_dir=profiles_dir)
+    try:
+        schema_resolved = require_file(schema_path, label="Schema file", component="BATCH")
+        profile_inputs = _discover_profile_inputs(profiles=profiles or [], profiles_dir=profiles_dir)
+    except ScrutinyError as exc:
+        return {"ok": False, "exit_code": int(getattr(exc, "exit_code", 1)), "error": str(exc)}
+
     if not profile_inputs:
         log.err("No profile inputs found.")
         return {"ok": False, "exit_code": 1, "error": "No profile inputs found."}
+
+    schema_path = str(schema_resolved)
 
     batch_name = _slug(batch_id or _default_batch_id())
     batch_root = results_dir() / batch_name
@@ -337,7 +351,7 @@ def run_batch_verification(
 
     inputs_payload = {
         "batch_id": batch_name,
-        "schema_path": str(Path(schema_path).resolve()),
+        "schema_path": str(schema_resolved),
         "reference_input": str(reference_input_path),
         "reference_json_path": _relative_str(reference_json_path, batch_root),
         "reference_type": reference_mapper_type or "",

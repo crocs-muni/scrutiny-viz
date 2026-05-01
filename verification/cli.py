@@ -5,6 +5,7 @@ import argparse
 from typing import Optional
 
 from scrutiny import logging as slog
+from scrutiny.errors import ScrutinyError
 
 from .comparators import registry as comparator_registry
 from .service import run_verification
@@ -30,7 +31,7 @@ def add_verify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-o", "--output-file", default="verification.json", help="Output JSON path")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase log verbosity (-v, -vv)")
     parser.add_argument("--emit-matches", action="store_true", help="(kept for compatibility; comparators may use it)")
-    parser.add_argument("--print-diffs", type=int, default=3, metavar="N", help="Print up to N diffs per section (default: 3, 0 to disable)")
+    parser.add_argument("--print-diffs", type=int, default=10, metavar="N", help="Print up to N diffs per section (default: 10, 0 to disable)")
     parser.add_argument("--print-matches", type=int, default=0, metavar="N", help="Print up to N matches per section (default: 0)")
     parser.add_argument("--report", action="store_true", help="Create an HTML report after verification")
     parser.add_argument("--list-comparators", action="store_true", help="List discovered comparator plugins and exit")
@@ -72,6 +73,7 @@ def run_from_namespace(args: argparse.Namespace) -> int:
         report=args.report,
     )
     if not result.get("ok", False):
+        log.err(result.get("error", "Verification failed."))
         return int(result.get("exit_code", 1))
 
     message = (
@@ -95,8 +97,9 @@ def main(argv: Optional[list[str]] = None) -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
+    except ScrutinyError as exc:
+        slog.get_logger(getattr(exc, "component", "VERIFY")).err(str(exc))
+        raise SystemExit(int(getattr(exc, "exit_code", 1)))
     except Exception as exc:
-        from scrutiny import logging as slog
-
-        slog.get_logger("VERIFY").err(f"Error: {exc}")
+        slog.get_logger("VERIFY").err(f"Unexpected error: {exc}")
         raise SystemExit(1)
