@@ -1180,3 +1180,121 @@ label[for="jumpMod"]{
     min-width:0;
   }
 } 
+
+/* ============================
+   Comparison names
+   ============================ */
+.comparison-names{
+  display:inline-flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px 14px;
+  margin:6px 0 10px 0;
+  padding:6px 10px;
+  border:1px solid var(--table-border);
+  border-radius:9999px;
+  background:var(--surface-2);
+  font-size:13px;
+}
+
+.comparison-names p{
+  margin:0;
+}
+
+.comparison-names p:last-child{
+  margin-bottom:0;
+}
+
+/* ============================
+   Jump to module buttons
+   ============================ */
+.jump-module-label {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.jump-module-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 12px 0;
+}
+
+.jump-module-btn {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--table-border);
+  text-decoration: none;
+  font-size: 13px;
+  color: var(--main-color);
+  background: rgba(0,0,0,0.04);
+}
+
+.jump-module-btn:hover {
+  background: rgba(0,0,0,0.08);
+}
+
+.jump-module-btn.match {
+  border-color: rgba(76,175,80,0.45);
+  background: rgba(76,175,80,0.14);
+}
+
+.jump-module-btn.warn {
+  border-color: rgba(201,180,0,0.45);
+  background: rgba(201,180,0,0.14);
+}
+
+.jump-module-btn.suspicious {
+  border-color: rgba(192,68,68,0.45);
+  background: rgba(192,68,68,0.14);
+}
+
+body[data-theme="dark"] .jump-module-btn {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.14);
+}
+
+body[data-theme="dark"] .jump-module-btn.match {
+  border-color: rgba(76,175,80,0.55);
+  background: rgba(76,175,80,0.22);
+}
+
+body[data-theme="dark"] .jump-module-btn.warn {
+  border-color: rgba(201,180,0,0.60);
+  background: rgba(201,180,0,0.24);
+}
+
+body[data-theme="dark"] .jump-module-btn.suspicious {
+  border-color: rgba(192,68,68,0.60);
+  background: rgba(192,68,68,0.24);
+}
+
+/* ============================
+   Help text
+   ============================ */
+.help-text {
+  font-size: 13px;
+  opacity: 0.92;
+  padding: 8px 10px;
+  border: 1px solid var(--table-border);
+  border-radius: 12px;
+  background: rgba(0,0,0,0.025);
+}
+
+body[data-theme="dark"] .help-text {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.12);
+}
+
+.trace-empty-placeholder {
+  grid-column: 1 / -1;
+  min-height: 120px;
+  padding: 24px;
+  border: 1px dashed var(--table-border);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--muted-color);
+  background: var(--surface-2);
+}

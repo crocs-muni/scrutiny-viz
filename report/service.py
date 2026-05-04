@@ -5,6 +5,7 @@ import json
 import os
 import re
 import zipfile
+import hashlib
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -46,6 +47,33 @@ RESULT_TEXT = {
 _ID_PATTERN = re.compile(r"[^A-Za-z0-9_-]+")
 _LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 _BOOLISH_STRINGS = {"true", "false", "yes", "no", "supported", "unsupported", "1", "0"}
+
+
+def sha256_file(path: str | os.PathLike[str]) -> str | None:
+    try:
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except Exception:
+        return None
+
+
+def display_state(value: Any) -> str:
+    raw = "" if value is None else str(value)
+    state = raw.strip().upper()
+
+    if state == "MATCH":
+        return "Match"
+    if state == "WARN":
+        return "Warning"
+    if state == "SUSPICIOUS":
+        return "Suspicious"
+    if state == "ERROR":
+        return "Error"
+
+    return raw
 
 
 def safe_id(value: str) -> str:
@@ -372,7 +400,7 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
 
     tags.h2(f"Module: {section_name}", id=anchor_id)
     with tags.div():
-        tags.span(state.name, style="font-weight:bold;")
+        tags.span(display_state(state.name), style="font-weight:bold;", title=TOOLTIP_TEXT.get(state, ""))
 
     report_cfg = section.get("report") or {}
     doc_text = (report_cfg.get("doc_text") or "").strip()
@@ -434,10 +462,13 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
                 button_title="Show/hide table: Boolean / binary differences",
                 hide=False,
             ):
-                tags.p(
-                    "If a capability is supported by the reference but not by the profile (or vice versa), the cards likely do not match.",
-                    cls="hint",
-                )
+                with tags.p(cls="hint help-text"):
+                    tags.span("Help", cls="badge badge-neutral")
+                    tags.span(
+                        " If a capability is supported by the reference but not by the profile "
+                        "(or vice versa), the cards likely do not match."
+                    )
+
                 table(["Item", "Reference", "Profile"], buckets["boolean_rows"])
 
         if buckets["string_rows"]:
@@ -474,11 +505,18 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
         if section.get("matches"):
             with toggle_block(
                 block_id=f"{divname}_matches",
-                title="Matches",
+                title="Field-level matches",
                 button_text="Table",
-                button_title="Show/hide table: Matches",
+                button_title="Show/hide table: Field-level matches",
                 hide=True,
             ):
+                with tags.p(cls="hint help-text"):
+                    tags.span("Help", cls="badge badge-neutral")
+                    tags.span(
+                        " This table lists individual fields that matched. "
+                        "The same item may still have differences in another field."
+                    )
+
                 rows = []
                 labels = (section.get("key_labels") or section.get("labels") or {})
                 for match in section["matches"]:
@@ -502,7 +540,7 @@ def render_module_card(section_name: str, section: Dict[str, Any], idx: int, *, 
                 if rows:
                     table(["Item", "Field", "Value"], rows)
                 else:
-                    tags.p("No relevant matches to display (filtered noisy fields).")
+                    tags.p("No relevant field-level matches to display.")
 
     tags.hr()
 
@@ -511,7 +549,16 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
     ref_name = report.get("reference_name", "reference")
     prof_name = report.get("profile_name", "profile")
 
-    tags.h1("Verification of profile against")
+    tags.h1("Verification of profile against reference profile")
+    with tags.div(cls="comparison-names"):
+        tags.span()
+        tags.strong("Reference device: ")
+        tags.span(ref_name)
+
+        tags.span()
+        tags.strong("Profile device: ")
+        tags.span(prof_name)
+
     with tags.p(cls="intro-oneline"):
         tags.strong("Reference:")
         tags.span(" baseline measurement used as the expected/known-good comparison point. ")
@@ -530,45 +577,58 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
             tags.span("i")
             with tags.span(cls="tooltiptext info", style="left:0; transform:translateX(-20%);"):
                 tags.strong("Result: ")
-                tags.span(RESULT_TEXT[overall_state](suspicions))
+                tags.span(RESULT_TEXT[overall_state](suspicions).replace("WARN", "WARNING"))
                 tags.br()
                 tags.br()
                 tags.strong("Methodology: ")
                 tags.span(
-                    "WARN when changes are below configured thresholds; SUSPICIOUS when changed/compared exceeds "
-                    "the ratio threshold or the change count exceeds the count threshold."
+                    "WARNING when changes are below configured thresholds; SUSPICIOUS when changed/compared exceeds "
+                    "the ratio threshold or the change count exceeds the count threshold. Missing/extra records are treated as suspicious."
                 )
 
     with tags.div(id="modules"):
         for name, section in iter_sections_issues_first(report):
-            render_status_dot_link(section_name=name, state=state_enum(section.get("result", "WARN")), target_id=safe_id(name))
+            render_status_dot_link(
+                section_name=name,
+                state=state_enum(section.get("result", "WARN")),
+                target_id=safe_id(name),
+            )
+
         with tags.div(cls="dot-legend"):
             with tags.span(cls="legend-item"):
                 tags.span("", cls="legend-dot match")
-                tags.span("Match")
+                tags.span(display_state("MATCH"))
             with tags.span(cls="legend-item"):
                 tags.span("", cls="legend-dot warn")
-                tags.span("Warn")
+                tags.span(display_state("WARN"))
             with tags.span(cls="legend-item"):
                 tags.span("", cls="legend-dot suspicious")
-                tags.span("Suspicious")
+                tags.span(display_state("SUSPICIOUS"))
 
     tags.h3("Quick visibility settings")
     tags.button("Show All", onclick="showAllToggles()")
     tags.button("Hide All", onclick="hideAllToggles()")
     tags.button("Default", onclick="defaultToggles()")
+    tags.button("Toggle light/dark mode", onclick="toggleTheme()", title="Switch report theme")
 
-    sections = [name for name, _section in iter_sections_issues_first(report)]
+    sections = [(name, section) for name, section in iter_sections_issues_first(report)]
     if sections:
-        with tags.div():
-            tags.label("Jump to module: ", _for="jumpMod")
-            select = tags.select(id="jumpMod", onchange="location.hash=this.value")
-            for name in sections:
-                select.add(tags.option(name, value=safe_id(name)))
+        tags.div("Jump to module:", cls="jump-module-label")
+
+        with tags.div(cls="jump-module-buttons"):
+            for name, section in sections:
+                state = state_enum(section.get("result", "WARN")).name.lower()
+                tags.a(
+                    name,
+                    href=f"#{safe_id(name)}",
+                    cls=f"jump-module-btn {state}",
+                    title=f"Jump to module: {name}",
+                )
 
     meta = report.get("meta", {}) or {}
     schema_title = meta.get("schema_title")
     details_id = "intro_details"
+
     with tags.div(cls="intro-details-bar"):
         tags.button(
             "Details",
@@ -577,15 +637,21 @@ def render_intro_left(report: Dict[str, Any], *, overall_state: ContrastState, s
             onclick=f"hideButton('{details_id}')",
             **{"data-toggle-target": details_id, "aria-expanded": "false"},
         )
+
     with tags.div(id=details_id, cls="toggle-block", style="display:none;", **{"data-default": "hide"}):
         with tags.div(cls="intro-meta"):
             tags.p(f"Generated on: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
             tags.p(f"Generated from: {src_path}")
-            tags.p(f"Reference label: {ref_name}")
-            tags.p(f"Profile label: {prof_name}")
+
+            src_hash = sha256_file(src_path)
+            if src_hash:
+                tags.p(f"Generated-from SHA256: {src_hash}")
+
+            tags.p(f"Reference label used in report: {ref_name}")
+            tags.p(f"Profile label used in report: {prof_name}")
+
             if schema_title:
                 tags.p(f"Schema: {schema_title}")
-
 
 def render_intro_right(report: Dict[str, Any]):
     dashboard = report.get("dashboard", {}) or {}
@@ -601,7 +667,10 @@ def render_intro_right(report: Dict[str, Any]):
         total_compared += int(stats.get("compared", 0) or 0)
 
     donut_plugin = viz_registry.get_plugin("donut")
-    tip_modules = "Overall modules: counts how many modules ended as Match/Warn/Suspicious (one verdict per module)."
+    tip_modules = (
+        "Overall modules: counts how many modules ended as "
+        "MATCH/WARNING/SUSPICIOUS (one verdict per module)."
+    )
     tip_results = "Overall results: aggregates all compared items across modules: matches vs differences (including missing/extra)."
 
     with tags.div(_class="donut-stack"):
@@ -614,7 +683,7 @@ def render_intro_right(report: Dict[str, Any]):
                 radius=52,
                 stroke=18,
                 center_label=str(sum(int(overall_counts.get(k, 0) or 0) for k in ("MATCH", "WARN", "SUSPICIOUS"))),
-                legend_labels={"MATCH": "Match", "WARN": "Warn", "SUSPICIOUS": "Suspicious"},
+                legend_labels={"MATCH": display_state("MATCH"), "WARN": display_state("WARN"), "SUSPICIOUS": display_state("SUSPICIOUS")},
                 variant=None,
             )
         )
@@ -745,7 +814,7 @@ def run_report_html(
         for section in report.get("sections", {}).values()
         if state_enum(section.get("result", "WARN")).value >= ContrastState.WARN.value
     )
-    log.info(f"Overall state: {overall_state.name}")
+    log.info(f"Overall state: {display_state(overall_state.name)}")
 
     log.step("Loading JS")
     script = _load_text_file(JS_DIR, kind="JS")
