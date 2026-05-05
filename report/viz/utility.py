@@ -137,7 +137,7 @@ def state_badge(state: str) -> tags.span:
         kind = "warn"
     elif state_up == "SUSPICIOUS":
         kind = "bad"
-    return badge(display_state(state_up) or "UNKNOWN", kind, title=state_description(state_up))
+    return badge(display_state(state_up) or "Unknown", kind, title=state_description(state_up))
 
 
 def state_border_style(state: str) -> str:

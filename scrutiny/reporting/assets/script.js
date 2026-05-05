@@ -89,6 +89,17 @@ function displayStateText(value) {
   return raw;
 }
 
+function stateBadgeClass(value) {
+  var state = String(value || "").toUpperCase();
+
+  if (state === "MATCH") return "badge-ok";
+  if (state === "WARN") return "badge-warn";
+  if (state === "SUSPICIOUS") return "badge-bad";
+  if (state === "ERROR") return "badge-bad";
+
+  return "badge-neutral";
+}
+
 /**
  * Back-to-top button
  */
@@ -731,15 +742,34 @@ document.addEventListener("DOMContentLoaded", function () {
     img.alt = name || "Trace preview";
     title.textContent = name || "Trace preview";
 
-    var meta = [];
-    if (state) meta.push("State: " + state);
-    if (value) meta.push("Value: " + value);
+    subtitle.textContent = "";
 
-    if (tracePreviewLinks.length > 1 && tracePreviewIndex >= 0) {
-      meta.push("Image " + (tracePreviewIndex + 1) + " of " + tracePreviewLinks.length);
+    if (state) {
+      var stateLabel = document.createElement("span");
+      stateLabel.textContent = "State: ";
+      subtitle.appendChild(stateLabel);
+
+      var badge = document.createElement("span");
+      badge.className = "badge " + stateBadgeClass(link.getAttribute("data-state") || "");
+      badge.textContent = displayStateText(link.getAttribute("data-state") || "");
+      subtitle.appendChild(badge);
     }
 
-    subtitle.textContent = meta.join(" | ");
+    if (value) {
+      if (subtitle.childNodes.length) {
+        subtitle.appendChild(document.createTextNode(" | "));
+      }
+      subtitle.appendChild(document.createTextNode("Value: " + value));
+    }
+
+    if (tracePreviewLinks.length > 1 && tracePreviewIndex >= 0) {
+      if (subtitle.childNodes.length) {
+        subtitle.appendChild(document.createTextNode(" | "));
+      }
+      subtitle.appendChild(
+        document.createTextNode("Image " + (tracePreviewIndex + 1) + " of " + tracePreviewLinks.length)
+      );
+    }
 
     modal.classList.add("is-open");
     modal.setAttribute("aria-hidden", "false");

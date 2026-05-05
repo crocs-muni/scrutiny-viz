@@ -325,13 +325,22 @@ def render_tracescompare_table(section: Dict[str, Any], ref_name: str, prof_name
                 has_issues = (warn_count + suspicious_count) > 0
 
                 tags.h4(f"Pipeline: {pipeline_code}", title=pipeline_description(pipeline_code))
-                tags.p(
-                    f"This pipeline uses metric '{metric_type}'. "
-                    f"Match bound is {match_bound} and warning bound is {warn_bound}. "
-                    f"Out of {len(comparisons)} comparisons, {match_count} are {display_state('MATCH')}, "
-                    f"{warn_count} are {display_state('WARN')}, and {suspicious_count} are {display_state('SUSPICIOUS')}. "
-                    f"Overall pipeline state is {display_state(pipeline.get('comparison_state', ''))}."
-                )
+
+                pipeline_info_block_id = f"trace_pipeline_info_{operation_idx}_{pipeline_idx}"
+                with toggle_block(
+                    block_id=pipeline_info_block_id,
+                    title=f"Pipeline info: {pipeline_code}",
+                    button_text="Info",
+                    button_title=f"Show/hide pipeline info: {pipeline_code}",
+                    hide=True,
+                ):
+                    tags.p(
+                        f"This pipeline uses metric '{metric_type}'. "
+                        f"Match bound is {match_bound} and warning bound is {warn_bound}. "
+                        f"Out of {len(comparisons)} comparisons, {match_count} are {display_state('MATCH')}, "
+                        f"{warn_count} are {display_state('WARN')}, and {suspicious_count} are {display_state('SUSPICIOUS')}. "
+                        f"Overall pipeline state is {display_state(pipeline.get('comparison_state', ''))}."
+                    )
 
                 photo_block_id = f"trace_photos_{operation_idx}_{pipeline_idx}"
                 photo_title = (
