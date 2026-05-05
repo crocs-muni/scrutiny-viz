@@ -8,6 +8,8 @@ from typing import Any, Dict, Optional
 import yaml
 
 from scrutiny import logging as slog
+from scrutiny.errors import SchemaError
+from scrutiny.validation import require_file
 
 log = slog.get_logger("SCHEMA")
 
@@ -48,7 +50,7 @@ class SchemaLoader:
     def _warn_or_raise(self, msg: str, *, fatal: bool = False) -> None:
         if fatal or self.strict:
             log.err(msg)
-            raise ValueError(msg)
+            raise SchemaError(msg)
         log.warn(msg)
 
     def _validate_category(self, field_name: str, category: Optional[str], section: str) -> None:
@@ -187,8 +189,11 @@ class SchemaLoader:
         except Exception:
             pass
 
-        with open(abs_path, "r", encoding="utf-8") as f:
-            return f.read()
+        try:
+            with open(abs_path, "r", encoding="utf-8") as f:
+                return f.read()
+        except OSError as exc:
+            raise SchemaError(f"Section '{section}': failed to read report.doc file: {relative_path} ({exc})") from exc
 
     def _normalize_defaults(self, defaults: Dict[str, Any]) -> Dict[str, Any]:
         data_defaults = defaults.get("data", {}) or {}
@@ -334,8 +339,14 @@ class SchemaLoader:
         }
 
     def load(self) -> LoadedSchema:
-        with open(self.yaml_path, "r", encoding="utf-8") as f:
-            raw = yaml.safe_load(f) or {}
+        schema_path = require_file(self.yaml_path, label="Schema file", component="SCHEMA")
+        try:
+            with schema_path.open("r", encoding="utf-8") as f:
+                raw = yaml.safe_load(f) or {}
+        except yaml.YAMLError as exc:
+            raise SchemaError(f"Schema file is not valid YAML: {schema_path} ({exc})") from exc
+        except OSError as exc:
+            raise SchemaError(f"Failed to read schema file: {schema_path} ({exc})") from exc
 
         version = str(raw.get("schema_version", "")).strip()
         if version not in _SUPPORTED_SCHEMA_VERSIONS:

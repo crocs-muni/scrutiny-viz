@@ -8,11 +8,13 @@ from dominate import tags
 from .contracts import VizPlugin, VizSpec
 from .utility import (
     comparison_similarity_percentages,
+    display_state,
     first_token,
     format_number,
     format_percent,
     format_pp,
     operation_similarity_percentages,
+    pipeline_description,
     render_table_block,
     row_key,
     row_value,
@@ -258,7 +260,7 @@ def render_tracescompare_table(section: Dict[str, Any], ref_name: str, prof_name
             ])
         container.add(
             render_table_block(
-                ["Operation", "Present in profile", "State", "Match", "Warn", "Suspicious"],
+                ["Operation", "Present in profile", "State", display_state("MATCH"), display_state("WARN"), display_state("SUSPICIOUS")],
                 summary_rows,
             )
         )
@@ -301,7 +303,7 @@ def render_tracescompare_table(section: Dict[str, Any], ref_name: str, prof_name
                 tags.h4("Pipeline summary")
                 container.add(
                     render_table_block(
-                        ["Pipeline", "Metric", "Match bound", "Warn bound", "Comparisons", "Match", "Warn", "Suspicious", "State"],
+                        ["Pipeline", "Metric", "Match bound", "Warning bound", "Comparisons", display_state("MATCH"), display_state("WARN"), display_state("SUSPICIOUS"), "State"],
                         pipeline_summary_rows,
                     )
                 )
@@ -322,17 +324,30 @@ def render_tracescompare_table(section: Dict[str, Any], ref_name: str, prof_name
                 match_count, warn_count, suspicious_count = _pipeline_counts(comparisons)
                 has_issues = (warn_count + suspicious_count) > 0
 
-                tags.h4(f"Pipeline: {pipeline_code}")
-                tags.p(
-                    f"This pipeline uses metric '{metric_type}'. "
-                    f"Match bound is {match_bound} and warn bound is {warn_bound}. "
-                    f"Out of {len(comparisons)} comparisons, {match_count} are MATCH, "
-                    f"{warn_count} are WARN, and {suspicious_count} are SUSPICIOUS. "
-                    f"Overall pipeline state is {str(pipeline.get('comparison_state', ''))}."
-                )
+                tags.h4(f"Pipeline: {pipeline_code}", title=pipeline_description(pipeline_code))
+
+                pipeline_info_block_id = f"trace_pipeline_info_{operation_idx}_{pipeline_idx}"
+                with toggle_block(
+                    block_id=pipeline_info_block_id,
+                    title=f"Pipeline info: {pipeline_code}",
+                    button_text="Info",
+                    button_title=f"Show/hide pipeline info: {pipeline_code}",
+                    hide=True,
+                ):
+                    tags.p(
+                        f"This pipeline uses metric '{metric_type}'. "
+                        f"Match bound is {match_bound} and warning bound is {warn_bound}. "
+                        f"Out of {len(comparisons)} comparisons, {match_count} are {display_state('MATCH')}, "
+                        f"{warn_count} are {display_state('WARN')}, and {suspicious_count} are {display_state('SUSPICIOUS')}. "
+                        f"Overall pipeline state is {display_state(pipeline.get('comparison_state', ''))}."
+                    )
 
                 photo_block_id = f"trace_photos_{operation_idx}_{pipeline_idx}"
-                photo_title = f"Comparison photos (all: {len(comparisons)}, warn: {warn_count}, suspicious: {suspicious_count})"
+                photo_title = (
+                    f"Comparison photos (all: {len(comparisons)}, "
+                    f"issues: {warn_count + suspicious_count} = warning + suspicious, "
+                    f"warning: {warn_count}, suspicious: {suspicious_count})"
+                )
 
                 with toggle_block(
                     block_id=photo_block_id,
@@ -344,9 +359,9 @@ def render_tracescompare_table(section: Dict[str, Any], ref_name: str, prof_name
                     with tags.div(_class="trace-filterbar", **{"data-trace-filterbar": photo_block_id, "data-active-filter": "all"}):
                         tags.button(f"All ({len(comparisons)})", type="button", _class="trace-filter-btn active", **{"data-filter": "all"})
                         tags.button(f"Issues ({warn_count + suspicious_count})", type="button", _class="trace-filter-btn", **{"data-filter": "issues"})
-                        tags.button(f"Warn ({warn_count})", type="button", _class="trace-filter-btn", **{"data-filter": "warn"})
-                        tags.button(f"Suspicious ({suspicious_count})", type="button", _class="trace-filter-btn", **{"data-filter": "suspicious"})
-                        tags.button(f"Match ({match_count})", type="button", _class="trace-filter-btn", **{"data-filter": "match"})
+                        tags.button(f"{display_state('WARN')} ({warn_count})", type="button", _class="trace-filter-btn", **{"data-filter": "warn"})
+                        tags.button(f"{display_state('SUSPICIOUS')} ({suspicious_count})", type="button", _class="trace-filter-btn", **{"data-filter": "suspicious"})
+                        tags.button(f"{display_state('MATCH')} ({match_count})", type="button", _class="trace-filter-btn", **{"data-filter": "match"})
 
                     with tags.div(_class="trace-grid", **{"data-trace-grid": photo_block_id}) as grid:
                         for comparison in comparisons:
@@ -361,7 +376,6 @@ def render_tracescompare_table(section: Dict[str, Any], ref_name: str, prof_name
 
                 tags.br()
 
-            tags.h4("Execution times section")
             exec_rows: List[List[Any]] = []
             for exec_idx, exec_time in enumerate(operation.get("exec_times") or [], start=1):
                 match_lower = float(operation.get("exec_time_match_lower_bound", 0.0) or 0.0)
@@ -385,9 +399,10 @@ def render_tracescompare_table(section: Dict[str, Any], ref_name: str, prof_name
                 ])
 
             if exec_rows:
+                tags.h4("Execution times section")
                 container.add(
                     render_table_block(
-                        ["Measurement", "Match bounds", "Warn bounds", "Execution time value", "State"],
+                        ["Measurement", "Match bounds", "Warning bounds", "Execution time value", "State"],
                         exec_rows,
                     )
                 )
@@ -488,7 +503,7 @@ def render_traceclassifier_table(section: Dict[str, Any], ref_name: str, prof_na
                 f"Detected intervals: {len(intervals)} | "
                 f"Best similarity: {'' if best_value is None else format_number(best_value, precision=4, trim=True)} | "
                 f"Type: {str(operation.get('similarity_value_type', ''))} | "
-                f"State: {str(operation.get('comparison_state', 'MATCH'))}"
+                f"State: {display_state(operation.get('comparison_state', 'MATCH'))}"
             )
 
             comparisons: List[Dict[str, Any]] = []

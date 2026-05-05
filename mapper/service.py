@@ -6,11 +6,24 @@ from pathlib import Path
 from typing import Optional, Set
 
 from scrutiny import logging as slog
+from scrutiny.errors import MapperError, ScrutinyError, UserInputError
+from scrutiny.validation import ensure_output_parent, require_dir, require_path_exists
 
 from . import mapper_utils, registry
 from .mappers.contracts import build_context
 
 log = slog.get_logger("MAPPER")
+
+
+def _get_mapper_plugin(mapper_type: str):
+    try:
+        return registry.get_plugin(mapper_type)
+    except KeyError as exc:
+        raise UserInputError(
+            f"Unknown mapper type '{mapper_type}'. "
+            "Use 'python scrutinize.py map --list-mappers' to inspect available plugins.",
+            component="MAPPER",
+        ) from exc
 
 
 def _default_output_path(src_path: Path) -> Path:
@@ -35,15 +48,16 @@ def _directory_mode_output_path(source_path: Path, output_hint: Optional[str]) -
 
 
 def _write_json_output(out_path: Path, result: dict) -> Optional[Path]:
-    out_path.parent.mkdir(parents=True, exist_ok=True)
     try:
+        out_path = ensure_output_parent(out_path, label="Mapper output file", component="MAPPER")
         with open(out_path, "w", encoding="utf-8") as handle:
             json.dump(result, handle, indent=4, ensure_ascii=False)
         log.info(f"Result saved to {out_path}")
         return out_path
+    except ScrutinyError:
+        raise
     except Exception as exc:
-        log.err(f"Failed to write output to {out_path}: {exc}")
-        return None
+        raise MapperError(f"Failed to write output to {out_path}: {exc}") from exc
 
 
 def process_source(
@@ -53,19 +67,20 @@ def process_source(
     excluded_properties: Optional[Set[str]] = None,
     output_path: Optional[Path] = None,
 ) -> Optional[Path]:
-    plugin = registry.get_plugin(mapper_type)
+    plugin = _get_mapper_plugin(mapper_type)
     canonical_type = registry.normalize_type(mapper_type)
 
-    src_path = Path(source_path).resolve()
+    src_path = require_path_exists(source_path, label="Mapper source path", component="MAPPER")
     log.info(f"Processing source: {src_path} (type={canonical_type})")
 
     context = build_context(delimiter=delimiter, excluded_properties=excluded_properties)
 
     try:
         final_result = plugin.map_path(src_path, context)
+    except ScrutinyError:
+        raise
     except Exception as exc:
-        log.err(f"Failed to map source {src_path}: {exc}")
-        return None
+        raise MapperError(f"Failed to map source {src_path}: {exc}") from exc
 
     if excluded_properties:
         final_result = mapper_utils.apply_exclusions(final_result, excluded_properties)
@@ -121,15 +136,8 @@ def process_folder(
     delimiter: str = ";",
     excluded_properties: Optional[Set[str]] = None,
 ) -> list[Path]:
-    source_path = Path(folder_path).resolve()
-    plugin = registry.get_plugin(mapper_type)
-
-    if not source_path.exists():
-        log.err(f"Source folder does not exist: {source_path}")
-        return []
-    if not source_path.is_dir():
-        log.err(f"Path is not a directory: {source_path}")
-        return []
+    source_path = require_dir(folder_path, label="Source folder", component="MAPPER")
+    plugin = _get_mapper_plugin(mapper_type)
 
     if plugin.accepts_directories:
         out_path = _directory_mode_output_path(source_path, output_folder)
@@ -146,8 +154,7 @@ def process_folder(
 
     csv_files = list(source_path.rglob("*.csv"))
     if not csv_files:
-        log.warn(f"No CSV files found in {source_path}")
-        return []
+        raise UserInputError(f"No CSV files found in source folder: {source_path}", component="MAPPER")
 
     output_path.mkdir(parents=True, exist_ok=True)
 

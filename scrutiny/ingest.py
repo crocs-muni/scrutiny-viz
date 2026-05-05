@@ -6,6 +6,8 @@ from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
 from scrutiny import logging as slog
+from scrutiny.errors import IngestError
+from scrutiny.validation import require_file
 
 ingest_log = slog.get_logger("INGEST")
 
@@ -169,11 +171,17 @@ class JsonParser:
         ingest_log.info(f"Applied defaults dynamically to section '{section_name}'")
 
     def parse(self, json_path: str) -> ParsedJson:
-        with open(json_path, "r", encoding="utf-8") as f:
-            raw = json.load(f)
+        input_path = require_file(json_path, label="Input JSON file", component="INGEST")
+        try:
+            with input_path.open("r", encoding="utf-8") as f:
+                raw = json.load(f)
+        except json.JSONDecodeError as exc:
+            raise IngestError(f"Input JSON file is not valid JSON: {input_path} ({exc})") from exc
+        except OSError as exc:
+            raise IngestError(f"Failed to read input JSON file: {input_path} ({exc})") from exc
 
         if not isinstance(raw, dict):
-            raise TypeError(f"Top-level JSON must be an object, got {type(raw).__name__}")
+            raise IngestError(f"Top-level JSON must be an object, got {type(raw).__name__}")
 
         parsed = ParsedJson(ingest_meta=self._make_ingest_meta())
         parsed._ingest_meta.update(

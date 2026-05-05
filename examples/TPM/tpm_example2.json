@@ -1,611 +1,364 @@
 {
+  "_type": "tpm-perf",
   "TPM_INFO": [
     {
-      "name": "TestedAndProvidedBy",
+      "name": "Tested and provided by",
       "value": ""
+    },
+    {
+      "name": "Execution date/time",
+      "value": "2019/05/17 09:02:56"
     },
     {
       "name": "Manufacturer",
       "value": "INTC"
     },
     {
-      "name": "VendorString",
+      "name": "Vendor string",
       "value": "Intel"
     },
     {
-      "name": "FirmwareVersion",
-      "value": "11.0.0.1202"
+      "name": "Firmware version",
+      "value": "10.0.36.1030"
     },
     {
-      "name": "ImageTag",
+      "name": "Image tag",
       "value": "v1.0"
     }
   ],
   "TPM2_Create": [
     {
-      "algorithm": "TPM2_Create|ECC|0x0003",
-      "op_name": "ECC 0x0003",
+      "algorithm": "TPM2_Create|Key parameters=ECC 0x0003",
+      "op_name": "TPM2_Create",
       "measurement_config": "Key parameters=ECC 0x0003",
-      "avg_ms": 300.61,
-      "min_ms": 308.45,
-      "max_ms": 340.5,
+      "avg_ms": 190.02,
+      "min_ms": 179.92,
+      "max_ms": 196.48,
       "total_iterations": 1000,
-      "total_invocations": 1000,
-      "notes": "failed=0"
+      "total_invocations": 1000
     },
     {
-      "algorithm": "TPM2_Create|ECC|0x0010",
-      "op_name": "ECC 0x0010",
-      "measurement_config": "Key parameters=ECC 0x0010",
-      "avg_ms": 696.88,
-      "min_ms": 624.27,
-      "max_ms": 644.51,
-      "total_iterations": 1000,
-      "total_invocations": 1000,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_Create|HMAC",
-      "op_name": "HMAC",
+      "algorithm": "TPM2_Create|Key parameters=HMAC",
+      "op_name": "TPM2_Create",
       "measurement_config": "Key parameters=HMAC",
-      "avg_ms": 12.54,
-      "min_ms": 11.62,
-      "max_ms": 12.83,
+      "avg_ms": 6.13,
+      "min_ms": 5.64,
+      "max_ms": 6.66,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_Create|RSA|1024",
-      "op_name": "RSA 1024",
+      "algorithm": "TPM2_Create|Key parameters=RSA 1024",
+      "op_name": "TPM2_Create",
       "measurement_config": "Key parameters=RSA 1024",
-      "avg_ms": 999.97,
-      "min_ms": 192.47,
-      "max_ms": 4708.57,
+      "avg_ms": 5224.88,
+      "min_ms": 561.02,
+      "max_ms": 26610.34,
       "total_iterations": 1000,
-      "total_invocations": 1000,
-      "notes": "failed=0"
+      "total_invocations": 1000
     },
     {
-      "algorithm": "TPM2_Create|RSA|2048",
-      "op_name": "RSA 2048",
+      "algorithm": "TPM2_Create|Key parameters=RSA 2048",
+      "op_name": "TPM2_Create",
       "measurement_config": "Key parameters=RSA 2048",
-      "avg_ms": 5284.29,
-      "min_ms": 24.48,
-      "max_ms": 33636.74,
+      "avg_ms": 31601.74,
+      "min_ms": 1498.95,
+      "max_ms": 118211.2,
       "total_iterations": 995,
-      "total_invocations": 995,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_Create|SYMCIPHER|0x0006|128",
-      "op_name": "SYMCIPHER 0x0006 128",
-      "measurement_config": "Key parameters=SYMCIPHER 0x0006 128",
-      "avg_ms": 13.46,
-      "min_ms": 12.1,
-      "max_ms": 12.87,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    }
-  ],
-  "TPM2_EncryptDecrypt": [
-    {
-      "algorithm": "TPM2_EncryptDecrypt|Alg=0x0006|Len=128|Mode=0x0040|decrypt|Data=256",
-      "op_name": "Alg 0x0006 Len 128 Mode 0x0040 decrypt",
-      "measurement_config": "Algorithm=0x0006;KeyLength=128;Mode=0x0040;Dir=decrypt;DataLength=256",
-      "avg_ms": 11.97,
-      "min_ms": 11.77,
-      "max_ms": 12.28,
-      "data_length": 256,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_EncryptDecrypt|Alg=0x0006|Len=128|Mode=0x0040|encrypt|Data=256",
-      "op_name": "Alg 0x0006 Len 128 Mode 0x0040 encrypt",
-      "measurement_config": "Algorithm=0x0006;KeyLength=128;Mode=0x0040;Dir=encrypt;DataLength=256",
-      "avg_ms": 13.01,
-      "min_ms": 11.47,
-      "max_ms": 108.07,
-      "data_length": 256,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_EncryptDecrypt|Alg=0x0006|Len=128|Mode=0x0041|decrypt|Data=256",
-      "op_name": "Alg 0x0006 Len 128 Mode 0x0041 decrypt",
-      "measurement_config": "Algorithm=0x0006;KeyLength=128;Mode=0x0041;Dir=decrypt;DataLength=256",
-      "avg_ms": 12.01,
-      "min_ms": 10.75,
-      "max_ms": 15.97,
-      "data_length": 256,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_EncryptDecrypt|Alg=0x0006|Len=128|Mode=0x0041|encrypt|Data=256",
-      "op_name": "Alg 0x0006 Len 128 Mode 0x0041 encrypt",
-      "measurement_config": "Algorithm=0x0006;KeyLength=128;Mode=0x0041;Dir=encrypt;DataLength=256",
-      "avg_ms": 12.85,
-      "min_ms": 11.19,
-      "max_ms": 96.07,
-      "data_length": 256,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_EncryptDecrypt|Alg=0x0006|Len=128|Mode=0x0042|decrypt|Data=256",
-      "op_name": "Alg 0x0006 Len 128 Mode 0x0042 decrypt",
-      "measurement_config": "Algorithm=0x0006;KeyLength=128;Mode=0x0042;Dir=decrypt;DataLength=256",
-      "avg_ms": 12.21,
-      "min_ms": 11.29,
-      "max_ms": 16.17,
-      "data_length": 256,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_EncryptDecrypt|Alg=0x0006|Len=128|Mode=0x0042|encrypt|Data=256",
-      "op_name": "Alg 0x0006 Len 128 Mode 0x0042 encrypt",
-      "measurement_config": "Algorithm=0x0006;KeyLength=128;Mode=0x0042;Dir=encrypt;DataLength=256",
-      "avg_ms": 12.01,
-      "min_ms": 11.59,
-      "max_ms": 15.76,
-      "data_length": 256,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_EncryptDecrypt|Alg=0x0006|Len=128|Mode=0x0043|decrypt|Data=256",
-      "op_name": "Alg 0x0006 Len 128 Mode 0x0043 decrypt",
-      "measurement_config": "Algorithm=0x0006;KeyLength=128;Mode=0x0043;Dir=decrypt;DataLength=256",
-      "avg_ms": 12.37,
-      "min_ms": 11.58,
-      "max_ms": 16.26,
-      "data_length": 256,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_EncryptDecrypt|Alg=0x0006|Len=128|Mode=0x0043|encrypt|Data=256",
-      "op_name": "Alg 0x0006 Len 128 Mode 0x0043 encrypt",
-      "measurement_config": "Algorithm=0x0006;KeyLength=128;Mode=0x0043;Dir=encrypt;DataLength=256",
-      "avg_ms": 12.29,
-      "min_ms": 11.22,
-      "max_ms": 16.29,
-      "data_length": 256,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_EncryptDecrypt|Alg=0x0006|Len=128|Mode=0x0044|decrypt|Data=256",
-      "op_name": "Alg 0x0006 Len 128 Mode 0x0044 decrypt",
-      "measurement_config": "Algorithm=0x0006;KeyLength=128;Mode=0x0044;Dir=decrypt;DataLength=256",
-      "avg_ms": 0.0,
-      "min_ms": 0.0,
-      "max_ms": 0.0,
-      "data_length": 256,
-      "total_iterations": 100,
-      "total_invocations": 0,
-      "error": "03d5",
-      "notes": "failed=100"
-    },
-    {
-      "algorithm": "TPM2_EncryptDecrypt|Alg=0x0006|Len=128|Mode=0x0044|encrypt|Data=256",
-      "op_name": "Alg 0x0006 Len 128 Mode 0x0044 encrypt",
-      "measurement_config": "Algorithm=0x0006;KeyLength=128;Mode=0x0044;Dir=encrypt;DataLength=256",
-      "avg_ms": 0.0,
-      "min_ms": 0.0,
-      "max_ms": 0.0,
-      "data_length": 256,
-      "total_iterations": 100,
-      "total_invocations": 0,
-      "error": "03d5",
-      "notes": "failed=100"
+      "total_invocations": 990,
+      "error": "a000a"
     }
   ],
   "TPM2_GetRandom": [
     {
-      "algorithm": "TPM2_GetRandom|Data=32",
-      "op_name": "Data 32",
-      "measurement_config": "DataLength=32",
-      "avg_ms": 11.97,
-      "min_ms": 11.58,
-      "max_ms": 12.36,
+      "algorithm": "TPM2_GetRandom|Data length (bytes)=32",
+      "op_name": "TPM2_GetRandom",
+      "measurement_config": "Data length (bytes)=32",
       "data_length": 32,
+      "avg_ms": 6.09,
+      "min_ms": 5.63,
+      "max_ms": 6.75,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     }
   ],
   "TPM2_HMAC": [
     {
-      "algorithm": "TPM2_HMAC|SHA-256|Data=256",
-      "op_name": "SHA-256 Data 256",
-      "measurement_config": "Hash=SHA-256;DataLength=256",
-      "avg_ms": 12.01,
-      "min_ms": 11.13,
-      "max_ms": 16.03,
+      "algorithm": "TPM2_HMAC|Data length (bytes)=256",
+      "op_name": "TPM2_HMAC",
+      "measurement_config": "Data length (bytes)=256",
       "data_length": 256,
+      "avg_ms": 6.21,
+      "min_ms": 5.68,
+      "max_ms": 6.92,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     }
   ],
   "TPM2_Hash": [
     {
-      "algorithm": "TPM2_Hash|Alg=0x0004|Data=256",
-      "op_name": "Alg 0x0004 Data 256",
-      "measurement_config": "HashAlgorithm=0x0004;DataLength=256",
-      "avg_ms": 12.13,
-      "min_ms": 11.77,
-      "max_ms": 16.02,
+      "algorithm": "TPM2_Hash|Hash algorithm=0x0004|Data length (bytes)=256",
+      "op_name": "TPM2_Hash",
+      "measurement_config": "Hash algorithm=0x0004;Data length (bytes)=256",
       "data_length": 256,
+      "avg_ms": 6.12,
+      "min_ms": 5.77,
+      "max_ms": 6.43,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_Hash|Alg=0x000b|Data=256",
-      "op_name": "Alg 0x000b Data 256",
-      "measurement_config": "HashAlgorithm=0x000b;DataLength=256",
-      "avg_ms": 12.25,
-      "min_ms": 11.32,
-      "max_ms": 16.13,
+      "algorithm": "TPM2_Hash|Hash algorithm=0x000b|Data length (bytes)=256",
+      "op_name": "TPM2_Hash",
+      "measurement_config": "Hash algorithm=0x000b;Data length (bytes)=256",
       "data_length": 256,
+      "avg_ms": 6.19,
+      "min_ms": 5.78,
+      "max_ms": 6.64,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     }
   ],
   "TPM2_RSA_Decrypt": [
     {
-      "algorithm": "TPM2_RSA_Decrypt|RSA1024|Scheme=0x0010",
-      "op_name": "RSA 1024 Scheme 0x0010",
-      "measurement_config": "Key=RSA 1024;Scheme=0x0010",
-      "avg_ms": 39.45,
-      "min_ms": 35.64,
-      "max_ms": 60.2,
+      "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0010",
+      "op_name": "TPM2_RSA_Decrypt",
+      "measurement_config": "Scheme=0x0010",
+      "avg_ms": 274.18,
+      "min_ms": 271.02,
+      "max_ms": 277.01,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_RSA_Decrypt|RSA1024|Scheme=0x0015",
-      "op_name": "RSA 1024 Scheme 0x0015",
-      "measurement_config": "Key=RSA 1024;Scheme=0x0015",
-      "avg_ms": 40.05,
-      "min_ms": 35.3,
-      "max_ms": 64.99,
+      "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0015",
+      "op_name": "TPM2_RSA_Decrypt",
+      "measurement_config": "Scheme=0x0015",
+      "avg_ms": 216.95,
+      "min_ms": 214.81,
+      "max_ms": 217.88,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_RSA_Decrypt|RSA1024|Scheme=0x0017",
-      "op_name": "RSA 1024 Scheme 0x0017",
-      "measurement_config": "Key=RSA 1024;Scheme=0x0017",
-      "avg_ms": 37.77,
-      "min_ms": 35.62,
-      "max_ms": 63.87,
+      "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0017",
+      "op_name": "TPM2_RSA_Decrypt",
+      "measurement_config": "Scheme=0x0017",
+      "avg_ms": 216.04,
+      "min_ms": 213.98,
+      "max_ms": 222.11,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_RSA_Decrypt|RSA2048|Scheme=0x0010",
-      "op_name": "RSA 2048 Scheme 0x0010",
-      "measurement_config": "Key=RSA 2048;Scheme=0x0010",
-      "avg_ms": 232.37,
-      "min_ms": 227.76,
-      "max_ms": 256.05,
+      "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0010",
+      "op_name": "TPM2_RSA_Decrypt",
+      "measurement_config": "Scheme=0x0010",
+      "avg_ms": 1369.41,
+      "min_ms": 1360.86,
+      "max_ms": 1383.02,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_RSA_Decrypt|RSA2048|Scheme=0x0015",
-      "op_name": "RSA 2048 Scheme 0x0015",
-      "measurement_config": "Key=RSA 2048;Scheme=0x0015",
-      "avg_ms": 230.88,
-      "min_ms": 227.64,
-      "max_ms": 252.27,
+      "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0015",
+      "op_name": "TPM2_RSA_Decrypt",
+      "measurement_config": "Scheme=0x0015",
+      "avg_ms": 1240.52,
+      "min_ms": 1232.71,
+      "max_ms": 1253.18,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_RSA_Decrypt|RSA2048|Scheme=0x0017",
-      "op_name": "RSA 2048 Scheme 0x0017",
-      "measurement_config": "Key=RSA 2048;Scheme=0x0017",
-      "avg_ms": 241.0,
-      "min_ms": 231.64,
-      "max_ms": 256.21,
+      "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0017",
+      "op_name": "TPM2_RSA_Decrypt",
+      "measurement_config": "Scheme=0x0017",
+      "avg_ms": 1236.41,
+      "min_ms": 1233.84,
+      "max_ms": 1248.92,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     }
   ],
   "TPM2_RSA_Encrypt": [
     {
-      "algorithm": "TPM2_RSA_Encrypt|RSA1024|Scheme=0x0010",
-      "op_name": "RSA 1024 Scheme 0x0010",
-      "measurement_config": "Key=RSA 1024;Scheme=0x0010",
-      "avg_ms": 12.05,
-      "min_ms": 11.57,
-      "max_ms": 16.04,
+      "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0010",
+      "op_name": "TPM2_RSA_Encrypt",
+      "measurement_config": "Scheme=0x0010",
+      "avg_ms": 11.59,
+      "min_ms": 11.12,
+      "max_ms": 12.03,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_RSA_Encrypt|RSA1024|Scheme=0x0015",
-      "op_name": "RSA 1024 Scheme 0x0015",
-      "measurement_config": "Key=RSA 1024;Scheme=0x0015",
-      "avg_ms": 12.09,
+      "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0015",
+      "op_name": "TPM2_RSA_Encrypt",
+      "measurement_config": "Scheme=0x0015",
+      "avg_ms": 11.51,
       "min_ms": 11.22,
-      "max_ms": 16.06,
+      "max_ms": 12.12,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_RSA_Encrypt|RSA1024|Scheme=0x0017",
-      "op_name": "RSA 1024 Scheme 0x0017",
-      "measurement_config": "Key=RSA 1024;Scheme=0x0017",
-      "avg_ms": 11.97,
-      "min_ms": 11.82,
-      "max_ms": 12.18,
+      "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0017",
+      "op_name": "TPM2_RSA_Encrypt",
+      "measurement_config": "Scheme=0x0017",
+      "avg_ms": 11.58,
+      "min_ms": 11.14,
+      "max_ms": 12.01,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_RSA_Encrypt|RSA2048|Scheme=0x0010",
-      "op_name": "RSA 2048 Scheme 0x0010",
-      "measurement_config": "Key=RSA 2048;Scheme=0x0010",
-      "avg_ms": 14.73,
-      "min_ms": 11.66,
-      "max_ms": 36.13,
+      "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0010",
+      "op_name": "TPM2_RSA_Encrypt",
+      "measurement_config": "Scheme=0x0010",
+      "avg_ms": 22.24,
+      "min_ms": 21.59,
+      "max_ms": 23.05,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_RSA_Encrypt|RSA2048|Scheme=0x0015",
-      "op_name": "RSA 2048 Scheme 0x0015",
-      "measurement_config": "Key=RSA 2048;Scheme=0x0015",
-      "avg_ms": 14.57,
-      "min_ms": 11.58,
-      "max_ms": 40.43,
+      "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0015",
+      "op_name": "TPM2_RSA_Encrypt",
+      "measurement_config": "Scheme=0x0015",
+      "avg_ms": 22.11,
+      "min_ms": 21.52,
+      "max_ms": 22.94,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_RSA_Encrypt|RSA2048|Scheme=0x0017",
-      "op_name": "RSA 2048 Scheme 0x0017",
-      "measurement_config": "Key=RSA 2048;Scheme=0x0017",
-      "avg_ms": 26.37,
-      "min_ms": 15.9,
-      "max_ms": 36.27,
+      "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0017",
+      "op_name": "TPM2_RSA_Encrypt",
+      "measurement_config": "Scheme=0x0017",
+      "avg_ms": 22.02,
+      "min_ms": 21.42,
+      "max_ms": 22.58,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     }
   ],
   "TPM2_Sign": [
     {
-      "algorithm": "TPM2_Sign|ECC|0x0003|Scheme=0x0018",
-      "op_name": "ECC 0x0003 Scheme 0x0018",
-      "measurement_config": "Key=ECC 0x0003;Scheme=0x0018",
-      "avg_ms": 145.32,
-      "min_ms": 131.96,
-      "max_ms": 156.38,
+      "algorithm": "TPM2_Sign|Scheme=0x0018|Key parameters=ECC 0x0003",
+      "op_name": "TPM2_Sign",
+      "measurement_config": "Scheme=0x0018;Key parameters=ECC 0x0003",
+      "avg_ms": 190.11,
+      "min_ms": 184.02,
+      "max_ms": 197.04,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_Sign|ECC|0x0003|Scheme=0x001b",
-      "op_name": "ECC 0x0003 Scheme 0x001b",
-      "measurement_config": "Key=ECC 0x0003;Scheme=0x001b",
-      "avg_ms": 0.0,
-      "min_ms": 0.0,
-      "max_ms": 0.0,
+      "algorithm": "TPM2_Sign|Scheme=0x001b|Key parameters=ECC 0x0003",
+      "op_name": "TPM2_Sign",
+      "measurement_config": "Scheme=0x001b;Key parameters=ECC 0x0003",
       "total_iterations": 100,
-      "total_invocations": 0,
-      "error": "02d2",
-      "notes": "failed=100"
+      "error": "02d2"
     },
     {
-      "algorithm": "TPM2_Sign|ECC|0x0003|Scheme=0x001c",
-      "op_name": "ECC 0x0003 Scheme 0x001c",
-      "measurement_config": "Key=ECC 0x0003;Scheme=0x001c",
-      "avg_ms": 145.77,
-      "min_ms": 131.97,
-      "max_ms": 160.07,
+      "algorithm": "TPM2_Sign|Scheme=0x001c|Key parameters=ECC 0x0003",
+      "op_name": "TPM2_Sign",
+      "measurement_config": "Scheme=0x001c;Key parameters=ECC 0x0003",
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "error": "02d2"
     },
     {
-      "algorithm": "TPM2_Sign|ECC|0x0010|Scheme=0x0018",
-      "op_name": "ECC 0x0010 Scheme 0x0018",
-      "measurement_config": "Key=ECC 0x0010;Scheme=0x0018",
-      "avg_ms": 280.29,
-      "min_ms": 275.19,
-      "max_ms": 324.35,
+      "algorithm": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 1024",
+      "op_name": "TPM2_Sign",
+      "measurement_config": "Scheme=0x0014;Key parameters=RSA 1024",
+      "avg_ms": 216.93,
+      "min_ms": 214.92,
+      "max_ms": 222.51,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_Sign|ECC|0x0010|Scheme=0x001b",
-      "op_name": "ECC 0x0010 Scheme 0x001b",
-      "measurement_config": "Key=ECC 0x0010;Scheme=0x001b",
-      "avg_ms": 0.0,
-      "min_ms": 0.0,
-      "max_ms": 0.0,
+      "algorithm": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 1024",
+      "op_name": "TPM2_Sign",
+      "measurement_config": "Scheme=0x0016;Key parameters=RSA 1024",
+      "avg_ms": 216.18,
+      "min_ms": 214.2,
+      "max_ms": 221.79,
       "total_iterations": 100,
-      "total_invocations": 0,
-      "error": "02d2",
-      "notes": "failed=100"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_Sign|ECC|0x0010|Scheme=0x001c",
-      "op_name": "ECC 0x0010 Scheme 0x001c",
-      "measurement_config": "Key=ECC 0x0010;Scheme=0x001c",
-      "avg_ms": 276.21,
-      "min_ms": 268.2,
-      "max_ms": 280.35,
+      "algorithm": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 2048",
+      "op_name": "TPM2_Sign",
+      "measurement_config": "Scheme=0x0014;Key parameters=RSA 2048",
+      "avg_ms": 1241.88,
+      "min_ms": 1238.21,
+      "max_ms": 1255.34,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_Sign|RSA|1024|Scheme=0x0014",
-      "op_name": "RSA 1024 Scheme 0x0014",
-      "measurement_config": "Key=RSA 1024;Scheme=0x0014",
-      "avg_ms": 36.13,
-      "min_ms": 35.23,
-      "max_ms": 40.13,
+      "algorithm": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 2048",
+      "op_name": "TPM2_Sign",
+      "measurement_config": "Scheme=0x0016;Key parameters=RSA 2048",
+      "avg_ms": 1236.47,
+      "min_ms": 1233.95,
+      "max_ms": 1249.62,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_Sign|RSA|1024|Scheme=0x0016",
-      "op_name": "RSA 1024 Scheme 0x0016",
-      "measurement_config": "Key=RSA 1024;Scheme=0x0016",
-      "avg_ms": 36.16,
-      "min_ms": 35.57,
-      "max_ms": 40.27,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_Sign|RSA|2048|Scheme=0x0014",
-      "op_name": "RSA 2048 Scheme 0x0014",
-      "measurement_config": "Key=RSA 2048;Scheme=0x0014",
-      "avg_ms": 233.49,
-      "min_ms": 227.74,
-      "max_ms": 252.32,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_Sign|RSA|2048|Scheme=0x0016",
-      "op_name": "RSA 2048 Scheme 0x0016",
-      "measurement_config": "Key=RSA 2048;Scheme=0x0016",
-      "avg_ms": 242.25,
-      "min_ms": 231.94,
-      "max_ms": 252.25,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     }
   ],
   "TPM2_VerifySignature": [
     {
-      "algorithm": "TPM2_VerifySignature|ECC|0x0003|Scheme=0x0018",
-      "op_name": "ECC 0x0003 Scheme 0x0018",
-      "measurement_config": "Key=ECC 0x0003;Scheme=0x0018",
-      "avg_ms": 62.8,
-      "min_ms": 51.85,
-      "max_ms": 72.39,
+      "algorithm": "TPM2_VerifySignature|Scheme=0x0018|Key parameters=ECC 0x0003",
+      "op_name": "TPM2_VerifySignature",
+      "measurement_config": "Scheme=0x0018;Key parameters=ECC 0x0003",
+      "avg_ms": 71.02,
+      "min_ms": 70.34,
+      "max_ms": 71.26,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_VerifySignature|ECC|0x0003|Scheme=0x001c",
-      "op_name": "ECC 0x0003 Scheme 0x001c",
-      "measurement_config": "Key=ECC 0x0003;Scheme=0x001c",
-      "avg_ms": 181.2,
-      "min_ms": 179.52,
-      "max_ms": 203.97,
+      "algorithm": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 1024",
+      "op_name": "TPM2_VerifySignature",
+      "measurement_config": "Scheme=0x0014;Key parameters=RSA 1024",
+      "avg_ms": 11.57,
+      "min_ms": 11.12,
+      "max_ms": 12.04,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_VerifySignature|ECC|0x0010|Scheme=0x0018",
-      "op_name": "ECC 0x0010 Scheme 0x0018",
-      "measurement_config": "Key=ECC 0x0010;Scheme=0x0018",
-      "avg_ms": 0.0,
-      "min_ms": 0.0,
-      "max_ms": 0.0,
+      "algorithm": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 1024",
+      "op_name": "TPM2_VerifySignature",
+      "measurement_config": "Scheme=0x0016;Key parameters=RSA 1024",
+      "avg_ms": 11.49,
+      "min_ms": 11.11,
+      "max_ms": 11.86,
       "total_iterations": 100,
-      "total_invocations": 0,
-      "error": "02db",
-      "notes": "failed=100"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_VerifySignature|ECC|0x0010|Scheme=0x001c",
-      "op_name": "ECC 0x0010 Scheme 0x001c",
-      "measurement_config": "Key=ECC 0x0010;Scheme=0x001c",
-      "avg_ms": 369.89,
-      "min_ms": 363.57,
-      "max_ms": 372.77,
+      "algorithm": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 2048",
+      "op_name": "TPM2_VerifySignature",
+      "measurement_config": "Scheme=0x0014;Key parameters=RSA 2048",
+      "avg_ms": 22.39,
+      "min_ms": 21.79,
+      "max_ms": 22.88,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     },
     {
-      "algorithm": "TPM2_VerifySignature|RSA|1024|Scheme=0x0014",
-      "op_name": "RSA 1024 Scheme 0x0014",
-      "measurement_config": "Key=RSA 1024;Scheme=0x0014",
-      "avg_ms": 12.0,
-      "min_ms": 11.63,
-      "max_ms": 15.96,
+      "algorithm": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 2048",
+      "op_name": "TPM2_VerifySignature",
+      "measurement_config": "Scheme=0x0016;Key parameters=RSA 2048",
+      "avg_ms": 22.18,
+      "min_ms": 21.41,
+      "max_ms": 22.69,
       "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_VerifySignature|RSA|1024|Scheme=0x0016",
-      "op_name": "RSA 1024 Scheme 0x0016",
-      "measurement_config": "Key=RSA 1024;Scheme=0x0016",
-      "avg_ms": 12.0,
-      "min_ms": 11.21,
-      "max_ms": 15.95,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_VerifySignature|RSA|2048|Scheme=0x0014",
-      "op_name": "RSA 2048 Scheme 0x0014",
-      "measurement_config": "Key=RSA 2048;Scheme=0x0014",
-      "avg_ms": 14.73,
-      "min_ms": 11.53,
-      "max_ms": 36.33,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
-    },
-    {
-      "algorithm": "TPM2_VerifySignature|RSA|2048|Scheme=0x0016",
-      "op_name": "RSA 2048 Scheme 0x0016",
-      "measurement_config": "Key=RSA 2048;Scheme=0x0016",
-      "avg_ms": 12.8,
-      "min_ms": 11.56,
-      "max_ms": 36.18,
-      "total_iterations": 100,
-      "total_invocations": 100,
-      "notes": "failed=0"
+      "total_invocations": 100
     }
   ]
 }

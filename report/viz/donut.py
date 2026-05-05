@@ -9,6 +9,7 @@ from dominate import tags
 from dominate.util import raw
 
 from .contracts import VizPlugin, VizSpec
+from .utility import display_state
 
 _DEFAULT_COLORS = {
     "MATCH": "#49b473",
@@ -79,7 +80,7 @@ def render_donut_block(
             dash = circumference * (value / total)
             color = colors.get(segment, "#888")
             pct = _pct2(value, total)
-            title_text = f"{legend_labels.get(segment, segment.title())}: {value} ({pct:.2f}%)"
+            title_text = f"{legend_labels.get(segment, display_state(segment))}: {value} ({pct:.2f}%)"
 
             svg_parts.append(
                 f'<g>'
@@ -116,7 +117,7 @@ def render_donut_block(
         swatch["style"] = f"background:{colors.get(segment, '#888')}"
         row.add(swatch)
 
-        label = legend_labels.get(segment, segment.title())
+        label = legend_labels.get(segment, display_state(segment))
         row.add(tags.span(f"{label}: ", _class="legend-text"))
         row.add(tags.span(str(value), _class="legend-text"))
         row.add(tags.span(f" ({pct:.2f}%)", _class="legend-text"))

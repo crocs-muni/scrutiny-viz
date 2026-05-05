@@ -66,6 +66,41 @@ function defaultToggles() {
 }
 
 /**
+ * Theme toggle
+ */
+function toggleTheme() {
+  var current = (document.body.getAttribute("data-theme") || "light").toLowerCase();
+  var next = current === "dark" ? "light" : "dark";
+  document.body.setAttribute("data-theme", next);
+}
+
+/**
+ * Display helpers
+ */
+function displayStateText(value) {
+  var raw = String(value || "");
+  var state = raw.toUpperCase();
+
+  if (state === "MATCH") return "Match";
+  if (state === "WARN") return "Warning";
+  if (state === "SUSPICIOUS") return "Suspicious";
+  if (state === "ERROR") return "Error";
+
+  return raw;
+}
+
+function stateBadgeClass(value) {
+  var state = String(value || "").toUpperCase();
+
+  if (state === "MATCH") return "badge-ok";
+  if (state === "WARN") return "badge-warn";
+  if (state === "SUSPICIOUS") return "badge-bad";
+  if (state === "ERROR") return "badge-bad";
+
+  return "badge-neutral";
+}
+
+/**
  * Back-to-top button
  */
 window.onscroll = showHideScrollButton;
@@ -298,6 +333,7 @@ document.addEventListener("DOMContentLoaded", function () {
     toolsBtn.type = "button";
     toolsBtn.className = "table-tools-btn";
     toolsBtn.textContent = "Table tools";
+    toolsBtn.title = "Open table search, sorting and column filters. Aa = match case, W = whole word, .* = regular expression.";
     toolsBtn.setAttribute("aria-expanded", "false");
 
     const statusPill = document.createElement("span");
@@ -603,6 +639,16 @@ document.addEventListener("DOMContentLoaded", function () {
  * Tracescompare filters + image preview
  */
 (function () {
+  var tracePreviewLinks = [];
+  var tracePreviewIndex = -1;
+
+  function getVisibleTraceLinks() {
+    return Array.from(document.querySelectorAll(".trace-preview-link")).filter(function (link) {
+      var card = link.closest(".trace-card");
+      return !card || window.getComputedStyle(card).display !== "none";
+    });
+  }
+
   function applyTraceFilter(filterbar) {
     if (!filterbar) return;
 
@@ -612,6 +658,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var grid = document.querySelector('[data-trace-grid="' + targetId + '"]');
     if (!grid) return;
+
+    var visibleCount = 0;
 
     grid.querySelectorAll(".trace-card").forEach(function (card) {
       var state = (card.getAttribute("data-state") || "").toLowerCase();
@@ -623,7 +671,17 @@ document.addEventListener("DOMContentLoaded", function () {
       else if (active === "match") show = (state === "match");
 
       card.style.display = show ? "" : "none";
+      if (show) visibleCount++;
     });
+
+    var empty = grid.querySelector(".trace-empty-placeholder");
+    if (!empty) {
+      empty = document.createElement("div");
+      empty.className = "trace-empty-placeholder";
+      empty.textContent = "No comparison photos match this filter.";
+      grid.appendChild(empty);
+    }
+    empty.style.display = visibleCount === 0 ? "block" : "none";
 
     filterbar.querySelectorAll(".trace-filter-btn").forEach(function (btn) {
       btn.classList.toggle("active", (btn.getAttribute("data-filter") || "all") === active);
@@ -650,7 +708,7 @@ document.addEventListener("DOMContentLoaded", function () {
           '<button type="button" class="trace-preview-close" data-trace-close="1">Close</button>' +
         '</div>' +
         '<div class="trace-preview-body">' +
-          '<img id="tracePreviewImage" class="trace-preview-image" alt="Trace preview">' +
+          '<img id="tracePreviewImage" class="trace-preview-image" alt="Trace preview" title="Click image to close preview">' +
         '</div>' +
       '</div>';
 
@@ -658,15 +716,20 @@ document.addEventListener("DOMContentLoaded", function () {
     return modal;
   }
 
-  function openTracePreview(link) {
+  function openTracePreview(link, keepList) {
     if (!link) return;
 
     var src = link.getAttribute("data-fullsrc") || link.getAttribute("href") || "";
     if (!src) return;
 
     var name = link.getAttribute("data-fullname") || link.getAttribute("title") || "";
-    var state = (link.getAttribute("data-state") || "").toUpperCase();
+    var state = displayStateText(link.getAttribute("data-state") || "");
     var value = link.getAttribute("data-value") || "";
+
+    if (!keepList) {
+      tracePreviewLinks = getVisibleTraceLinks();
+      tracePreviewIndex = tracePreviewLinks.indexOf(link);
+    }
 
     var modal = ensureTracePreviewModal();
     var img = document.getElementById("tracePreviewImage");
@@ -679,14 +742,50 @@ document.addEventListener("DOMContentLoaded", function () {
     img.alt = name || "Trace preview";
     title.textContent = name || "Trace preview";
 
-    var meta = [];
-    if (state) meta.push("State: " + state);
-    if (value) meta.push("Value: " + value);
-    subtitle.textContent = meta.join(" | ");
+    subtitle.textContent = "";
+
+    if (state) {
+      var stateLabel = document.createElement("span");
+      stateLabel.textContent = "State: ";
+      subtitle.appendChild(stateLabel);
+
+      var badge = document.createElement("span");
+      badge.className = "badge " + stateBadgeClass(link.getAttribute("data-state") || "");
+      badge.textContent = displayStateText(link.getAttribute("data-state") || "");
+      subtitle.appendChild(badge);
+    }
+
+    if (value) {
+      if (subtitle.childNodes.length) {
+        subtitle.appendChild(document.createTextNode(" | "));
+      }
+      subtitle.appendChild(document.createTextNode("Value: " + value));
+    }
+
+    if (tracePreviewLinks.length > 1 && tracePreviewIndex >= 0) {
+      if (subtitle.childNodes.length) {
+        subtitle.appendChild(document.createTextNode(" | "));
+      }
+      subtitle.appendChild(
+        document.createTextNode("Image " + (tracePreviewIndex + 1) + " of " + tracePreviewLinks.length)
+      );
+    }
 
     modal.classList.add("is-open");
     modal.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+  }
+
+  function moveTracePreview(delta) {
+    if (!tracePreviewLinks.length) {
+      tracePreviewLinks = getVisibleTraceLinks();
+    }
+    if (!tracePreviewLinks.length) return;
+
+    if (tracePreviewIndex < 0) tracePreviewIndex = 0;
+    tracePreviewIndex = (tracePreviewIndex + delta + tracePreviewLinks.length) % tracePreviewLinks.length;
+
+    openTracePreview(tracePreviewLinks[tracePreviewIndex], true);
   }
 
   function closeTracePreview() {
@@ -712,7 +811,13 @@ document.addEventListener("DOMContentLoaded", function () {
     var previewLink = ev.target.closest(".trace-preview-link");
     if (previewLink) {
       ev.preventDefault();
-      openTracePreview(previewLink);
+      openTracePreview(previewLink, false);
+      return;
+    }
+
+    if (ev.target && ev.target.id === "tracePreviewImage") {
+      ev.preventDefault();
+      closeTracePreview();
       return;
     }
 
@@ -723,8 +828,22 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   document.addEventListener("keydown", function (ev) {
+    var modal = document.getElementById("tracePreviewModal");
+    var isOpen = modal && modal.classList.contains("is-open");
+
     if (ev.key === "Escape") {
       closeTracePreview();
+      return;
+    }
+
+    if (!isOpen) return;
+
+    if (ev.key === "ArrowLeft") {
+      ev.preventDefault();
+      moveTracePreview(-1);
+    } else if (ev.key === "ArrowRight") {
+      ev.preventDefault();
+      moveTracePreview(1);
     }
   });
 

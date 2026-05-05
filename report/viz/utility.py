@@ -1,4 +1,3 @@
-# scrutiny-viz/report/viz/utility.py
 from __future__ import annotations
 
 from contextlib import contextmanager
@@ -85,8 +84,48 @@ def render_table_block(headers: List[str], rows: List[List[Any]]) -> tags.div:
     return container
 
 
-def badge(text: str, kind: str) -> tags.span:
-    return tags.span(text, cls=f"badge badge-{kind}")
+def display_state(value: Any) -> str:
+    raw = "" if value is None else str(value)
+    state = raw.strip().upper()
+
+    if state == "MATCH":
+        return "Match"
+    if state == "WARN":
+        return "Warning"
+    if state == "SUSPICIOUS":
+        return "Suspicious"
+    if state == "ERROR":
+        return "Error"
+
+    return raw
+
+
+def state_description(value: Any) -> str:
+    state = str(value or "").upper()
+    if state == "MATCH":
+        return "The measured value is inside the match threshold."
+    if state == "WARN":
+        return "The measured value is outside the match threshold but not suspicious."
+    if state == "SUSPICIOUS":
+        return "The measured value is outside the suspicious threshold."
+    return "Unknown comparison state."
+
+
+def pipeline_description(code: Any) -> str:
+    pipeline = str(code or "").strip().lower()
+    if pipeline == "pep":
+        return "PEP trace comparison pipeline. See the pipeline documentation for metric and threshold details."
+    if pipeline == "pcp":
+        return "PCP trace comparison pipeline. See the pipeline documentation for metric and threshold details."
+    if pipeline == "pdtwp":
+        return "PDTWP trace comparison pipeline. See the pipeline documentation for metric and threshold details."
+    if pipeline:
+        return f"Trace comparison pipeline '{pipeline}'. See the pipeline documentation for metric and threshold details."
+    return "Trace comparison pipeline. See the pipeline documentation for metric and threshold details."
+
+
+def badge(text: str, kind: str, **attrs: Any) -> tags.span:
+    return tags.span(text, cls=f"badge badge-{kind}", **attrs)
 
 
 def state_badge(state: str) -> tags.span:
@@ -98,7 +137,7 @@ def state_badge(state: str) -> tags.span:
         kind = "warn"
     elif state_up == "SUSPICIOUS":
         kind = "bad"
-    return badge(state_up or "UNKNOWN", kind)
+    return badge(display_state(state_up) or "Unknown", kind, title=state_description(state_up))
 
 
 def state_border_style(state: str) -> str:

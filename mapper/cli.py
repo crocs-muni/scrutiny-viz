@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from scrutiny import logging as slog
+from scrutiny.errors import ScrutinyError, UserInputError
 
 from . import mapper_utils, registry
 from .service import process_files, process_folder, map_single_source
@@ -24,6 +25,17 @@ def _print_mapper_catalog() -> None:
         print(f"  description: {spec.description or '-'}")
 
 
+def _get_mapper_plugin_for_cli(mapper_type: str):
+    try:
+        return registry.get_plugin(mapper_type)
+    except KeyError as exc:
+        raise UserInputError(
+            f"Unknown mapper type '{mapper_type}'. "
+            "Use 'python scrutinize.py map --list-mappers' to inspect available plugins.",
+            component="MAPPER",
+        ) from exc
+
+
 def add_mapper_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-t", "--type", dest="mapper_type", help="Mapper type to use")
     parser.add_argument("-o", "--output", dest="output_path", help="Output file path for one source, or output directory for multi-file folder mode")
@@ -36,17 +48,19 @@ def add_mapper_args(parser: argparse.ArgumentParser) -> None:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
+    known_types = ", ".join(registry.list_types())
     parser = argparse.ArgumentParser(
         description="Parse supported input sources and convert them to scrutiny-viz JSON format.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=f"""
-Examples:
-  python scrutinize.py map --list-mappers
-  python scrutinize.py map -t jcperf file.csv
-  python scrutinize.py map -t tpm --folder ./csvs -o ./out
-  python scrutinize.py map -t rsabias --folder ./out_eval -o ./results/rsabias_old.json
-Known types: {", ".join(registry.list_types())}
-""",
+        epilog=(
+            "\n"
+            "Examples:\n"
+            "  python scrutinize.py map --list-mappers\n"
+            "  python scrutinize.py map -t jcperf file.csv\n"
+            "  python scrutinize.py map -t tpm --folder ./csvs -o ./out\n"
+            "  python scrutinize.py map -t rsabias --folder ./out_eval -o ./results/rsabias_old.json\n"
+            f"Known types: {known_types}\n"
+        ),
     )
     add_mapper_args(parser)
     return parser
@@ -74,10 +88,13 @@ def run_from_namespace(args: argparse.Namespace) -> int:
         return 0
 
     if not args.mapper_type:
-        raise SystemExit("Please provide --type to select a mapper, or use --list-mappers to inspect available plugins.")
+        raise UserInputError(
+            "Please provide --type to select a mapper, or use --list-mappers to inspect available plugins.",
+            component="MAPPER",
+        )
 
     excluded = mapper_utils.load_exclusions(args.exclude_file) if args.exclude_file else None
-    plugin = registry.get_plugin(args.mapper_type)
+    plugin = _get_mapper_plugin_for_cli(args.mapper_type)
 
     if args.folder_path:
         outputs = process_folder(
@@ -97,7 +114,10 @@ def run_from_namespace(args: argparse.Namespace) -> int:
             src = Path(args.file_paths[0]).resolve()
 
             if src.is_dir() and not plugin.accepts_directories:
-                raise SystemExit(f"Mapper '{args.mapper_type}' does not accept directory input: {src}")
+                raise UserInputError(
+                    f"Mapper '{args.mapper_type}' does not accept directory input: {src}",
+                    component="MAPPER",
+                )
 
             written = map_single_source(
                 source_path=src,
@@ -124,7 +144,7 @@ def run_from_namespace(args: argparse.Namespace) -> int:
         print_mapper_success(outputs, args.output_path)
         return 0
 
-    raise SystemExit("Please provide either file paths or use --folder option.")
+    raise UserInputError("Please provide either file paths or use --folder option.", component="MAPPER")
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -133,4 +153,8 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except ScrutinyError as exc:
+        slog.get_logger(getattr(exc, "component", "MAPPER")).err(str(exc))
+        raise SystemExit(int(getattr(exc, "exit_code", 1)))

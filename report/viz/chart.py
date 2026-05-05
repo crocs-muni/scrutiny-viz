@@ -7,7 +7,7 @@ from dominate import tags
 from dominate.util import raw
 
 from .contracts import VizPlugin, VizSpec
-from .utility import format_number, to_float
+from .utility import display_state, format_number, to_float
 
 
 def _truncate(text: str, max_chars: int = 42) -> str:
@@ -122,7 +122,7 @@ def render_chart_table_block(section_name: str, section: Dict[str, Any], idx: in
                     tags.td(format_number(row.get("test_avg"), precision=6, trim=True))
                     tags.td(format_number(row.get("delta_ms"), precision=6, trim=True))
                     tags.td(format_number(row.get("delta_pct"), precision=6, trim=True))
-                    tags.td(str(row.get("status", "")))
+                    tags.td(display_state(row.get("status", "")))
                     tags.td(str(row.get("note", "")))
     return table
 
