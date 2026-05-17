@@ -268,7 +268,7 @@ verification/
   cli.py
   comparators/
     __init__.py
-    verification/comparators/utility.py
+    utility.py
     contracts.py
     registry.py
     basic.py

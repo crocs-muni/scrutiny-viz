@@ -133,8 +133,8 @@ python scrutinize.py verify -h
 ```bash
 python scrutinize.py verify \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r examples/tpm_example1.json \
-  -p examples/tpm_example2.json \
+  -r examples/TPM/tpm_example1.json \
+  -p examples/TPM/tpm_example2.json \
   -o results/tpm_verify.json
 ```
 
@@ -143,8 +143,8 @@ python scrutinize.py verify \
 ```bash
 python scrutinize.py verify \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r examples/tpm_example1.json \
-  -p examples/tpm_example2.json \
+  -r examples/TPM/tpm_example1.json \
+  -p examples/TPM/tpm_example2.json \
   -o results/tpm_verify.json \
   --report
 ```
@@ -237,7 +237,7 @@ python scrutinize.py full \
 ```bash
 python scrutinize.py full \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r examples/tpm_example1.json \
+  -r examples/TPM/tpm_example1.json \
   -p tests/mapper/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
   --profile-type tpm \
   --verify-output results/tpm_verify.json \
@@ -292,7 +292,7 @@ python scrutinize.py batch-verify -h
 ```bash
 python scrutinize.py batch-verify \
   -s scrutiny/schemas/jcAlgSupport.yml \
-  -r examples/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT.json \
+  -r examples/jcAlgSupport/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT.json \
   --profiles-dir tests/mapper/test-data/jcAlgSupport \
   --profile-type jcalgsupport
 ```
@@ -302,8 +302,8 @@ python scrutinize.py batch-verify \
 ```bash
 python scrutinize.py batch-verify \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r examples/tpm_example1.json \
-  --profiles examples/tpm_example2.json examples/tpm_example1.json \
+  -r examples/TPM/tpm_example1.json \
+  --profiles examples/TPM/tpm_example2.json examples/TPM/tpm_example1.json \
   --report-mode all
 ```
 
