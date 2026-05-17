@@ -16,8 +16,8 @@ Example:
 ```bash
 python scrutinize.py verify \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r examples/tpm_example1.json \
-  -p examples/tpm_example2.json \
+  -r examples/TPM/tpm_example1.json \
+  -p examples/TPM/tpm_example2.json \
   -o results/tpm_verify.json
 
 python scrutinize.py report \
@@ -86,8 +86,8 @@ Typical commands:
 ```bash
 python scrutinize.py verify \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r examples/tpm_example1.json \
-  -p examples/tpm_example2.json \
+  -r examples/TPM/tpm_example1.json \
+  -p examples/TPM/tpm_example2.json \
   -o results/tpm_verify.json
 ```
 
@@ -102,8 +102,8 @@ Typical commands:
 ```bash
 python scrutinize.py verify \
   -s scrutiny/schemas/jcAIDScan.yml \
-  -r examples/ACS_ACOSJ_40K_AIDSUPPORT_3B69000241434F534A76313031-ref.json \
-  -p examples/ACS_ACOSJ_40K_AIDSUPPORT_3B69000241434F534A76313031.json \
+  -r examples/jcAIDScan/ACS_ACOSJ_40K_AIDSUPPORT_3B69000241434F534A76313031_ref.json \
+  -p examples/jcAIDScan/ACS_ACOSJ_40K_AIDSUPPORT_3B69000241434F534A76313031_profile.json \
   -o results/jcaid_verify.json
 ```
 
@@ -118,8 +118,8 @@ Typical commands:
 ```bash
 python scrutinize.py verify \
   -s scrutiny/schemas/jcAlgPerf.yml \
-  -r examples/Athena_IDProtect____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED.json \
-  -p examples/Athena_IDProtect____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_copy.json \
+  -r examples/jcAlgPerf/Athena_IDProtect____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED.json \
+  -p examples/jcAlgPerf/Athena_IDProtect____PERFORMANCE_SYMMETRIC_ASYMMETRIC_DATAFIXED_copy.json \
   -o results/jcperf_verify.json
 ```
 
@@ -134,8 +134,8 @@ Typical commands:
 ```bash
 python scrutinize.py verify \
   -s scrutiny/schemas/jcAlgSupport.yml \
-  -r examples/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT.json \
-  -p examples/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT_copy.json \
+  -r examples/jcAlgSupport/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT.json \
+  -p examples/jcAlgSupport/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT_copy.json \
   -o results/jcalgsupport_verify.json
 ```
 
@@ -150,8 +150,8 @@ Typical commands:
 ```bash
 python scrutinize.py verify \
   -s scrutiny/schemas/jcCPLC.yml \
-  -r "examples/CSOB VISA debit.json" \
-  -p "examples/IndusInd bank.json" \
+  -r "examples/CPLC/CSOB VISA debit.json" \
+  -p "examples/CPLC/IndusInd bank.json" \
   -o results/cplc_verify.json
 ```
 
@@ -164,7 +164,7 @@ Batch verification is useful when you want to compare one reference against many
 ```bash
 python scrutinize.py batch-verify \
   -s scrutiny/schemas/jcAlgSupport.yml \
-  -r examples/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT.json \
+  -r examples/jcAlgSupport/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT.json \
   --profiles-dir tests/mapper/test-data/jcAlgSupport \
   --profile-type jcalgsupport
 ```
@@ -174,8 +174,8 @@ python scrutinize.py batch-verify \
 ```bash
 python scrutinize.py batch-verify \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r examples/tpm_example1.json \
-  --profiles examples/tpm_example2.json examples/tpm_example1.json \
+  -r examples/TPM/tpm_example1.json \
+  --profiles examples/TPM/tpm_example2.json examples/TPM/tpm_example1.json \
   --report-mode all
 ```
 

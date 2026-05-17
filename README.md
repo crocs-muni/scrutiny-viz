@@ -52,8 +52,8 @@ pip install -r requirements.txt
 ```bash
 python scrutinize.py verify \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r examples/tpm_example1.json \
-  -p examples/tpm_example2.json \
+  -r examples/TPM/tpm_example1.json \
+  -p examples/TPM/tpm_example2.json \
   -o results/tpm_verify.json
 
 python scrutinize.py report \
@@ -78,7 +78,7 @@ python scrutinize.py full \
 ```bash
 python scrutinize.py batch-verify \
   -s scrutiny/schemas/jcAlgSupport.yml \
-  -r examples/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT.json \
+  -r examples/jcAlgSupport/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT.json \
   --profiles-dir tests/mapper/test-data/jcAlgSupport \
   --profile-type jcalgsupport \
   --report-mode nonmatch
