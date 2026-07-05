@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .contracts import ComparatorPlugin, ComparatorSpec, CompareResult
+from .contracts import ComparatorPlugin, ComparatorSpec, ComparatorVisualizationCapability, CompareResult
 from .utility import get_display_label, load_jsonish, max_state
 
 
@@ -13,6 +13,15 @@ class TraceClassifierComparator(ComparatorPlugin):
         name="traceclassifier",
         aliases=("trace-classifier", "powerclassifier", "classifier"),
         description="Comparator/adapter for already-classified power trace results.",
+        visualization_capabilities=(
+            ComparatorVisualizationCapability(
+                visualization_type="table",
+                variant="traceclassifier",
+                producer="renderer",
+                required_artifact_keys=("operations",),
+                description="Power trace classification operation summary table.",
+            ),
+        ),
     )
 
     def compare(

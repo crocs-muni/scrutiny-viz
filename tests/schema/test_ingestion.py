@@ -75,7 +75,7 @@ def test_jsonparser_parses_real_example_if_present(schema_filename: str, label: 
 def _write_dynamic_schema(tmp_path: Path, strict_sections: bool) -> Path:
     yml = tmp_path / "dynamic_sections.yml"
     yml.write_text(f'''
-schema_version: "0.13"
+schema_version: "0.14"
 
 ingest:
   dynamic_sections: true

@@ -14,7 +14,7 @@ from scrutiny.validation import require_file
 log = slog.get_logger("SCHEMA")
 
 _ALLOWED_CATEGORIES = {"ordinal", "nominal", "continuous", "binary", "set"}
-_SUPPORTED_SCHEMA_VERSIONS = {"0.11", "0.12", "0.13"}
+_SUPPORTED_SCHEMA_VERSIONS = {"0.14"}
 
 
 class LoadedSchema(dict):
@@ -36,6 +36,10 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any
         else:
             out[key] = value
     return out
+
+
+def _format_visualization_name(visualization_type: str, variant: Optional[str]) -> str:
+    return f"{visualization_type}:{variant}" if variant else visualization_type
 
 
 class SchemaLoader:
@@ -97,6 +101,43 @@ class SchemaLoader:
             )
         return theme
 
+    def _normalize_report_type_entry(self, item: Any, section: str) -> Dict[str, Any] | None:
+        if item is None:
+            return None
+
+        if isinstance(item, str):
+            value = item.strip().lower()
+            if not value:
+                return None
+            if ":" in value:
+                type_name, variant = value.split(":", 1)
+                type_name = type_name.strip().lower()
+                variant = variant.strip().lower() or None
+                if not type_name:
+                    self._warn_or_raise(
+                        f"Section '{section}': report.types entry missing visualization type before ':'.",
+                        fatal=True,
+                    )
+                return {"type": type_name, "variant": variant}
+            return {"type": value, "variant": None}
+
+        if not isinstance(item, dict):
+            self._warn_or_raise(
+                f"Section '{section}': report.types items must be string or map.",
+                fatal=True,
+            )
+
+        type_name = str(item.get("type") or "").strip().lower()
+        if not type_name:
+            self._warn_or_raise(
+                f"Section '{section}': report.types entry missing 'type'.",
+                fatal=True,
+            )
+
+        variant = item.get("variant")
+        variant = str(variant).strip().lower() if variant is not None and str(variant).strip() else None
+        return {"type": type_name, "variant": variant}
+
     def _parse_report_types(self, maybe_types: Any, section: str) -> list[Dict[str, Any]] | None:
         if maybe_types is None:
             return None
@@ -110,8 +151,9 @@ class SchemaLoader:
 
         if isinstance(maybe_types, str):
             for item in (piece.strip() for piece in maybe_types.split(",")):
-                if item:
-                    normalized.append({"type": item.lower(), "variant": None})
+                report_type = self._normalize_report_type_entry(item, section)
+                if report_type is not None:
+                    normalized.append(report_type)
             return normalized
 
         if not isinstance(maybe_types, list):
@@ -122,31 +164,9 @@ class SchemaLoader:
             return None
 
         for item in maybe_types:
-            if item is None:
-                continue
-
-            if isinstance(item, str):
-                value = item.strip().lower()
-                if value:
-                    normalized.append({"type": value, "variant": None})
-                continue
-
-            if not isinstance(item, dict):
-                self._warn_or_raise(
-                    f"Section '{section}': report.types items must be string or map.",
-                    fatal=True,
-                )
-
-            type_name = str(item.get("type") or "").strip().lower()
-            if not type_name:
-                self._warn_or_raise(
-                    f"Section '{section}': report.types entry missing 'type'.",
-                    fatal=True,
-                )
-
-            variant = item.get("variant")
-            variant = str(variant).strip().lower() if variant is not None and str(variant).strip() else None
-            normalized.append({"type": type_name, "variant": variant})
+            report_type = self._normalize_report_type_entry(item, section)
+            if report_type is not None:
+                normalized.append(report_type)
 
         return normalized
 
@@ -244,6 +264,89 @@ class SchemaLoader:
             "allow_missing_sections": bool(ingest_raw.get("allow_missing_sections", True)),
         }
 
+    def _get_comparator_spec(self, comparator_name: str, section_name: str) -> Any:
+        try:
+            from verification.comparators import registry as comparator_registry
+        except Exception as exc:
+            raise SchemaError(
+                f"Section '{section_name}': failed to import verification comparator registry while validating "
+                f"report.types ({exc})."
+            ) from exc
+
+        try:
+            return comparator_registry.get_plugin(comparator_name).spec
+        except KeyError as exc:
+            self._warn_or_raise(
+                f"Section '{section_name}': unknown component.comparator; unknown comparator '{comparator_name}'. "
+                "Run 'python scrutinize.py verify --list-capabilities' "
+                "or 'python scrutinize.py verify --list-comparators' to inspect available comparators.",
+                fatal=True,
+            )
+            raise SchemaError(str(exc)) from exc
+
+    def _format_comparator_capability_names(self, comparator_spec: Any) -> str:
+        capabilities = tuple(getattr(comparator_spec, "visualization_capabilities", ()) or ())
+        if not capabilities:
+            return "none declared"
+        names = sorted(
+            _format_visualization_name(str(capability.visualization_type), getattr(capability, "variant", None))
+            for capability in capabilities
+        )
+        return ", ".join(names)
+
+    def _comparator_supports_report_type(self, comparator_spec: Any, report_type: Dict[str, Any]) -> bool:
+        requested_type = str(report_type.get("type") or "").strip().lower()
+        requested_variant = report_type.get("variant")
+        requested_variant = str(requested_variant).strip().lower() if requested_variant else None
+
+        matching_capabilities = [
+            capability
+            for capability in tuple(getattr(comparator_spec, "visualization_capabilities", ()) or ())
+            if str(getattr(capability, "visualization_type", "")).strip().lower() == requested_type
+        ]
+        if not matching_capabilities:
+            return False
+
+        if requested_variant is None:
+            return True
+
+        return any(
+            str(getattr(capability, "variant", "") or "").strip().lower() == requested_variant
+            for capability in matching_capabilities
+        )
+
+    def _validate_report_visualization_capabilities(
+        self,
+        *,
+        section_name: str,
+        component: Dict[str, Any],
+        report: Dict[str, Any],
+    ) -> None:
+        report_types = report.get("types") or []
+        if not report_types:
+            return
+
+        comparator_name = str(component.get("comparator") or "").strip().lower()
+        comparator_spec = self._get_comparator_spec(comparator_name, section_name)
+
+        for report_type in report_types:
+            if not isinstance(report_type, dict):
+                continue
+            if self._comparator_supports_report_type(comparator_spec, report_type):
+                continue
+
+            requested_name = _format_visualization_name(
+                str(report_type.get("type") or "").strip().lower(),
+                report_type.get("variant"),
+            )
+            available_names = self._format_comparator_capability_names(comparator_spec)
+            self._warn_or_raise(
+                f"Section '{section_name}': report.types requests visualization '{requested_name}', "
+                f"but comparator '{comparator_spec.name}' declares: {available_names}. "
+                "Run 'python scrutinize.py verify --list-capabilities' to inspect available capabilities.",
+                fatal=True,
+            )
+
     def _build_component(
         self,
         *,
@@ -257,6 +360,9 @@ class SchemaLoader:
                 f"Section '{section_name}': component.comparator is mandatory.",
                 fatal=True,
             )
+
+        # Validate comparator existence here so schema/report visualization errors are caught before verification.
+        self._get_comparator_spec(comparator, section_name)
 
         match_key = component_cfg.get("match_key")
         if not match_key:
@@ -330,6 +436,11 @@ class SchemaLoader:
             component_cfg=merged["component"] or {},
             record_schema_norm=record_schema_norm,
         )
+        self._validate_report_visualization_capabilities(
+            section_name=section_name,
+            component=component,
+            report=report,
+        )
 
         return {
             "data": {"type": "list", "record_schema": record_schema_norm},
@@ -383,6 +494,7 @@ class SchemaLoader:
             "allow_missing_sections": ingest_opts["allow_missing_sections"],
             "dynamic_template": dynamic_template,
             "skipped_sections": [],
+            "visualization_capability_validation": True,
         }
 
         return LoadedSchema(out, loader_meta=loader_meta)

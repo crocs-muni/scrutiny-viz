@@ -8,6 +8,7 @@ from scrutiny import logging as slog
 from scrutiny.errors import ScrutinyError
 
 from .comparators import registry as comparator_registry
+from .comparators.contracts import ComparatorVisualizationCapability
 from .service import run_verification
 
 
@@ -15,13 +16,40 @@ def _format_aliases(aliases: tuple[str, ...]) -> str:
     return ", ".join(aliases) if aliases else "-"
 
 
-def _print_comparator_catalog() -> None:
+def _format_visualization_capability(capability: ComparatorVisualizationCapability) -> str:
+    visualization_name = capability.visualization_type
+    if capability.variant:
+        visualization_name = f"{visualization_name}:{capability.variant}"
+
+    details = [f"producer={capability.producer}"]
+    if capability.required_artifact_keys:
+        required_artifacts = ", ".join(capability.required_artifact_keys)
+        details.append(f"requires={required_artifacts}")
+
+    suffix = f" [{'; '.join(details)}]"
+    description = f" - {capability.description}" if capability.description else ""
+    return f"    - {visualization_name}{suffix}{description}"
+
+
+def print_comparator_capability_catalog() -> None:
     specs = comparator_registry.list_specs()
     print("Available comparator plugins:")
     for spec in specs:
         print(f"- {spec.name}")
         print(f"  aliases: {_format_aliases(spec.aliases)}")
         print(f"  description: {spec.description or '-'}")
+        print("  visualizations:")
+        if spec.visualization_capabilities:
+            for capability in spec.visualization_capabilities:
+                print(_format_visualization_capability(capability))
+        else:
+            print("    - none declared")
+
+
+
+def _print_comparator_capability_catalog() -> None:
+    """Backward-compatible private alias for older internal callers."""
+    print_comparator_capability_catalog()
 
 
 def add_verify_args(parser: argparse.ArgumentParser) -> None:
@@ -34,7 +62,13 @@ def add_verify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--print-diffs", type=int, default=10, metavar="N", help="Print up to N diffs per section (default: 10, 0 to disable)")
     parser.add_argument("--print-matches", type=int, default=0, metavar="N", help="Print up to N matches per section (default: 0)")
     parser.add_argument("--report", action="store_true", help="Create an HTML report after verification")
-    parser.add_argument("--list-comparators", action="store_true", help="List discovered comparator plugins and exit")
+    parser.add_argument(
+        "--list-capabilities",
+        "--list-comparators",
+        dest="list_capabilities",
+        action="store_true",
+        help="List discovered comparator plugins and visualization capabilities, then exit",
+    )
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -47,8 +81,8 @@ def run_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(args.verbose)
     log = slog.get_logger("VERIFY")
 
-    if args.list_comparators:
-        _print_comparator_catalog()
+    if args.list_capabilities:
+        print_comparator_capability_catalog()
         return 0
 
     missing = [
@@ -59,7 +93,7 @@ def run_from_namespace(args: argparse.Namespace) -> int:
     if missing:
         raise SystemExit(
             f"Missing required arguments: {', '.join(missing)}. "
-            "Provide them for verification, or use --list-comparators to inspect available plugins."
+            "Provide them for verification, or use --list-capabilities to inspect available plugins."
         )
 
     result = run_verification(

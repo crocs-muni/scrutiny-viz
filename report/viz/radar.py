@@ -12,6 +12,15 @@ from .contracts import VizPlugin, VizSpec
 from .utility import to_float
 
 
+def _get_visualization_rows_from_section(section: Dict[str, Any], visualization_name: str) -> List[Dict[str, Any]]:
+    visualizations_payload = section.get("visualizations") or {}
+    available_visualizations = visualizations_payload.get("available") if isinstance(visualizations_payload, dict) else {}
+    visualization_payload = available_visualizations.get(visualization_name) if isinstance(available_visualizations, dict) else None
+    if isinstance(visualization_payload, dict) and isinstance(visualization_payload.get("rows"), list):
+        return visualization_payload.get("rows") or []
+    return []
+
+
 def _point(cx: float, cy: float, radius: float, angle_rad: float) -> tuple[float, float]:
     return (cx + radius * math.cos(angle_rad), cy + radius * math.sin(angle_rad))
 
@@ -165,7 +174,7 @@ def _build_svg(rows: List[Dict[str, Any]], *, show_every: int = 1, title_suffix:
 
 
 def render_radar_block(section_name: str, section: Dict[str, Any], idx: int):
-    rows: List[Dict[str, Any]] = section.get("radar_rows", []) or []
+    rows: List[Dict[str, Any]] = _get_visualization_rows_from_section(section, "radar")
     if len(rows) < 3:
         return tags.div()
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 
-from .contracts import ComparatorPlugin, ComparatorSpec, CompareResult
+from .contracts import ComparatorPlugin, ComparatorSpec, ComparatorVisualizationCapability, CompareResult
 from .utility import build_row_map, get_display_label, sort_mixed_keys
 
 def _is_scalar(value: Any) -> bool:
@@ -45,6 +45,18 @@ class BasicComparator(ComparatorPlugin):
         name="basic",
         aliases=("default",),
         description="General-purpose comparator for scalar and grouped section rows.",
+        visualization_capabilities=(
+            ComparatorVisualizationCapability(
+                visualization_type="table",
+                producer="renderer",
+                description="Generic table rendering from comparison results.",
+            ),
+            ComparatorVisualizationCapability(
+                visualization_type="radar",
+                producer="report_assembler",
+                description="Derived when enough scalar comparable values are available.",
+            ),
+        ),
     )
 
     def compare(

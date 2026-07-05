@@ -5,28 +5,44 @@ from report.viz.chart import render_bar_pair_block, render_chart_table_block
 from report.viz import registry as viz_registry
 
 
+def _chart_rows():
+    return [
+        {
+            "key": "ALG_RSA",
+            "ref_avg": 10.0,
+            "test_avg": 12.0,
+            "delta_ms": 2.0,
+            "delta_pct": 20.0,
+            "status": "mismatch",
+            "note": "profile slower",
+        },
+        {
+            "key": "ALG_EC",
+            "ref_avg": 5.0,
+            "test_avg": 5.0,
+            "delta_ms": 0.0,
+            "delta_pct": 0.0,
+            "status": "match",
+            "note": "",
+        },
+    ]
+
+
 def _section():
     return {
-        "chart_rows": [
-            {
-                "key": "ALG_RSA",
-                "ref_avg": 10.0,
-                "test_avg": 12.0,
-                "delta_ms": 2.0,
-                "delta_pct": 20.0,
-                "status": "mismatch",
-                "note": "profile slower",
+        "visualizations": {
+            "requested": [{"type": "chart", "variant": None}],
+            "available": {
+                "chart": {
+                    "type": "chart",
+                    "variant": None,
+                    "producer": "comparator",
+                    "source": "artifacts.chart_rows",
+                    "rows": _chart_rows(),
+                }
             },
-            {
-                "key": "ALG_EC",
-                "ref_avg": 5.0,
-                "test_avg": 5.0,
-                "delta_ms": 0.0,
-                "delta_pct": 0.0,
-                "status": "match",
-                "note": "",
-            },
-        ]
+            "unavailable": [],
+        }
     }
 
 

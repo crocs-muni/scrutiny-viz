@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from .contracts import ComparatorPlugin, ComparatorSpec, CompareResult
+from .contracts import ComparatorPlugin, ComparatorSpec, ComparatorVisualizationCapability, CompareResult
 from .utility import build_string_key_map, get_display_label, to_float
 
 
@@ -23,6 +23,34 @@ class RSABiasComparator(ComparatorPlugin):
         name="rsabias",
         aliases=("rsa-bias",),
         description="Comparator for RSABias evaluation sections with numeric tolerance and summary artifacts.",
+        visualization_capabilities=(
+            ComparatorVisualizationCapability(
+                visualization_type="table",
+                variant="rsabias_accuracy",
+                producer="renderer",
+                required_artifact_keys=("top_accuracy_changes",),
+                description="Accuracy summary table by group.",
+            ),
+            ComparatorVisualizationCapability(
+                visualization_type="table",
+                variant="rsabias_confusion_top",
+                producer="renderer",
+                required_artifact_keys=("top_share_changes",),
+                description="Top confusion/share changes table.",
+            ),
+            ComparatorVisualizationCapability(
+                visualization_type="table",
+                variant="rsabias_matrix_top",
+                producer="renderer",
+                required_artifact_keys=("top_changed_cells",),
+                description="Top changed matrix cells table.",
+            ),
+            ComparatorVisualizationCapability(
+                visualization_type="heatmap",
+                producer="renderer",
+                description="Matrix-like heatmap when row/column/value fields are available.",
+            ),
+        ),
     )
 
     def compare(

@@ -5,7 +5,7 @@ from math import sqrt
 from statistics import mean, variance
 from typing import Any, Dict, List, Optional, Tuple
 
-from .contracts import ComparatorPlugin, ComparatorSpec, CompareResult
+from .contracts import ComparatorPlugin, ComparatorSpec, ComparatorVisualizationCapability, CompareResult
 from .utility import build_string_key_map, get_display_label, load_jsonish, max_state
 
 
@@ -47,6 +47,15 @@ class TracesCompareComparator(ComparatorPlugin):
         name="tracescompare",
         aliases=("traces-comparer", "ptraces"),
         description="Comparator for scrutiny-power-traces-analyzer Traces comparer data.",
+        visualization_capabilities=(
+            ComparatorVisualizationCapability(
+                visualization_type="table",
+                variant="tracescompare",
+                producer="renderer",
+                required_artifact_keys=("operations",),
+                description="Power trace comparison operation summary table.",
+            ),
+        ),
     )
 
     def compare(

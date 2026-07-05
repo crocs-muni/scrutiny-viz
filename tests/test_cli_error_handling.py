@@ -40,7 +40,7 @@ def assert_clean_cli_error(proc: subprocess.CompletedProcess[str], expected_text
 def write_simple_schema(path: Path, *, comparator: str = "basic", allow_missing_sections: bool = False) -> Path:
     path.write_text(
         f'''
-schema_version: "0.13"
+schema_version: "0.14"
 
 ingest:
   dynamic_sections: false

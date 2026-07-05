@@ -1,9 +1,249 @@
 # scrutiny-viz/scrutiny/reporting/reporting.py
 from __future__ import annotations
 
+import hashlib
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 _ORDER = {"MATCH": 0, "WARN": 1, "SUSPICIOUS": 2}
+
+
+REPORT_FORMAT_NAME = "scrutiny-viz.verification-report"
+REPORT_FORMAT_VERSION = "2.0"
+VALID_INPUT_SOURCE_KINDS = {"input_json", "mapper", "manual", "unknown"}
+
+
+def _calculate_sha256_for_file(path: str | None) -> str | None:
+    if not path:
+        return None
+    try:
+        digest = hashlib.sha256()
+        with open(path, "rb") as file_handle:
+            for chunk in iter(lambda: file_handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+    except Exception:
+        return None
+
+
+def _normalize_input_source_kind(value: Any) -> str:
+    normalized_value = str(value or "").strip().lower()
+    return normalized_value if normalized_value in VALID_INPUT_SOURCE_KINDS else "unknown"
+
+
+def _build_input_descriptor(
+    *,
+    label: str,
+    input_path: str | None,
+    source_metadata: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
+    source_metadata = source_metadata if isinstance(source_metadata, dict) else {}
+    input_file_name = Path(input_path).name if input_path else None
+    input_sha256 = _calculate_sha256_for_file(input_path)
+
+    source_payload = source_metadata.get("source") if isinstance(source_metadata.get("source"), dict) else source_metadata
+    source_kind = _normalize_input_source_kind(source_payload.get("kind") or ("input_json" if input_path else "unknown"))
+    mapper_name = source_payload.get("mapper")
+    mapper_name = str(mapper_name).strip() if mapper_name is not None and str(mapper_name).strip() else None
+
+    original_file_name = source_payload.get("original_file_name") or input_file_name
+    original_file_name = str(original_file_name).strip() if original_file_name is not None and str(original_file_name).strip() else None
+
+    original_sha256 = source_payload.get("original_sha256") or input_sha256
+    original_sha256 = str(original_sha256).strip() if original_sha256 is not None and str(original_sha256).strip() else None
+
+    return {
+        "label": label,
+        "file_name": input_file_name,
+        "path": str(input_path) if input_path else None,
+        "sha256": input_sha256,
+        "source": {
+            "kind": source_kind,
+            "mapper": mapper_name,
+            "original_file_name": original_file_name,
+            "original_sha256": original_sha256,
+        },
+    }
+
+
+def _convert_statistics_to_version_two(stats: Dict[str, Any]) -> Dict[str, int]:
+    return {
+        "compared": int(stats.get("compared", 0) or 0),
+        "changed": int(stats.get("changed", 0) or 0),
+        "matched": int(stats.get("matched", 0) or 0),
+        "only_reference": int(stats.get("only_reference", stats.get("only_ref", 0)) or 0),
+        "only_profile": int(stats.get("only_profile", stats.get("only_test", 0)) or 0),
+    }
+
+
+def _split_differences_into_result_buckets(diffs: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    changed_differences: List[Dict[str, Any]] = []
+    only_reference_differences: List[Dict[str, Any]] = []
+    only_profile_differences: List[Dict[str, Any]] = []
+    group_differences: List[Dict[str, Any]] = []
+
+    for diff in diffs or []:
+        if not isinstance(diff, dict):
+            continue
+        field_name = diff.get("field")
+        if field_name == "__presence__":
+            reference_present = bool(diff.get("ref"))
+            profile_present = bool(diff.get("test"))
+            if reference_present and not profile_present:
+                only_reference_differences.append(diff)
+            elif profile_present and not reference_present:
+                only_profile_differences.append(diff)
+            else:
+                changed_differences.append(diff)
+            continue
+        if field_name == "__group__":
+            group_differences.append(diff)
+            continue
+        changed_differences.append(diff)
+
+    return {
+        "changed": changed_differences,
+        "only_reference": only_reference_differences,
+        "only_profile": only_profile_differences,
+        "groups": group_differences,
+    }
+
+
+def _normalize_requested_visualizations(report_cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
+    requested: List[Dict[str, Any]] = []
+    for visualization_type in report_cfg.get("types") or []:
+        if not isinstance(visualization_type, dict):
+            continue
+        type_name = str(visualization_type.get("type") or "").strip().lower()
+        if not type_name:
+            continue
+        variant = visualization_type.get("variant")
+        variant = str(variant).strip().lower() if variant is not None and str(variant).strip() else None
+        requested.append({"type": type_name, "variant": variant})
+    return requested
+
+
+def _is_visualization_requested(requested: List[Dict[str, Any]], type_name: str) -> bool:
+    return any(item.get("type") == type_name for item in requested or [])
+
+
+def _get_requested_visualization_variant(requested: List[Dict[str, Any]], type_name: str) -> str | None:
+    for item in requested or []:
+        if item.get("type") == type_name:
+            variant = item.get("variant")
+            return str(variant) if variant is not None else None
+    return None
+
+
+def _can_derive_heatmap_visualization(diffs: List[Dict[str, Any]], matches: List[Dict[str, Any]]) -> bool:
+    row_fields = {"row_index", "row", "y"}
+    col_fields = {"col_index", "col", "x"}
+    value_fields = {"value", "share_pct", "score", "weight"}
+    fields_by_key: Dict[str, set[str]] = {}
+
+    for record in list(matches or []) + list(diffs or []):
+        if not isinstance(record, dict):
+            continue
+        key = str(record.get("key") or "")
+        field = str(record.get("field") or "")
+        if not key or not field or field == "__presence__":
+            continue
+        fields_by_key.setdefault(key, set()).add(field)
+
+    for fields in fields_by_key.values():
+        if fields & row_fields and fields & col_fields and fields & value_fields:
+            return True
+    return False
+
+
+def _build_section_visualization_payload(
+    *,
+    requested: List[Dict[str, Any]],
+    chart_rows: List[Dict[str, Any]],
+    radar_rows: List[Dict[str, Any]],
+    diffs: List[Dict[str, Any]],
+    matches: List[Dict[str, Any]],
+    chart_rows_producer: str,
+) -> Dict[str, Any]:
+    available: Dict[str, Any] = {}
+    unavailable: List[Dict[str, Any]] = []
+
+    if chart_rows:
+        available["chart"] = {
+            "type": "chart",
+            "variant": _get_requested_visualization_variant(requested, "chart"),
+            "producer": chart_rows_producer,
+            "source": "chart_rows",
+            "rows": chart_rows,
+        }
+
+    if _is_visualization_requested(requested, "radar"):
+        if len(radar_rows) >= 3:
+            available["radar"] = {
+                "type": "radar",
+                "variant": _get_requested_visualization_variant(requested, "radar"),
+                "producer": "report_assembler",
+                "source": "derived_from_chart_rows_or_results",
+                "rows": radar_rows,
+            }
+        else:
+            unavailable.append(
+                {
+                    "type": "radar",
+                    "variant": _get_requested_visualization_variant(requested, "radar"),
+                    "reason": "radar visualization requires at least three numeric or boolean comparable items",
+                }
+            )
+
+    if _is_visualization_requested(requested, "table"):
+        available["table"] = {
+            "type": "table",
+            "variant": _get_requested_visualization_variant(requested, "table"),
+            "producer": "renderer_lazy",
+            "source": "results_and_original_rows",
+        }
+
+    if _is_visualization_requested(requested, "heatmap"):
+        if _can_derive_heatmap_visualization(diffs, matches):
+            available["heatmap"] = {
+                "type": "heatmap",
+                "variant": _get_requested_visualization_variant(requested, "heatmap"),
+                "producer": "renderer_lazy",
+                "source": "results_differences_and_matches",
+            }
+        else:
+            unavailable.append(
+                {
+                    "type": "heatmap",
+                    "variant": _get_requested_visualization_variant(requested, "heatmap"),
+                    "reason": "section does not contain row/column/value fields needed for a matrix heatmap",
+                }
+            )
+
+    for requested_visualization in requested:
+        type_name = str(requested_visualization.get("type") or "").strip().lower()
+        if not type_name or type_name in available:
+            continue
+        if type_name in {"chart", "radar", "table", "heatmap"}:
+            if type_name == "chart" and not chart_rows:
+                unavailable.append(
+                    {
+                        "type": type_name,
+                        "variant": requested_visualization.get("variant"),
+                        "reason": "no chart rows were produced by the comparator or report assembler",
+                    }
+                )
+            continue
+        unavailable.append(
+            {
+                "type": type_name,
+                "variant": requested_visualization.get("variant"),
+                "reason": "visualization type is not produced by the report assembler",
+            }
+        )
+
+    return {"requested": requested, "available": available, "unavailable": unavailable}
 
 
 def _max_state(left: str, right: str) -> str:
@@ -345,6 +585,9 @@ def assemble_report(
     profile_name: str,
     section_rows: Dict[str, Any] | None = None,
     ingest_meta: Optional[Dict[str, Any]] = None,
+    reference_path: str | None = None,
+    profile_path: str | None = None,
+    input_metadata: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     sections_out: Dict[str, Any] = {}
     overall = "MATCH"
@@ -354,6 +597,9 @@ def assemble_report(
 
     theme = _pick_global_theme(schema)
     ingest_payload = dict(ingest_meta or _default_ingest_meta(schema))
+    input_metadata = input_metadata if isinstance(input_metadata, dict) else {}
+
+    result_counts = {"compared": 0, "changed": 0, "matched": 0, "only_reference": 0, "only_profile": 0}
 
     for section_name, result_payload in (compare_results or {}).items():
         diffs = result_payload.get("diffs", []) or []
@@ -361,8 +607,10 @@ def assemble_report(
         artifacts = result_payload.get("artifacts", {}) or {}
 
         chart_rows = result_payload.get("chart_rows")
+        chart_rows_producer = "comparator"
         if chart_rows is None:
             chart_rows = artifacts.get("chart_rows", []) or []
+            chart_rows_producer = "comparator" if chart_rows else "report_assembler"
         if not isinstance(chart_rows, list):
             chart_rows = []
 
@@ -372,8 +620,8 @@ def assemble_report(
                 "compared": int(provided_stats.get("compared", 0) or 0),
                 "changed": int(provided_stats.get("changed", 0) or 0),
                 "matched": int(provided_stats.get("matched", 0) or 0),
-                "only_ref": int(provided_stats.get("only_ref", 0) or 0),
-                "only_test": int(provided_stats.get("only_test", 0) or 0),
+                "only_ref": int(provided_stats.get("only_ref", provided_stats.get("only_reference", 0)) or 0),
+                "only_test": int(provided_stats.get("only_test", provided_stats.get("only_profile", 0)) or 0),
             }
             if stats["compared"] == 0 and (diffs or matches):
                 stats = _tally_stats(diffs, matches)
@@ -403,6 +651,13 @@ def assemble_report(
             "TOTAL": 1,
         }
 
+        stats_v2 = _convert_statistics_to_version_two(stats)
+        result_counts["compared"] += stats_v2["compared"]
+        result_counts["changed"] += stats_v2["changed"]
+        result_counts["matched"] += stats_v2["matched"]
+        result_counts["only_reference"] += stats_v2["only_reference"]
+        result_counts["only_profile"] += stats_v2["only_profile"]
+
         pairs = _collect_numeric_pairs_from_chart(chart_rows)
         if not pairs:
             pairs = _collect_pairs_from_rows(diffs, matches)
@@ -423,45 +678,103 @@ def assemble_report(
         if source_rows is None:
             source_rows = result_payload.get("source_rows")
 
+        labels = result_payload.get("key_labels") or result_payload.get("labels") or {}
+        requested_visualizations = _normalize_requested_visualizations(report_cfg)
+        visualizations_payload = _build_section_visualization_payload(
+            requested=requested_visualizations,
+            chart_rows=chart_rows,
+            radar_rows=radar_rows,
+            diffs=diffs,
+            matches=matches,
+            chart_rows_producer=chart_rows_producer,
+        )
+
+        original_payload = {
+            "reference": {"rows": []},
+            "profile": {"rows": []},
+        }
+        if isinstance(source_rows, dict):
+            original_payload = {
+                "reference": {"rows": source_rows.get("reference") or []},
+                "profile": {"rows": source_rows.get("profile") or source_rows.get("tested") or []},
+            }
+
         section_output = {
-            "result": section_result,
-            "stats": stats,
-            "stats_display": dict(stats),
-            "key_labels": result_payload.get("key_labels") or result_payload.get("labels") or {},
-            "diffs": diffs,
-            "matches": matches,
-            "chart_rows": chart_rows,
-            "radar_rows": radar_rows,
-            "report": report_cfg,
+            "meta": {
+                "name": section_name,
+                "comparator": (schema_section.get("component") or {}).get("comparator") if isinstance(schema_section, dict) else None,
+                "match_key": (schema_section.get("component") or {}).get("match_key") if isinstance(schema_section, dict) else None,
+                "show_key": (schema_section.get("component") or {}).get("show_key") if isinstance(schema_section, dict) else None,
+                "report": report_cfg,
+                "severity": _merge_severity_meta(schema, section_name, result_payload),
+            },
+            "original": original_payload,
+            "results": {
+                "state": section_result,
+                "stats": stats_v2,
+                "labels": labels,
+                "matches": matches,
+                "differences": _split_differences_into_result_buckets(diffs),
+                "raw_differences": diffs,
+            },
+            "visualizations": visualizations_payload,
             "artifacts": artifacts,
         }
-        if source_rows is not None:
-            section_output["source_rows"] = source_rows
 
         sections_out[section_name] = section_output
         overall = _max_state(overall, section_result)
 
     total_sections = sum(overall_counts.values())
-    dashboard = {
-        "overall_state_counts": {
-            "MATCH": overall_counts.get("MATCH", 0),
-            "WARN": overall_counts.get("WARN", 0),
-            "SUSPICIOUS": overall_counts.get("SUSPICIOUS", 0),
-            "TOTAL": total_sections,
-        },
+    state_counts_payload = {
+        "MATCH": overall_counts.get("MATCH", 0),
+        "WARN": overall_counts.get("WARN", 0),
+        "SUSPICIOUS": overall_counts.get("SUSPICIOUS", 0),
+        "TOTAL": total_sections,
+    }
+
+    reference_input = _build_input_descriptor(
+        label=reference_name,
+        input_path=reference_path,
+        source_metadata=input_metadata.get("reference") if isinstance(input_metadata, dict) else None,
+    )
+    profile_input = _build_input_descriptor(
+        label=profile_name,
+        input_path=profile_path,
+        source_metadata=input_metadata.get("profile") if isinstance(input_metadata, dict) else None,
+    )
+
+    summary = {
+        "overall": overall,
+        "state_counts": state_counts_payload,
+        "result_counts": result_counts,
         "by_section": by_section,
     }
 
-    return {
-        "reference_name": reference_name,
-        "profile_name": profile_name,
-        "theme": theme,
-        "overall": overall,
-        "sections": sections_out,
-        "dashboard": dashboard,
-        "meta": {
-            "generated_by": "assemble_report",
-            "schema_title": schema.get("title") if isinstance(schema, dict) else None,
-            "ingest": ingest_payload,
+    meta_payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_by": {
+            "tool": "scrutiny-viz",
+            "component": "scrutiny.reporting.reporting",
+            "assembler": "assemble_report",
         },
+        "schema": {
+            "title": schema.get("title") if isinstance(schema, dict) else None,
+        },
+        "ingest": ingest_payload,
+    }
+
+    return {
+        "format": {
+            "name": REPORT_FORMAT_NAME,
+            "version": REPORT_FORMAT_VERSION,
+        },
+        "inputs": {
+            "reference": reference_input,
+            "profile": profile_input,
+        },
+        "meta": meta_payload,
+        "theme": theme,
+        "summary": summary,
+        "sections": sections_out,
+        
     }

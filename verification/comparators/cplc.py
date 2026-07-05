@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from .contracts import ComparatorPlugin, ComparatorSpec, CompareResult
+from .contracts import ComparatorPlugin, ComparatorSpec, ComparatorVisualizationCapability, CompareResult
 from .utility import build_row_map, get_display_label, sort_mixed_keys
 
 
@@ -12,6 +12,14 @@ class CplcComparator(ComparatorPlugin):
         name="cplc",
         aliases=("jc-cplc", "jccplc"),
         description="Comparator for CPLC key/value rows with first-token normalization.",
+        visualization_capabilities=(
+            ComparatorVisualizationCapability(
+                visualization_type="table",
+                variant="cplc",
+                producer="renderer",
+                description="CPLC reference/profile value table.",
+            ),
+        ),
     )
 
     @staticmethod

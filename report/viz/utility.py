@@ -188,9 +188,11 @@ def row_value(row: Dict[str, Any]) -> str:
 
 
 def source_maps(section: Dict[str, Any], key_field: str) -> tuple[Dict[str, Dict[str, Any]], Dict[str, Dict[str, Any]]]:
-    source_rows = section.get("source_rows") or {}
-    ref_rows = source_rows.get("reference") or []
-    test_rows = source_rows.get("tested") or source_rows.get("profile") or []
+    original_payload = section.get("original") if isinstance(section, dict) else None
+    reference_payload = original_payload.get("reference") if isinstance(original_payload, dict) and isinstance(original_payload.get("reference"), dict) else {}
+    profile_payload = original_payload.get("profile") if isinstance(original_payload, dict) and isinstance(original_payload.get("profile"), dict) else {}
+    ref_rows = reference_payload.get("rows") or []
+    test_rows = profile_payload.get("rows") or []
 
     ref_map: Dict[str, Dict[str, Any]] = {}
     test_map: Dict[str, Dict[str, Any]] = {}

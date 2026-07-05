@@ -1,0 +1,2441 @@
+{
+  "format": {
+    "name": "scrutiny-viz.verification-report",
+    "version": "2.0"
+  },
+  "inputs": {
+    "reference": {
+      "label": "tpm_example2",
+      "file_name": "tpm_example2.json",
+      "path": "C:\\scrutiny-viz\\examples\\TPM\\tpm_example2.json",
+      "sha256": "220a22a71040b1b95856cf2155194369be4da642d579170a587bb30de9b018f3",
+      "source": {
+        "kind": "input_json",
+        "mapper": null,
+        "original_file_name": "tpm_example2.json",
+        "original_sha256": "220a22a71040b1b95856cf2155194369be4da642d579170a587bb30de9b018f3"
+      }
+    },
+    "profile": {
+      "label": "tpm_example1",
+      "file_name": "tpm_example1.json",
+      "path": "C:\\scrutiny-viz\\examples\\TPM\\tpm_example1.json",
+      "sha256": "8a16782ad760914a1a153ccf224a94ef3b9af252f6daf76111545b7ccd4918cc",
+      "source": {
+        "kind": "input_json",
+        "mapper": null,
+        "original_file_name": "tpm_example1.json",
+        "original_sha256": "8a16782ad760914a1a153ccf224a94ef3b9af252f6daf76111545b7ccd4918cc"
+      }
+    }
+  },
+  "meta": {
+    "generated_at": "2026-06-20T18:09:43.136568+00:00",
+    "generated_by": {
+      "tool": "scrutiny-viz",
+      "component": "scrutiny.reporting.reporting",
+      "assembler": "assemble_report"
+    },
+    "schema": {
+      "title": null
+    },
+    "ingest": {
+      "dynamic_sections_enabled": true,
+      "strict_sections": false,
+      "allow_missing_sections": true,
+      "applied_dynamic_sections": [
+        "TPM2_GetRandom",
+        "TPM2_HMAC",
+        "TPM2_Hash",
+        "TPM2_RSA_Decrypt",
+        "TPM2_RSA_Encrypt",
+        "TPM2_VerifySignature"
+      ],
+      "applied_dynamic_sections_reference": [
+        "TPM2_GetRandom",
+        "TPM2_HMAC",
+        "TPM2_Hash",
+        "TPM2_RSA_Decrypt",
+        "TPM2_RSA_Encrypt",
+        "TPM2_VerifySignature"
+      ],
+      "applied_dynamic_sections_profile": [],
+      "skipped_sections": [],
+      "skipped_sections_count": 0
+    }
+  },
+  "theme": "dark",
+  "summary": {
+    "overall": "MATCH",
+    "state_counts": {
+      "MATCH": 9,
+      "WARN": 0,
+      "SUSPICIOUS": 0,
+      "TOTAL": 9
+    },
+    "result_counts": {
+      "compared": 32,
+      "changed": 0,
+      "matched": 32,
+      "only_reference": 0,
+      "only_profile": 0
+    },
+    "by_section": {
+      "TPM_INFO": {
+        "MATCH": 1,
+        "WARN": 0,
+        "SUSPICIOUS": 0,
+        "TOTAL": 1
+      },
+      "TPM2_Create": {
+        "MATCH": 1,
+        "WARN": 0,
+        "SUSPICIOUS": 0,
+        "TOTAL": 1
+      },
+      "TPM2_Sign": {
+        "MATCH": 1,
+        "WARN": 0,
+        "SUSPICIOUS": 0,
+        "TOTAL": 1
+      },
+      "TPM2_GetRandom": {
+        "MATCH": 1,
+        "WARN": 0,
+        "SUSPICIOUS": 0,
+        "TOTAL": 1
+      },
+      "TPM2_HMAC": {
+        "MATCH": 1,
+        "WARN": 0,
+        "SUSPICIOUS": 0,
+        "TOTAL": 1
+      },
+      "TPM2_Hash": {
+        "MATCH": 1,
+        "WARN": 0,
+        "SUSPICIOUS": 0,
+        "TOTAL": 1
+      },
+      "TPM2_RSA_Decrypt": {
+        "MATCH": 1,
+        "WARN": 0,
+        "SUSPICIOUS": 0,
+        "TOTAL": 1
+      },
+      "TPM2_RSA_Encrypt": {
+        "MATCH": 1,
+        "WARN": 0,
+        "SUSPICIOUS": 0,
+        "TOTAL": 1
+      },
+      "TPM2_VerifySignature": {
+        "MATCH": 1,
+        "WARN": 0,
+        "SUSPICIOUS": 0,
+        "TOTAL": 1
+      }
+    }
+  },
+  "sections": {
+    "TPM_INFO": {
+      "meta": {
+        "name": "TPM_INFO",
+        "comparator": "basic",
+        "match_key": "name",
+        "show_key": "name",
+        "report": {
+          "types": [
+            {
+              "type": "table",
+              "variant": null
+            }
+          ],
+          "theme": "dark",
+          "doc": null,
+          "doc_text": null
+        },
+        "severity": {
+          "threshold_ratio": 0.5
+        }
+      },
+      "original": {
+        "reference": {
+          "rows": [
+            {
+              "name": "Tested and provided by",
+              "value": ""
+            },
+            {
+              "name": "Execution date/time",
+              "value": "2019/05/17 09:02:56"
+            },
+            {
+              "name": "Manufacturer",
+              "value": "INTC"
+            },
+            {
+              "name": "Vendor string",
+              "value": "Intel"
+            },
+            {
+              "name": "Firmware version",
+              "value": "10.0.36.1030"
+            },
+            {
+              "name": "Image tag",
+              "value": "v1.0"
+            }
+          ]
+        },
+        "profile": {
+          "rows": [
+            {
+              "name": "Tested and provided by",
+              "value": ""
+            },
+            {
+              "name": "Execution date/time",
+              "value": "2019/05/17 09:02:56"
+            },
+            {
+              "name": "Manufacturer",
+              "value": "INTC"
+            },
+            {
+              "name": "Vendor string",
+              "value": "Intel"
+            },
+            {
+              "name": "Firmware version",
+              "value": "10.0.36.1030"
+            },
+            {
+              "name": "Image tag",
+              "value": "v1.0"
+            }
+          ]
+        }
+      },
+      "results": {
+        "state": "MATCH",
+        "stats": {
+          "compared": 6,
+          "changed": 0,
+          "matched": 6,
+          "only_reference": 0,
+          "only_profile": 0
+        },
+        "labels": {
+          "Execution date/time": "Execution date/time",
+          "Firmware version": "Firmware version",
+          "Image tag": "Image tag",
+          "Manufacturer": "Manufacturer",
+          "Tested and provided by": "Tested and provided by",
+          "Vendor string": "Vendor string"
+        },
+        "matches": [
+          {
+            "key": "Execution date/time",
+            "field": "value",
+            "value": "2019/05/17 09:02:56"
+          },
+          {
+            "key": "Firmware version",
+            "field": "value",
+            "value": "10.0.36.1030"
+          },
+          {
+            "key": "Image tag",
+            "field": "value",
+            "value": "v1.0"
+          },
+          {
+            "key": "Manufacturer",
+            "field": "value",
+            "value": "INTC"
+          },
+          {
+            "key": "Tested and provided by",
+            "field": "value",
+            "value": ""
+          },
+          {
+            "key": "Vendor string",
+            "field": "value",
+            "value": "Intel"
+          }
+        ],
+        "differences": {
+          "changed": [],
+          "only_reference": [],
+          "only_profile": [],
+          "groups": []
+        },
+        "raw_differences": []
+      },
+      "visualizations": {
+        "requested": [
+          {
+            "type": "table",
+            "variant": null
+          }
+        ],
+        "available": {
+          "table": {
+            "type": "table",
+            "variant": null,
+            "producer": "renderer_lazy",
+            "source": "results_and_original_rows"
+          }
+        },
+        "unavailable": []
+      },
+      "artifacts": {}
+    },
+    "TPM2_Create": {
+      "meta": {
+        "name": "TPM2_Create",
+        "comparator": "algperf",
+        "match_key": "algorithm",
+        "show_key": "op_name",
+        "report": {
+          "types": [
+            {
+              "type": "chart",
+              "variant": null
+            },
+            {
+              "type": "radar",
+              "variant": null
+            }
+          ],
+          "theme": "dark",
+          "doc": null,
+          "doc_text": null
+        },
+        "severity": {
+          "threshold_ratio": 0.5
+        }
+      },
+      "original": {
+        "reference": {
+          "rows": [
+            {
+              "algorithm": "TPM2_Create|Key parameters=ECC 0x0003",
+              "op_name": "TPM2_Create",
+              "measurement_config": "Key parameters=ECC 0x0003",
+              "avg_ms": 190.02,
+              "min_ms": 179.92,
+              "max_ms": 196.48,
+              "total_iterations": 1000,
+              "total_invocations": 1000
+            },
+            {
+              "algorithm": "TPM2_Create|Key parameters=HMAC",
+              "op_name": "TPM2_Create",
+              "measurement_config": "Key parameters=HMAC",
+              "avg_ms": 6.13,
+              "min_ms": 5.64,
+              "max_ms": 6.66,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Create|Key parameters=RSA 1024",
+              "op_name": "TPM2_Create",
+              "measurement_config": "Key parameters=RSA 1024",
+              "avg_ms": 5224.88,
+              "min_ms": 561.02,
+              "max_ms": 26610.34,
+              "total_iterations": 1000,
+              "total_invocations": 1000
+            },
+            {
+              "algorithm": "TPM2_Create|Key parameters=RSA 2048",
+              "op_name": "TPM2_Create",
+              "measurement_config": "Key parameters=RSA 2048",
+              "avg_ms": 31601.74,
+              "min_ms": 1498.95,
+              "max_ms": 118211.2,
+              "total_iterations": 995,
+              "total_invocations": 990,
+              "error": "a000a"
+            }
+          ]
+        },
+        "profile": {
+          "rows": [
+            {
+              "algorithm": "TPM2_Create|Key parameters=ECC 0x0003",
+              "op_name": "TPM2_Create",
+              "measurement_config": "Key parameters=ECC 0x0003",
+              "avg_ms": 189.31,
+              "min_ms": 179.35,
+              "max_ms": 195.77,
+              "total_iterations": 1000,
+              "total_invocations": 1000
+            },
+            {
+              "algorithm": "TPM2_Create|Key parameters=HMAC",
+              "op_name": "TPM2_Create",
+              "measurement_config": "Key parameters=HMAC",
+              "avg_ms": 6.1,
+              "min_ms": 5.61,
+              "max_ms": 6.61,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Create|Key parameters=RSA 1024",
+              "op_name": "TPM2_Create",
+              "measurement_config": "Key parameters=RSA 1024",
+              "avg_ms": 5197.12,
+              "min_ms": 559.94,
+              "max_ms": 26496.1,
+              "total_iterations": 1000,
+              "total_invocations": 1000
+            },
+            {
+              "algorithm": "TPM2_Create|Key parameters=RSA 2048",
+              "op_name": "TPM2_Create",
+              "measurement_config": "Key parameters=RSA 2048",
+              "avg_ms": 31522.98,
+              "min_ms": 1501.8,
+              "max_ms": 117960.5,
+              "total_iterations": 995,
+              "total_invocations": 990,
+              "error": "a000a"
+            }
+          ]
+        }
+      },
+      "results": {
+        "state": "MATCH",
+        "stats": {
+          "compared": 4,
+          "changed": 0,
+          "matched": 4,
+          "only_reference": 0,
+          "only_profile": 0
+        },
+        "labels": {
+          "TPM2_Create|Key parameters=ECC 0x0003": "TPM2_Create",
+          "TPM2_Create|Key parameters=HMAC": "TPM2_Create",
+          "TPM2_Create|Key parameters=RSA 1024": "TPM2_Create",
+          "TPM2_Create|Key parameters=RSA 2048": "TPM2_Create"
+        },
+        "matches": [
+          {
+            "key": "TPM2_Create|Key parameters=ECC 0x0003",
+            "field": "avg_ms",
+            "value": 189.31
+          },
+          {
+            "key": "TPM2_Create|Key parameters=HMAC",
+            "field": "avg_ms (skipped)",
+            "value": 6.1
+          },
+          {
+            "key": "TPM2_Create|Key parameters=RSA 1024",
+            "field": "avg_ms",
+            "value": 5197.12
+          },
+          {
+            "key": "TPM2_Create|Key parameters=RSA 2048",
+            "field": "error",
+            "value": "a000a"
+          }
+        ],
+        "differences": {
+          "changed": [],
+          "only_reference": [],
+          "only_profile": [],
+          "groups": []
+        },
+        "raw_differences": []
+      },
+      "visualizations": {
+        "requested": [
+          {
+            "type": "chart",
+            "variant": null
+          },
+          {
+            "type": "radar",
+            "variant": null
+          }
+        ],
+        "available": {
+          "chart": {
+            "type": "chart",
+            "variant": null,
+            "producer": "comparator",
+            "source": "chart_rows",
+            "rows": [
+              {
+                "key": "TPM2_Create|Key parameters=ECC 0x0003",
+                "status": "match",
+                "ref_avg": 190.02,
+                "test_avg": 189.31,
+                "delta_ms": -0.710000000000008,
+                "delta_pct": -0.37364487948637404,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_Create|Key parameters=HMAC",
+                "status": "skipped",
+                "ref_avg": 6.13,
+                "test_avg": 6.1,
+                "delta_ms": -0.03000000000000025,
+                "delta_pct": -0.48939641109298937,
+                "note": "fast op"
+              },
+              {
+                "key": "TPM2_Create|Key parameters=RSA 1024",
+                "status": "match",
+                "ref_avg": 5224.88,
+                "test_avg": 5197.12,
+                "delta_ms": -27.76000000000022,
+                "delta_pct": -0.5313040682274084,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_Create|Key parameters=RSA 2048",
+                "status": "error",
+                "ref_avg": null,
+                "test_avg": null,
+                "delta_ms": null,
+                "delta_pct": null,
+                "note": "both failed: a000a"
+              }
+            ]
+          },
+          "radar": {
+            "type": "radar",
+            "variant": null,
+            "producer": "report_assembler",
+            "source": "derived_from_chart_rows_or_results",
+            "rows": [
+              {
+                "key": "TPM2_Create|Key parameters=ECC 0x0003",
+                "ref_score": 0.03636829936764098,
+                "test_score": 0.03623241107929751,
+                "ref_raw": 190.02,
+                "test_raw": 189.31,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_Create|Key parameters=HMAC",
+                "ref_score": 0.0011732326866837133,
+                "test_score": 0.0011674909280213134,
+                "ref_raw": 6.13,
+                "test_raw": 6.1,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_Create|Key parameters=RSA 1024",
+                "ref_score": 1.0,
+                "test_score": 0.9946869593177259,
+                "ref_raw": 5224.88,
+                "test_raw": 5197.12,
+                "kind": "numeric"
+              }
+            ]
+          }
+        },
+        "unavailable": []
+      },
+      "artifacts": {
+        "chart_rows": [
+          {
+            "key": "TPM2_Create|Key parameters=ECC 0x0003",
+            "status": "match",
+            "ref_avg": 190.02,
+            "test_avg": 189.31,
+            "delta_ms": -0.710000000000008,
+            "delta_pct": -0.37364487948637404,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_Create|Key parameters=HMAC",
+            "status": "skipped",
+            "ref_avg": 6.13,
+            "test_avg": 6.1,
+            "delta_ms": -0.03000000000000025,
+            "delta_pct": -0.48939641109298937,
+            "note": "fast op"
+          },
+          {
+            "key": "TPM2_Create|Key parameters=RSA 1024",
+            "status": "match",
+            "ref_avg": 5224.88,
+            "test_avg": 5197.12,
+            "delta_ms": -27.76000000000022,
+            "delta_pct": -0.5313040682274084,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_Create|Key parameters=RSA 2048",
+            "status": "error",
+            "ref_avg": null,
+            "test_avg": null,
+            "delta_ms": null,
+            "delta_pct": null,
+            "note": "both failed: a000a"
+          }
+        ]
+      }
+    },
+    "TPM2_Sign": {
+      "meta": {
+        "name": "TPM2_Sign",
+        "comparator": "algperf",
+        "match_key": "algorithm",
+        "show_key": "op_name",
+        "report": {
+          "types": [
+            {
+              "type": "chart",
+              "variant": null
+            },
+            {
+              "type": "radar",
+              "variant": null
+            }
+          ],
+          "theme": "dark",
+          "doc": null,
+          "doc_text": null
+        },
+        "severity": {
+          "threshold_ratio": 0.5
+        }
+      },
+      "original": {
+        "reference": {
+          "rows": [
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x0018|Key parameters=ECC 0x0003",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x0018;Key parameters=ECC 0x0003",
+              "avg_ms": 190.11,
+              "min_ms": 184.02,
+              "max_ms": 197.04,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x001b|Key parameters=ECC 0x0003",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x001b;Key parameters=ECC 0x0003",
+              "total_iterations": 100,
+              "error": "02d2"
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x001c|Key parameters=ECC 0x0003",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x001c;Key parameters=ECC 0x0003",
+              "total_iterations": 100,
+              "error": "02d2"
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 1024",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x0014;Key parameters=RSA 1024",
+              "avg_ms": 216.93,
+              "min_ms": 214.92,
+              "max_ms": 222.51,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 1024",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x0016;Key parameters=RSA 1024",
+              "avg_ms": 216.18,
+              "min_ms": 214.2,
+              "max_ms": 221.79,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 2048",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x0014;Key parameters=RSA 2048",
+              "avg_ms": 1241.88,
+              "min_ms": 1238.21,
+              "max_ms": 1255.34,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 2048",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x0016;Key parameters=RSA 2048",
+              "avg_ms": 1236.47,
+              "min_ms": 1233.95,
+              "max_ms": 1249.62,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        },
+        "profile": {
+          "rows": [
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x0018|Key parameters=ECC 0x0003",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x0018;Key parameters=ECC 0x0003",
+              "avg_ms": 189.29,
+              "min_ms": 183.75,
+              "max_ms": 196.6,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x001b|Key parameters=ECC 0x0003",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x001b;Key parameters=ECC 0x0003",
+              "total_iterations": 100,
+              "error": "02d2"
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x001c|Key parameters=ECC 0x0003",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x001c;Key parameters=ECC 0x0003",
+              "total_iterations": 100,
+              "error": "02d2"
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 1024",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x0014;Key parameters=RSA 1024",
+              "avg_ms": 216.41,
+              "min_ms": 214.58,
+              "max_ms": 222.09,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 1024",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x0016;Key parameters=RSA 1024",
+              "avg_ms": 216.59,
+              "min_ms": 214.53,
+              "max_ms": 222.21,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 2048",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x0014;Key parameters=RSA 2048",
+              "avg_ms": 1239.05,
+              "min_ms": 1235.98,
+              "max_ms": 1252.52,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 2048",
+              "op_name": "TPM2_Sign",
+              "measurement_config": "Scheme=0x0016;Key parameters=RSA 2048",
+              "avg_ms": 1238.94,
+              "min_ms": 1236.09,
+              "max_ms": 1252.98,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        }
+      },
+      "results": {
+        "state": "MATCH",
+        "stats": {
+          "compared": 7,
+          "changed": 0,
+          "matched": 7,
+          "only_reference": 0,
+          "only_profile": 0
+        },
+        "labels": {
+          "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 1024": "TPM2_Sign",
+          "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 2048": "TPM2_Sign",
+          "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 1024": "TPM2_Sign",
+          "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 2048": "TPM2_Sign",
+          "TPM2_Sign|Scheme=0x0018|Key parameters=ECC 0x0003": "TPM2_Sign",
+          "TPM2_Sign|Scheme=0x001b|Key parameters=ECC 0x0003": "TPM2_Sign",
+          "TPM2_Sign|Scheme=0x001c|Key parameters=ECC 0x0003": "TPM2_Sign"
+        },
+        "matches": [
+          {
+            "key": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 1024",
+            "field": "avg_ms",
+            "value": 216.41
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 2048",
+            "field": "avg_ms",
+            "value": 1239.05
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 1024",
+            "field": "avg_ms",
+            "value": 216.59
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 2048",
+            "field": "avg_ms",
+            "value": 1238.94
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x0018|Key parameters=ECC 0x0003",
+            "field": "avg_ms",
+            "value": 189.29
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x001b|Key parameters=ECC 0x0003",
+            "field": "error",
+            "value": "02d2"
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x001c|Key parameters=ECC 0x0003",
+            "field": "error",
+            "value": "02d2"
+          }
+        ],
+        "differences": {
+          "changed": [],
+          "only_reference": [],
+          "only_profile": [],
+          "groups": []
+        },
+        "raw_differences": []
+      },
+      "visualizations": {
+        "requested": [
+          {
+            "type": "chart",
+            "variant": null
+          },
+          {
+            "type": "radar",
+            "variant": null
+          }
+        ],
+        "available": {
+          "chart": {
+            "type": "chart",
+            "variant": null,
+            "producer": "comparator",
+            "source": "chart_rows",
+            "rows": [
+              {
+                "key": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 1024",
+                "status": "match",
+                "ref_avg": 216.93,
+                "test_avg": 216.41,
+                "delta_ms": -0.5200000000000102,
+                "delta_pct": -0.2397086617803025,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 2048",
+                "status": "match",
+                "ref_avg": 1241.88,
+                "test_avg": 1239.05,
+                "delta_ms": -2.8300000000001546,
+                "delta_pct": -0.22788031049700086,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 1024",
+                "status": "match",
+                "ref_avg": 216.18,
+                "test_avg": 216.59,
+                "delta_ms": 0.4099999999999966,
+                "delta_pct": 0.18965676750855612,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 2048",
+                "status": "match",
+                "ref_avg": 1236.47,
+                "test_avg": 1238.94,
+                "delta_ms": 2.4700000000000273,
+                "delta_pct": 0.19976222633788346,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_Sign|Scheme=0x0018|Key parameters=ECC 0x0003",
+                "status": "match",
+                "ref_avg": 190.11,
+                "test_avg": 189.29,
+                "delta_ms": -0.8200000000000216,
+                "delta_pct": -0.43132923044554283,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_Sign|Scheme=0x001b|Key parameters=ECC 0x0003",
+                "status": "error",
+                "ref_avg": null,
+                "test_avg": null,
+                "delta_ms": null,
+                "delta_pct": null,
+                "note": "both failed: 02d2"
+              },
+              {
+                "key": "TPM2_Sign|Scheme=0x001c|Key parameters=ECC 0x0003",
+                "status": "error",
+                "ref_avg": null,
+                "test_avg": null,
+                "delta_ms": null,
+                "delta_pct": null,
+                "note": "both failed: 02d2"
+              }
+            ]
+          },
+          "radar": {
+            "type": "radar",
+            "variant": null,
+            "producer": "report_assembler",
+            "source": "derived_from_chart_rows_or_results",
+            "rows": [
+              {
+                "key": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 1024",
+                "ref_score": 0.1746787129191226,
+                "test_score": 0.17425999291396913,
+                "ref_raw": 216.93,
+                "test_raw": 216.41,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 2048",
+                "ref_score": 1.0,
+                "test_score": 0.99772119689503,
+                "ref_raw": 1241.88,
+                "test_raw": 1239.05,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 1024",
+                "ref_score": 0.17407478983476662,
+                "test_score": 0.17440493445421457,
+                "ref_raw": 216.18,
+                "test_raw": 216.59,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 2048",
+                "ref_score": 0.9956437014848455,
+                "test_score": 0.9976326215093245,
+                "ref_raw": 1236.47,
+                "test_raw": 1238.94,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_Sign|Scheme=0x0018|Key parameters=ECC 0x0003",
+                "ref_score": 0.1530824234225529,
+                "test_score": 0.15242213418365702,
+                "ref_raw": 190.11,
+                "test_raw": 189.29,
+                "kind": "numeric"
+              }
+            ]
+          }
+        },
+        "unavailable": []
+      },
+      "artifacts": {
+        "chart_rows": [
+          {
+            "key": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 1024",
+            "status": "match",
+            "ref_avg": 216.93,
+            "test_avg": 216.41,
+            "delta_ms": -0.5200000000000102,
+            "delta_pct": -0.2397086617803025,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x0014|Key parameters=RSA 2048",
+            "status": "match",
+            "ref_avg": 1241.88,
+            "test_avg": 1239.05,
+            "delta_ms": -2.8300000000001546,
+            "delta_pct": -0.22788031049700086,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 1024",
+            "status": "match",
+            "ref_avg": 216.18,
+            "test_avg": 216.59,
+            "delta_ms": 0.4099999999999966,
+            "delta_pct": 0.18965676750855612,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x0016|Key parameters=RSA 2048",
+            "status": "match",
+            "ref_avg": 1236.47,
+            "test_avg": 1238.94,
+            "delta_ms": 2.4700000000000273,
+            "delta_pct": 0.19976222633788346,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x0018|Key parameters=ECC 0x0003",
+            "status": "match",
+            "ref_avg": 190.11,
+            "test_avg": 189.29,
+            "delta_ms": -0.8200000000000216,
+            "delta_pct": -0.43132923044554283,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x001b|Key parameters=ECC 0x0003",
+            "status": "error",
+            "ref_avg": null,
+            "test_avg": null,
+            "delta_ms": null,
+            "delta_pct": null,
+            "note": "both failed: 02d2"
+          },
+          {
+            "key": "TPM2_Sign|Scheme=0x001c|Key parameters=ECC 0x0003",
+            "status": "error",
+            "ref_avg": null,
+            "test_avg": null,
+            "delta_ms": null,
+            "delta_pct": null,
+            "note": "both failed: 02d2"
+          }
+        ]
+      }
+    },
+    "TPM2_GetRandom": {
+      "meta": {
+        "name": "TPM2_GetRandom",
+        "comparator": "algperf",
+        "match_key": "algorithm",
+        "show_key": "op_name",
+        "report": {
+          "types": [
+            {
+              "type": "chart",
+              "variant": null
+            },
+            {
+              "type": "radar",
+              "variant": null
+            }
+          ],
+          "theme": "dark",
+          "doc": null,
+          "doc_text": null
+        },
+        "severity": {
+          "threshold_ratio": 0.5
+        }
+      },
+      "original": {
+        "reference": {
+          "rows": [
+            {
+              "algorithm": "TPM2_GetRandom|Data length (bytes)=32",
+              "op_name": "TPM2_GetRandom",
+              "measurement_config": "Data length (bytes)=32",
+              "data_length": 32,
+              "avg_ms": 6.09,
+              "min_ms": 5.63,
+              "max_ms": 6.75,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        },
+        "profile": {
+          "rows": [
+            {
+              "algorithm": "TPM2_GetRandom|Data length (bytes)=32",
+              "op_name": "TPM2_GetRandom",
+              "measurement_config": "Data length (bytes)=32",
+              "data_length": 32,
+              "avg_ms": 6.06,
+              "min_ms": 5.61,
+              "max_ms": 6.71,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        }
+      },
+      "results": {
+        "state": "MATCH",
+        "stats": {
+          "compared": 1,
+          "changed": 0,
+          "matched": 1,
+          "only_reference": 0,
+          "only_profile": 0
+        },
+        "labels": {
+          "TPM2_GetRandom|Data length (bytes)=32": "TPM2_GetRandom"
+        },
+        "matches": [
+          {
+            "key": "TPM2_GetRandom|Data length (bytes)=32",
+            "field": "avg_ms (skipped)",
+            "value": 6.06
+          }
+        ],
+        "differences": {
+          "changed": [],
+          "only_reference": [],
+          "only_profile": [],
+          "groups": []
+        },
+        "raw_differences": []
+      },
+      "visualizations": {
+        "requested": [
+          {
+            "type": "chart",
+            "variant": null
+          },
+          {
+            "type": "radar",
+            "variant": null
+          }
+        ],
+        "available": {
+          "chart": {
+            "type": "chart",
+            "variant": null,
+            "producer": "comparator",
+            "source": "chart_rows",
+            "rows": [
+              {
+                "key": "TPM2_GetRandom|Data length (bytes)=32",
+                "status": "skipped",
+                "ref_avg": 6.09,
+                "test_avg": 6.06,
+                "delta_ms": -0.03000000000000025,
+                "delta_pct": -0.4926108374384277,
+                "note": "fast op"
+              }
+            ]
+          }
+        },
+        "unavailable": [
+          {
+            "type": "radar",
+            "variant": null,
+            "reason": "radar visualization requires at least three numeric or boolean comparable items"
+          }
+        ]
+      },
+      "artifacts": {
+        "chart_rows": [
+          {
+            "key": "TPM2_GetRandom|Data length (bytes)=32",
+            "status": "skipped",
+            "ref_avg": 6.09,
+            "test_avg": 6.06,
+            "delta_ms": -0.03000000000000025,
+            "delta_pct": -0.4926108374384277,
+            "note": "fast op"
+          }
+        ]
+      }
+    },
+    "TPM2_HMAC": {
+      "meta": {
+        "name": "TPM2_HMAC",
+        "comparator": "algperf",
+        "match_key": "algorithm",
+        "show_key": "op_name",
+        "report": {
+          "types": [
+            {
+              "type": "chart",
+              "variant": null
+            },
+            {
+              "type": "radar",
+              "variant": null
+            }
+          ],
+          "theme": "dark",
+          "doc": null,
+          "doc_text": null
+        },
+        "severity": {
+          "threshold_ratio": 0.5
+        }
+      },
+      "original": {
+        "reference": {
+          "rows": [
+            {
+              "algorithm": "TPM2_HMAC|Data length (bytes)=256",
+              "op_name": "TPM2_HMAC",
+              "measurement_config": "Data length (bytes)=256",
+              "data_length": 256,
+              "avg_ms": 6.21,
+              "min_ms": 5.68,
+              "max_ms": 6.92,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        },
+        "profile": {
+          "rows": [
+            {
+              "algorithm": "TPM2_HMAC|Data length (bytes)=256",
+              "op_name": "TPM2_HMAC",
+              "measurement_config": "Data length (bytes)=256",
+              "data_length": 256,
+              "avg_ms": 6.18,
+              "min_ms": 5.66,
+              "max_ms": 6.89,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        }
+      },
+      "results": {
+        "state": "MATCH",
+        "stats": {
+          "compared": 1,
+          "changed": 0,
+          "matched": 1,
+          "only_reference": 0,
+          "only_profile": 0
+        },
+        "labels": {
+          "TPM2_HMAC|Data length (bytes)=256": "TPM2_HMAC"
+        },
+        "matches": [
+          {
+            "key": "TPM2_HMAC|Data length (bytes)=256",
+            "field": "avg_ms (skipped)",
+            "value": 6.18
+          }
+        ],
+        "differences": {
+          "changed": [],
+          "only_reference": [],
+          "only_profile": [],
+          "groups": []
+        },
+        "raw_differences": []
+      },
+      "visualizations": {
+        "requested": [
+          {
+            "type": "chart",
+            "variant": null
+          },
+          {
+            "type": "radar",
+            "variant": null
+          }
+        ],
+        "available": {
+          "chart": {
+            "type": "chart",
+            "variant": null,
+            "producer": "comparator",
+            "source": "chart_rows",
+            "rows": [
+              {
+                "key": "TPM2_HMAC|Data length (bytes)=256",
+                "status": "skipped",
+                "ref_avg": 6.21,
+                "test_avg": 6.18,
+                "delta_ms": -0.03000000000000025,
+                "delta_pct": -0.4830917874396175,
+                "note": "fast op"
+              }
+            ]
+          }
+        },
+        "unavailable": [
+          {
+            "type": "radar",
+            "variant": null,
+            "reason": "radar visualization requires at least three numeric or boolean comparable items"
+          }
+        ]
+      },
+      "artifacts": {
+        "chart_rows": [
+          {
+            "key": "TPM2_HMAC|Data length (bytes)=256",
+            "status": "skipped",
+            "ref_avg": 6.21,
+            "test_avg": 6.18,
+            "delta_ms": -0.03000000000000025,
+            "delta_pct": -0.4830917874396175,
+            "note": "fast op"
+          }
+        ]
+      }
+    },
+    "TPM2_Hash": {
+      "meta": {
+        "name": "TPM2_Hash",
+        "comparator": "algperf",
+        "match_key": "algorithm",
+        "show_key": "op_name",
+        "report": {
+          "types": [
+            {
+              "type": "chart",
+              "variant": null
+            },
+            {
+              "type": "radar",
+              "variant": null
+            }
+          ],
+          "theme": "dark",
+          "doc": null,
+          "doc_text": null
+        },
+        "severity": {
+          "threshold_ratio": 0.5
+        }
+      },
+      "original": {
+        "reference": {
+          "rows": [
+            {
+              "algorithm": "TPM2_Hash|Hash algorithm=0x0004|Data length (bytes)=256",
+              "op_name": "TPM2_Hash",
+              "measurement_config": "Hash algorithm=0x0004;Data length (bytes)=256",
+              "data_length": 256,
+              "avg_ms": 6.12,
+              "min_ms": 5.77,
+              "max_ms": 6.43,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Hash|Hash algorithm=0x000b|Data length (bytes)=256",
+              "op_name": "TPM2_Hash",
+              "measurement_config": "Hash algorithm=0x000b;Data length (bytes)=256",
+              "data_length": 256,
+              "avg_ms": 6.19,
+              "min_ms": 5.78,
+              "max_ms": 6.64,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        },
+        "profile": {
+          "rows": [
+            {
+              "algorithm": "TPM2_Hash|Hash algorithm=0x0004|Data length (bytes)=256",
+              "op_name": "TPM2_Hash",
+              "measurement_config": "Hash algorithm=0x0004;Data length (bytes)=256",
+              "data_length": 256,
+              "avg_ms": 6.14,
+              "min_ms": 5.79,
+              "max_ms": 6.41,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_Hash|Hash algorithm=0x000b|Data length (bytes)=256",
+              "op_name": "TPM2_Hash",
+              "measurement_config": "Hash algorithm=0x000b;Data length (bytes)=256",
+              "data_length": 256,
+              "avg_ms": 6.16,
+              "min_ms": 5.76,
+              "max_ms": 6.61,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        }
+      },
+      "results": {
+        "state": "MATCH",
+        "stats": {
+          "compared": 2,
+          "changed": 0,
+          "matched": 2,
+          "only_reference": 0,
+          "only_profile": 0
+        },
+        "labels": {
+          "TPM2_Hash|Hash algorithm=0x0004|Data length (bytes)=256": "TPM2_Hash",
+          "TPM2_Hash|Hash algorithm=0x000b|Data length (bytes)=256": "TPM2_Hash"
+        },
+        "matches": [
+          {
+            "key": "TPM2_Hash|Hash algorithm=0x0004|Data length (bytes)=256",
+            "field": "avg_ms (skipped)",
+            "value": 6.14
+          },
+          {
+            "key": "TPM2_Hash|Hash algorithm=0x000b|Data length (bytes)=256",
+            "field": "avg_ms (skipped)",
+            "value": 6.16
+          }
+        ],
+        "differences": {
+          "changed": [],
+          "only_reference": [],
+          "only_profile": [],
+          "groups": []
+        },
+        "raw_differences": []
+      },
+      "visualizations": {
+        "requested": [
+          {
+            "type": "chart",
+            "variant": null
+          },
+          {
+            "type": "radar",
+            "variant": null
+          }
+        ],
+        "available": {
+          "chart": {
+            "type": "chart",
+            "variant": null,
+            "producer": "comparator",
+            "source": "chart_rows",
+            "rows": [
+              {
+                "key": "TPM2_Hash|Hash algorithm=0x0004|Data length (bytes)=256",
+                "status": "skipped",
+                "ref_avg": 6.12,
+                "test_avg": 6.14,
+                "delta_ms": 0.019999999999999574,
+                "delta_pct": 0.32679738562090804,
+                "note": "fast op"
+              },
+              {
+                "key": "TPM2_Hash|Hash algorithm=0x000b|Data length (bytes)=256",
+                "status": "skipped",
+                "ref_avg": 6.19,
+                "test_avg": 6.16,
+                "delta_ms": -0.03000000000000025,
+                "delta_pct": -0.48465266558966474,
+                "note": "fast op"
+              }
+            ]
+          }
+        },
+        "unavailable": [
+          {
+            "type": "radar",
+            "variant": null,
+            "reason": "radar visualization requires at least three numeric or boolean comparable items"
+          }
+        ]
+      },
+      "artifacts": {
+        "chart_rows": [
+          {
+            "key": "TPM2_Hash|Hash algorithm=0x0004|Data length (bytes)=256",
+            "status": "skipped",
+            "ref_avg": 6.12,
+            "test_avg": 6.14,
+            "delta_ms": 0.019999999999999574,
+            "delta_pct": 0.32679738562090804,
+            "note": "fast op"
+          },
+          {
+            "key": "TPM2_Hash|Hash algorithm=0x000b|Data length (bytes)=256",
+            "status": "skipped",
+            "ref_avg": 6.19,
+            "test_avg": 6.16,
+            "delta_ms": -0.03000000000000025,
+            "delta_pct": -0.48465266558966474,
+            "note": "fast op"
+          }
+        ]
+      }
+    },
+    "TPM2_RSA_Decrypt": {
+      "meta": {
+        "name": "TPM2_RSA_Decrypt",
+        "comparator": "algperf",
+        "match_key": "algorithm",
+        "show_key": "op_name",
+        "report": {
+          "types": [
+            {
+              "type": "chart",
+              "variant": null
+            },
+            {
+              "type": "radar",
+              "variant": null
+            }
+          ],
+          "theme": "dark",
+          "doc": null,
+          "doc_text": null
+        },
+        "severity": {
+          "threshold_ratio": 0.5
+        }
+      },
+      "original": {
+        "reference": {
+          "rows": [
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0010",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0010",
+              "avg_ms": 274.18,
+              "min_ms": 271.02,
+              "max_ms": 277.01,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0015",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0015",
+              "avg_ms": 216.95,
+              "min_ms": 214.81,
+              "max_ms": 217.88,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0017",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0017",
+              "avg_ms": 216.04,
+              "min_ms": 213.98,
+              "max_ms": 222.11,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0010",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0010",
+              "avg_ms": 1369.41,
+              "min_ms": 1360.86,
+              "max_ms": 1383.02,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0015",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0015",
+              "avg_ms": 1240.52,
+              "min_ms": 1232.71,
+              "max_ms": 1253.18,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0017",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0017",
+              "avg_ms": 1236.41,
+              "min_ms": 1233.84,
+              "max_ms": 1248.92,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        },
+        "profile": {
+          "rows": [
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0010",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0010",
+              "avg_ms": 273.48,
+              "min_ms": 270.75,
+              "max_ms": 276.26,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0015",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0015",
+              "avg_ms": 216.39,
+              "min_ms": 214.54,
+              "max_ms": 217.32,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0017",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0017",
+              "avg_ms": 216.52,
+              "min_ms": 214.25,
+              "max_ms": 222.55,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0010",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0010",
+              "avg_ms": 1365.94,
+              "min_ms": 1363.04,
+              "max_ms": 1379.78,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0015",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0015",
+              "avg_ms": 1237.93,
+              "min_ms": 1234.99,
+              "max_ms": 1250.99,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Decrypt|Scheme=0x0017",
+              "op_name": "TPM2_RSA_Decrypt",
+              "measurement_config": "Scheme=0x0017",
+              "avg_ms": 1238.97,
+              "min_ms": 1236.08,
+              "max_ms": 1251.48,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        }
+      },
+      "results": {
+        "state": "MATCH",
+        "stats": {
+          "compared": 3,
+          "changed": 0,
+          "matched": 3,
+          "only_reference": 0,
+          "only_profile": 0
+        },
+        "labels": {
+          "TPM2_RSA_Decrypt|Scheme=0x0010": "TPM2_RSA_Decrypt",
+          "TPM2_RSA_Decrypt|Scheme=0x0015": "TPM2_RSA_Decrypt",
+          "TPM2_RSA_Decrypt|Scheme=0x0017": "TPM2_RSA_Decrypt"
+        },
+        "matches": [
+          {
+            "key": "TPM2_RSA_Decrypt|Scheme=0x0010",
+            "field": "avg_ms",
+            "value": 1365.94
+          },
+          {
+            "key": "TPM2_RSA_Decrypt|Scheme=0x0015",
+            "field": "avg_ms",
+            "value": 1237.93
+          },
+          {
+            "key": "TPM2_RSA_Decrypt|Scheme=0x0017",
+            "field": "avg_ms",
+            "value": 1238.97
+          }
+        ],
+        "differences": {
+          "changed": [],
+          "only_reference": [],
+          "only_profile": [],
+          "groups": []
+        },
+        "raw_differences": []
+      },
+      "visualizations": {
+        "requested": [
+          {
+            "type": "chart",
+            "variant": null
+          },
+          {
+            "type": "radar",
+            "variant": null
+          }
+        ],
+        "available": {
+          "chart": {
+            "type": "chart",
+            "variant": null,
+            "producer": "comparator",
+            "source": "chart_rows",
+            "rows": [
+              {
+                "key": "TPM2_RSA_Decrypt|Scheme=0x0010",
+                "status": "match",
+                "ref_avg": 1369.41,
+                "test_avg": 1365.94,
+                "delta_ms": -3.4700000000000273,
+                "delta_pct": -0.2533937973287786,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_RSA_Decrypt|Scheme=0x0015",
+                "status": "match",
+                "ref_avg": 1240.52,
+                "test_avg": 1237.93,
+                "delta_ms": -2.589999999999918,
+                "delta_pct": -0.20878341340727422,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_RSA_Decrypt|Scheme=0x0017",
+                "status": "match",
+                "ref_avg": 1236.41,
+                "test_avg": 1238.97,
+                "delta_ms": 2.5599999999999454,
+                "delta_pct": 0.20705105911469054,
+                "note": "similar"
+              }
+            ]
+          },
+          "radar": {
+            "type": "radar",
+            "variant": null,
+            "producer": "report_assembler",
+            "source": "derived_from_chart_rows_or_results",
+            "rows": [
+              {
+                "key": "TPM2_RSA_Decrypt|Scheme=0x0010",
+                "ref_score": 1.0,
+                "test_score": 0.9974660620267122,
+                "ref_raw": 1369.41,
+                "test_raw": 1365.94,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_RSA_Decrypt|Scheme=0x0015",
+                "ref_score": 0.9058791742429221,
+                "test_score": 0.9039878487815921,
+                "ref_raw": 1240.52,
+                "test_raw": 1237.93,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_RSA_Decrypt|Scheme=0x0017",
+                "ref_score": 0.9028778817154833,
+                "test_score": 0.9047472999320875,
+                "ref_raw": 1236.41,
+                "test_raw": 1238.97,
+                "kind": "numeric"
+              }
+            ]
+          }
+        },
+        "unavailable": []
+      },
+      "artifacts": {
+        "chart_rows": [
+          {
+            "key": "TPM2_RSA_Decrypt|Scheme=0x0010",
+            "status": "match",
+            "ref_avg": 1369.41,
+            "test_avg": 1365.94,
+            "delta_ms": -3.4700000000000273,
+            "delta_pct": -0.2533937973287786,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_RSA_Decrypt|Scheme=0x0015",
+            "status": "match",
+            "ref_avg": 1240.52,
+            "test_avg": 1237.93,
+            "delta_ms": -2.589999999999918,
+            "delta_pct": -0.20878341340727422,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_RSA_Decrypt|Scheme=0x0017",
+            "status": "match",
+            "ref_avg": 1236.41,
+            "test_avg": 1238.97,
+            "delta_ms": 2.5599999999999454,
+            "delta_pct": 0.20705105911469054,
+            "note": "similar"
+          }
+        ]
+      }
+    },
+    "TPM2_RSA_Encrypt": {
+      "meta": {
+        "name": "TPM2_RSA_Encrypt",
+        "comparator": "algperf",
+        "match_key": "algorithm",
+        "show_key": "op_name",
+        "report": {
+          "types": [
+            {
+              "type": "chart",
+              "variant": null
+            },
+            {
+              "type": "radar",
+              "variant": null
+            }
+          ],
+          "theme": "dark",
+          "doc": null,
+          "doc_text": null
+        },
+        "severity": {
+          "threshold_ratio": 0.5
+        }
+      },
+      "original": {
+        "reference": {
+          "rows": [
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0010",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0010",
+              "avg_ms": 11.59,
+              "min_ms": 11.12,
+              "max_ms": 12.03,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0015",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0015",
+              "avg_ms": 11.51,
+              "min_ms": 11.22,
+              "max_ms": 12.12,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0017",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0017",
+              "avg_ms": 11.58,
+              "min_ms": 11.14,
+              "max_ms": 12.01,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0010",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0010",
+              "avg_ms": 22.24,
+              "min_ms": 21.59,
+              "max_ms": 23.05,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0015",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0015",
+              "avg_ms": 22.11,
+              "min_ms": 21.52,
+              "max_ms": 22.94,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0017",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0017",
+              "avg_ms": 22.02,
+              "min_ms": 21.42,
+              "max_ms": 22.58,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        },
+        "profile": {
+          "rows": [
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0010",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0010",
+              "avg_ms": 11.54,
+              "min_ms": 11.09,
+              "max_ms": 11.99,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0015",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0015",
+              "avg_ms": 11.56,
+              "min_ms": 11.26,
+              "max_ms": 12.08,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0017",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0017",
+              "avg_ms": 11.55,
+              "min_ms": 11.11,
+              "max_ms": 12.05,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0010",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0010",
+              "avg_ms": 22.18,
+              "min_ms": 21.53,
+              "max_ms": 22.99,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0015",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0015",
+              "avg_ms": 22.17,
+              "min_ms": 21.58,
+              "max_ms": 23.0,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_RSA_Encrypt|Scheme=0x0017",
+              "op_name": "TPM2_RSA_Encrypt",
+              "measurement_config": "Scheme=0x0017",
+              "avg_ms": 21.95,
+              "min_ms": 21.37,
+              "max_ms": 22.51,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        }
+      },
+      "results": {
+        "state": "MATCH",
+        "stats": {
+          "compared": 3,
+          "changed": 0,
+          "matched": 3,
+          "only_reference": 0,
+          "only_profile": 0
+        },
+        "labels": {
+          "TPM2_RSA_Encrypt|Scheme=0x0010": "TPM2_RSA_Encrypt",
+          "TPM2_RSA_Encrypt|Scheme=0x0015": "TPM2_RSA_Encrypt",
+          "TPM2_RSA_Encrypt|Scheme=0x0017": "TPM2_RSA_Encrypt"
+        },
+        "matches": [
+          {
+            "key": "TPM2_RSA_Encrypt|Scheme=0x0010",
+            "field": "avg_ms",
+            "value": 22.18
+          },
+          {
+            "key": "TPM2_RSA_Encrypt|Scheme=0x0015",
+            "field": "avg_ms",
+            "value": 22.17
+          },
+          {
+            "key": "TPM2_RSA_Encrypt|Scheme=0x0017",
+            "field": "avg_ms",
+            "value": 21.95
+          }
+        ],
+        "differences": {
+          "changed": [],
+          "only_reference": [],
+          "only_profile": [],
+          "groups": []
+        },
+        "raw_differences": []
+      },
+      "visualizations": {
+        "requested": [
+          {
+            "type": "chart",
+            "variant": null
+          },
+          {
+            "type": "radar",
+            "variant": null
+          }
+        ],
+        "available": {
+          "chart": {
+            "type": "chart",
+            "variant": null,
+            "producer": "comparator",
+            "source": "chart_rows",
+            "rows": [
+              {
+                "key": "TPM2_RSA_Encrypt|Scheme=0x0010",
+                "status": "match",
+                "ref_avg": 22.24,
+                "test_avg": 22.18,
+                "delta_ms": -0.05999999999999872,
+                "delta_pct": -0.2697841726618648,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_RSA_Encrypt|Scheme=0x0015",
+                "status": "match",
+                "ref_avg": 22.11,
+                "test_avg": 22.17,
+                "delta_ms": 0.060000000000002274,
+                "delta_pct": 0.2713704206241623,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_RSA_Encrypt|Scheme=0x0017",
+                "status": "match",
+                "ref_avg": 22.02,
+                "test_avg": 21.95,
+                "delta_ms": -0.07000000000000028,
+                "delta_pct": -0.3178928247048151,
+                "note": "similar"
+              }
+            ]
+          },
+          "radar": {
+            "type": "radar",
+            "variant": null,
+            "producer": "report_assembler",
+            "source": "derived_from_chart_rows_or_results",
+            "rows": [
+              {
+                "key": "TPM2_RSA_Encrypt|Scheme=0x0010",
+                "ref_score": 1.0,
+                "test_score": 0.9973021582733813,
+                "ref_raw": 22.24,
+                "test_raw": 22.18,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_RSA_Encrypt|Scheme=0x0015",
+                "ref_score": 0.9941546762589929,
+                "test_score": 0.9968525179856117,
+                "ref_raw": 22.11,
+                "test_raw": 22.17,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_RSA_Encrypt|Scheme=0x0017",
+                "ref_score": 0.9901079136690648,
+                "test_score": 0.9869604316546763,
+                "ref_raw": 22.02,
+                "test_raw": 21.95,
+                "kind": "numeric"
+              }
+            ]
+          }
+        },
+        "unavailable": []
+      },
+      "artifacts": {
+        "chart_rows": [
+          {
+            "key": "TPM2_RSA_Encrypt|Scheme=0x0010",
+            "status": "match",
+            "ref_avg": 22.24,
+            "test_avg": 22.18,
+            "delta_ms": -0.05999999999999872,
+            "delta_pct": -0.2697841726618648,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_RSA_Encrypt|Scheme=0x0015",
+            "status": "match",
+            "ref_avg": 22.11,
+            "test_avg": 22.17,
+            "delta_ms": 0.060000000000002274,
+            "delta_pct": 0.2713704206241623,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_RSA_Encrypt|Scheme=0x0017",
+            "status": "match",
+            "ref_avg": 22.02,
+            "test_avg": 21.95,
+            "delta_ms": -0.07000000000000028,
+            "delta_pct": -0.3178928247048151,
+            "note": "similar"
+          }
+        ]
+      }
+    },
+    "TPM2_VerifySignature": {
+      "meta": {
+        "name": "TPM2_VerifySignature",
+        "comparator": "algperf",
+        "match_key": "algorithm",
+        "show_key": "op_name",
+        "report": {
+          "types": [
+            {
+              "type": "chart",
+              "variant": null
+            },
+            {
+              "type": "radar",
+              "variant": null
+            }
+          ],
+          "theme": "dark",
+          "doc": null,
+          "doc_text": null
+        },
+        "severity": {
+          "threshold_ratio": 0.5
+        }
+      },
+      "original": {
+        "reference": {
+          "rows": [
+            {
+              "algorithm": "TPM2_VerifySignature|Scheme=0x0018|Key parameters=ECC 0x0003",
+              "op_name": "TPM2_VerifySignature",
+              "measurement_config": "Scheme=0x0018;Key parameters=ECC 0x0003",
+              "avg_ms": 71.02,
+              "min_ms": 70.34,
+              "max_ms": 71.26,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 1024",
+              "op_name": "TPM2_VerifySignature",
+              "measurement_config": "Scheme=0x0014;Key parameters=RSA 1024",
+              "avg_ms": 11.57,
+              "min_ms": 11.12,
+              "max_ms": 12.04,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 1024",
+              "op_name": "TPM2_VerifySignature",
+              "measurement_config": "Scheme=0x0016;Key parameters=RSA 1024",
+              "avg_ms": 11.49,
+              "min_ms": 11.11,
+              "max_ms": 11.86,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 2048",
+              "op_name": "TPM2_VerifySignature",
+              "measurement_config": "Scheme=0x0014;Key parameters=RSA 2048",
+              "avg_ms": 22.39,
+              "min_ms": 21.79,
+              "max_ms": 22.88,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 2048",
+              "op_name": "TPM2_VerifySignature",
+              "measurement_config": "Scheme=0x0016;Key parameters=RSA 2048",
+              "avg_ms": 22.18,
+              "min_ms": 21.41,
+              "max_ms": 22.69,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        },
+        "profile": {
+          "rows": [
+            {
+              "algorithm": "TPM2_VerifySignature|Scheme=0x0018|Key parameters=ECC 0x0003",
+              "op_name": "TPM2_VerifySignature",
+              "measurement_config": "Scheme=0x0018;Key parameters=ECC 0x0003",
+              "avg_ms": 70.79,
+              "min_ms": 70.2,
+              "max_ms": 71.11,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 1024",
+              "op_name": "TPM2_VerifySignature",
+              "measurement_config": "Scheme=0x0014;Key parameters=RSA 1024",
+              "avg_ms": 11.52,
+              "min_ms": 11.08,
+              "max_ms": 12.1,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 1024",
+              "op_name": "TPM2_VerifySignature",
+              "measurement_config": "Scheme=0x0016;Key parameters=RSA 1024",
+              "avg_ms": 11.53,
+              "min_ms": 11.16,
+              "max_ms": 11.91,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 2048",
+              "op_name": "TPM2_VerifySignature",
+              "measurement_config": "Scheme=0x0014;Key parameters=RSA 2048",
+              "avg_ms": 22.32,
+              "min_ms": 21.72,
+              "max_ms": 22.8,
+              "total_iterations": 100,
+              "total_invocations": 100
+            },
+            {
+              "algorithm": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 2048",
+              "op_name": "TPM2_VerifySignature",
+              "measurement_config": "Scheme=0x0016;Key parameters=RSA 2048",
+              "avg_ms": 22.26,
+              "min_ms": 21.48,
+              "max_ms": 22.77,
+              "total_iterations": 100,
+              "total_invocations": 100
+            }
+          ]
+        }
+      },
+      "results": {
+        "state": "MATCH",
+        "stats": {
+          "compared": 5,
+          "changed": 0,
+          "matched": 5,
+          "only_reference": 0,
+          "only_profile": 0
+        },
+        "labels": {
+          "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 1024": "TPM2_VerifySignature",
+          "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 2048": "TPM2_VerifySignature",
+          "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 1024": "TPM2_VerifySignature",
+          "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 2048": "TPM2_VerifySignature",
+          "TPM2_VerifySignature|Scheme=0x0018|Key parameters=ECC 0x0003": "TPM2_VerifySignature"
+        },
+        "matches": [
+          {
+            "key": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 1024",
+            "field": "avg_ms",
+            "value": 11.52
+          },
+          {
+            "key": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 2048",
+            "field": "avg_ms",
+            "value": 22.32
+          },
+          {
+            "key": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 1024",
+            "field": "avg_ms",
+            "value": 11.53
+          },
+          {
+            "key": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 2048",
+            "field": "avg_ms",
+            "value": 22.26
+          },
+          {
+            "key": "TPM2_VerifySignature|Scheme=0x0018|Key parameters=ECC 0x0003",
+            "field": "avg_ms",
+            "value": 70.79
+          }
+        ],
+        "differences": {
+          "changed": [],
+          "only_reference": [],
+          "only_profile": [],
+          "groups": []
+        },
+        "raw_differences": []
+      },
+      "visualizations": {
+        "requested": [
+          {
+            "type": "chart",
+            "variant": null
+          },
+          {
+            "type": "radar",
+            "variant": null
+          }
+        ],
+        "available": {
+          "chart": {
+            "type": "chart",
+            "variant": null,
+            "producer": "comparator",
+            "source": "chart_rows",
+            "rows": [
+              {
+                "key": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 1024",
+                "status": "match",
+                "ref_avg": 11.57,
+                "test_avg": 11.52,
+                "delta_ms": -0.05000000000000071,
+                "delta_pct": -0.4321521175453821,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 2048",
+                "status": "match",
+                "ref_avg": 22.39,
+                "test_avg": 22.32,
+                "delta_ms": -0.07000000000000028,
+                "delta_pct": -0.31263957123716074,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 1024",
+                "status": "match",
+                "ref_avg": 11.49,
+                "test_avg": 11.53,
+                "delta_ms": 0.03999999999999915,
+                "delta_pct": 0.34812880765882637,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 2048",
+                "status": "match",
+                "ref_avg": 22.18,
+                "test_avg": 22.26,
+                "delta_ms": 0.08000000000000185,
+                "delta_pct": 0.36068530207394883,
+                "note": "similar"
+              },
+              {
+                "key": "TPM2_VerifySignature|Scheme=0x0018|Key parameters=ECC 0x0003",
+                "status": "match",
+                "ref_avg": 71.02,
+                "test_avg": 70.79,
+                "delta_ms": -0.22999999999998977,
+                "delta_pct": -0.3238524359335255,
+                "note": "similar"
+              }
+            ]
+          },
+          "radar": {
+            "type": "radar",
+            "variant": null,
+            "producer": "report_assembler",
+            "source": "derived_from_chart_rows_or_results",
+            "rows": [
+              {
+                "key": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 1024",
+                "ref_score": 0.16291185581526332,
+                "test_score": 0.16220782878062517,
+                "ref_raw": 11.57,
+                "test_raw": 11.52,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 2048",
+                "ref_score": 0.3152633061109547,
+                "test_score": 0.3142776682624613,
+                "ref_raw": 22.39,
+                "test_raw": 22.32,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 1024",
+                "ref_score": 0.1617854125598423,
+                "test_score": 0.1623486341875528,
+                "ref_raw": 11.49,
+                "test_raw": 11.53,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 2048",
+                "ref_score": 0.31230639256547454,
+                "test_score": 0.31343283582089554,
+                "ref_raw": 22.18,
+                "test_raw": 22.26,
+                "kind": "numeric"
+              },
+              {
+                "key": "TPM2_VerifySignature|Scheme=0x0018|Key parameters=ECC 0x0003",
+                "ref_score": 1.0,
+                "test_score": 0.9967614756406648,
+                "ref_raw": 71.02,
+                "test_raw": 70.79,
+                "kind": "numeric"
+              }
+            ]
+          }
+        },
+        "unavailable": []
+      },
+      "artifacts": {
+        "chart_rows": [
+          {
+            "key": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 1024",
+            "status": "match",
+            "ref_avg": 11.57,
+            "test_avg": 11.52,
+            "delta_ms": -0.05000000000000071,
+            "delta_pct": -0.4321521175453821,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_VerifySignature|Scheme=0x0014|Key parameters=RSA 2048",
+            "status": "match",
+            "ref_avg": 22.39,
+            "test_avg": 22.32,
+            "delta_ms": -0.07000000000000028,
+            "delta_pct": -0.31263957123716074,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 1024",
+            "status": "match",
+            "ref_avg": 11.49,
+            "test_avg": 11.53,
+            "delta_ms": 0.03999999999999915,
+            "delta_pct": 0.34812880765882637,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_VerifySignature|Scheme=0x0016|Key parameters=RSA 2048",
+            "status": "match",
+            "ref_avg": 22.18,
+            "test_avg": 22.26,
+            "delta_ms": 0.08000000000000185,
+            "delta_pct": 0.36068530207394883,
+            "note": "similar"
+          },
+          {
+            "key": "TPM2_VerifySignature|Scheme=0x0018|Key parameters=ECC 0x0003",
+            "status": "match",
+            "ref_avg": 71.02,
+            "test_avg": 70.79,
+            "delta_ms": -0.22999999999998977,
+            "delta_pct": -0.3238524359335255,
+            "note": "similar"
+          }
+        ]
+      }
+    }
+  }
+}

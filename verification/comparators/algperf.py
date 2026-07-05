@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from .contracts import ComparatorPlugin, ComparatorSpec, CompareResult
+from .contracts import ComparatorPlugin, ComparatorSpec, ComparatorVisualizationCapability, CompareResult
 from .utility import build_row_map, get_display_label, sort_mixed_keys, to_float
 
 
@@ -12,6 +12,25 @@ class AlgPerfComparator(ComparatorPlugin):
         name="algperf",
         aliases=("jcalgperf", "performance"),
         description="Comparator for algorithm performance rows with avg/min/max/error semantics.",
+        visualization_capabilities=(
+            ComparatorVisualizationCapability(
+                visualization_type="chart",
+                producer="comparator",
+                required_artifact_keys=("chart_rows",),
+                description="Bar-pair chart from algorithm performance averages.",
+            ),
+            ComparatorVisualizationCapability(
+                visualization_type="radar",
+                producer="report_assembler",
+                required_artifact_keys=("chart_rows",),
+                description="Radar visualization derived from algorithm performance chart rows.",
+            ),
+            ComparatorVisualizationCapability(
+                visualization_type="table",
+                producer="renderer",
+                description="Generic table rendering from comparison results.",
+            ),
+        ),
     )
 
     KEY_AVG = "avg_ms"

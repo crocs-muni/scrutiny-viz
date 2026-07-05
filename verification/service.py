@@ -244,6 +244,8 @@ def run_verification(
         profile_name=Path(profile_path).stem,
         section_rows=section_rows,
         ingest_meta=ingest_meta,
+        reference_path=reference_path,
+        profile_path=profile_path,
     )
 
     log.step("Writing output JSON:", str(output_path))
@@ -280,7 +282,7 @@ def run_verification(
         "ok": True,
         "exit_code": 0,
         "output_json_path": str(output_path),
-        "overall": str(final_json.get("overall", "WARN")).upper(),
+        "overall": str((final_json.get("summary") or {}).get("overall", "WARN")).upper(),
         "report_html_path": report_html_path,
         "report_zip_path": report_zip_path,
     }

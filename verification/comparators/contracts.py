@@ -19,10 +19,20 @@ class CompareResult(TypedDict, total=False):
 
 
 @dataclass(frozen=True)
+class ComparatorVisualizationCapability:
+    visualization_type: str
+    variant: Optional[str] = None
+    producer: str = "comparator"
+    required_artifact_keys: Tuple[str, ...] = ()
+    description: str = ""
+
+
+@dataclass(frozen=True)
 class ComparatorSpec:
     name: str
     aliases: Tuple[str, ...] = ()
     description: str = ""
+    visualization_capabilities: Tuple[ComparatorVisualizationCapability, ...] = ()
 
 
 class ComparatorPlugin(ABC):

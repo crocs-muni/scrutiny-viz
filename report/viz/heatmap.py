@@ -18,6 +18,34 @@ _ROW_LABEL_FIELDS = ("row_label",)
 _COL_LABEL_FIELDS = ("col_label",)
 
 
+def _get_section_matches(section: Dict[str, Any]) -> list[Dict[str, Any]]:
+    results_payload = section.get("results") or {}
+    if isinstance(results_payload, dict) and isinstance(results_payload.get("matches"), list):
+        return results_payload.get("matches") or []
+    return []
+
+
+def _get_section_differences(section: Dict[str, Any]) -> list[Dict[str, Any]]:
+    results_payload = section.get("results") or {}
+    if not isinstance(results_payload, dict):
+        return []
+
+    raw_differences = results_payload.get("raw_differences")
+    if isinstance(raw_differences, list):
+        return raw_differences
+
+    differences_payload = results_payload.get("differences")
+    if not isinstance(differences_payload, dict):
+        return []
+
+    combined_differences: list[Dict[str, Any]] = []
+    for bucket_name in ("changed", "groups", "only_reference", "only_profile"):
+        bucket = differences_payload.get(bucket_name)
+        if isinstance(bucket, list):
+            combined_differences.extend(item for item in bucket if isinstance(item, dict))
+    return combined_differences
+
+
 def _is_percent_scale(values: list[float], forced_mode: Optional[str]) -> bool:
     if forced_mode == "percent":
         return True
@@ -83,7 +111,7 @@ def _parse_variant(variant: Optional[str]) -> dict[str, bool]:
 def _build_cells(section: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     cells: Dict[str, Dict[str, Any]] = {}
 
-    for record in section.get("matches", []) or []:
+    for record in _get_section_matches(section):
         key = str(record.get("key") or "")
         field = str(record.get("field") or "")
         value = record.get("value")
@@ -105,7 +133,7 @@ def _build_cells(section: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         elif field in _COL_LABEL_FIELDS:
             cell["col_label"] = "" if value is None else str(value)
 
-    for record in section.get("diffs", []) or []:
+    for record in _get_section_differences(section):
         field = str(record.get("field") or "")
         if field == "__presence__":
             continue

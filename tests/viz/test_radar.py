@@ -5,13 +5,29 @@ from report.viz.radar import render_radar_block
 from report.viz import registry as viz_registry
 
 
-def _section():
+def _radar_rows():
+    return [
+        {"key": "ALG_RSA", "ref_raw": 10.0, "test_raw": 12.0, "ref_score": 0.83, "test_score": 1.0},
+        {"key": "ALG_EC", "ref_raw": 5.0, "test_raw": 5.0, "ref_score": 1.0, "test_score": 1.0},
+        {"key": "ALG_AES", "ref_raw": 2.0, "test_raw": 3.0, "ref_score": 0.67, "test_score": 1.0},
+    ]
+
+
+def _section(rows=None):
     return {
-        "radar_rows": [
-            {"key": "ALG_RSA", "ref_raw": 10.0, "test_raw": 12.0, "ref_score": 0.83, "test_score": 1.0},
-            {"key": "ALG_EC", "ref_raw": 5.0, "test_raw": 5.0, "ref_score": 1.0, "test_score": 1.0},
-            {"key": "ALG_AES", "ref_raw": 2.0, "test_raw": 3.0, "ref_score": 0.67, "test_score": 1.0},
-        ]
+        "visualizations": {
+            "requested": [{"type": "radar", "variant": None}],
+            "available": {
+                "radar": {
+                    "type": "radar",
+                    "variant": None,
+                    "producer": "report_assembler",
+                    "source": "derived_from_results",
+                    "rows": _radar_rows() if rows is None else rows,
+                }
+            },
+            "unavailable": [],
+        }
     }
 
 
@@ -33,12 +49,12 @@ def test_render_radar_block_contains_svg_labels_and_legend():
 
 
 def test_render_radar_block_returns_empty_div_for_too_few_rows():
-    section = {
-        "radar_rows": [
+    section = _section(
+        rows=[
             {"key": "ALG_RSA", "ref_score": 0.8, "test_score": 1.0},
             {"key": "ALG_EC", "ref_score": 1.0, "test_score": 1.0},
         ]
-    }
+    )
 
     html = str(render_radar_block("PERF", section, 0))
     assert html == "<div></div>"

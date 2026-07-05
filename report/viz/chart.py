@@ -17,6 +17,15 @@ def _truncate(text: str, max_chars: int = 42) -> str:
     return text[: max_chars - 1] + "…"
 
 
+def _get_visualization_rows_from_section(section: Dict[str, Any], visualization_name: str) -> List[Dict[str, Any]]:
+    visualizations_payload = section.get("visualizations") or {}
+    available_visualizations = visualizations_payload.get("available") if isinstance(visualizations_payload, dict) else {}
+    visualization_payload = available_visualizations.get(visualization_name) if isinstance(available_visualizations, dict) else None
+    if isinstance(visualization_payload, dict) and isinstance(visualization_payload.get("rows"), list):
+        return visualization_payload.get("rows") or []
+    return []
+
+
 def _chart_values(rows: List[Dict[str, Any]]) -> List[float]:
     values: List[float] = []
     for row in rows:
@@ -30,7 +39,7 @@ def _chart_values(rows: List[Dict[str, Any]]) -> List[float]:
 
 
 def render_bar_pair_block(section_name: str, section: Dict[str, Any], idx: int):
-    rows: List[Dict[str, Any]] = section.get("chart_rows", []) or []
+    rows: List[Dict[str, Any]] = _get_visualization_rows_from_section(section, "chart")
     values = _chart_values(rows)
     if not values:
         return tags.div()
@@ -103,7 +112,7 @@ def render_bar_pair_block(section_name: str, section: Dict[str, Any], idx: int):
 
 
 def render_chart_table_block(section_name: str, section: Dict[str, Any], idx: int):
-    rows: List[Dict[str, Any]] = section.get("chart_rows", []) or []
+    rows: List[Dict[str, Any]] = _get_visualization_rows_from_section(section, "chart")
     if not rows:
         return tags.div()
 

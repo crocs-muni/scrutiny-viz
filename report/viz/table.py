@@ -26,9 +26,11 @@ from .utility import (
 
 
 def render_cplc_table(section: Dict[str, Any], ref_name: str, prof_name: str):
-    source_rows = section.get("source_rows") or {}
-    ref_rows = source_rows.get("reference") or []
-    test_rows = source_rows.get("tested") or source_rows.get("profile") or []
+    original_payload = section.get("original") if isinstance(section, dict) else None
+    reference_payload = original_payload.get("reference") if isinstance(original_payload, dict) and isinstance(original_payload.get("reference"), dict) else {}
+    profile_payload = original_payload.get("profile") if isinstance(original_payload, dict) and isinstance(original_payload.get("profile"), dict) else {}
+    ref_rows = reference_payload.get("rows") or []
+    test_rows = profile_payload.get("rows") or []
 
     ref_map: Dict[str, str] = {}
     test_map: Dict[str, str] = {}
@@ -413,55 +415,6 @@ def render_tracescompare_table(section: Dict[str, Any], ref_name: str, prof_name
 def render_traceclassifier_table(section: Dict[str, Any], ref_name: str, prof_name: str):
     artifacts = section.get("artifacts") or {}
     operations = artifacts.get("operations") or []
-
-    # fallback to legacy cards structure if needed
-    if not operations:
-        cards = artifacts.get("cards") or []
-        if not cards:
-            return None
-
-        operations = []
-        for card in cards:
-            for operation in card.get("operations") or []:
-                image_path = str(operation.get("visualized_operations", "") or "")
-                image_name = image_path.rsplit("/", 1)[-1].rsplit("\\", 1)[-1] if image_path else ""
-                operations.append(
-                    {
-                        "operation_code": operation.get("operation_code", ""),
-                        "operation_present": operation.get("operation_found", False),
-                        "comparison_results": [
-                            {
-                                "pipeline_code": "traceclassifier",
-                                "match_bound": 0.0,
-                                "warn_bound": 0.0,
-                                "metric_type": str(operation.get("similarity_value_type", "")).lower(),
-                                "comparison_state": str(operation.get("classification_state", "MATCH")),
-                                "comparison_results": (
-                                    [{
-                                        "distance_value": operation.get("best_similarity_value", 0.0) or 0.0,
-                                        "image_path": image_path,
-                                        "image_name": image_name,
-                                        "comparison_state": str(operation.get("classification_state", "MATCH")),
-                                    }]
-                                    if image_path else []
-                                ),
-                                "similarity_intervals": operation.get("similarity_intervals") or [],
-                            }
-                        ],
-                        "exec_time_match_lower_bound": 0.0,
-                        "exec_time_match_upper_bound": 0.0,
-                        "exec_time_warn_lower_bound": 0.0,
-                        "exec_time_warn_upper_bound": 0.0,
-                        "exec_times": [],
-                        "comparison_state": str(operation.get("classification_state", "MATCH")),
-                        "interval_count": int(operation.get("interval_count", 0) or 0),
-                        "best_similarity_value": operation.get("best_similarity_value"),
-                        "similarity_value_type": operation.get("similarity_value_type", ""),
-                        "similarity_intervals": operation.get("similarity_intervals") or [],
-                        "image_path": image_path,
-                        "image_name": image_name,
-                    }
-                )
 
     if not operations:
         return None

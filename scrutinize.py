@@ -12,7 +12,7 @@ from scrutiny.validation import require_file
 from mapper.cli import add_mapper_args, run_from_namespace as run_mapper_from_namespace
 from mapper.service import map_single_file
 
-from verification.cli import add_verify_args, run_from_namespace as run_verify_from_namespace
+from verification.cli import add_verify_args, print_comparator_capability_catalog, run_from_namespace as run_verify_from_namespace
 from verification.service import run_verification
 
 from report.cli import add_report_args, run_from_namespace as run_report_from_namespace
@@ -22,9 +22,9 @@ from scrutiny.batch.cli import add_batch_args, run_from_namespace as run_batch_f
 
 
 def add_full_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("-s", "--schema", required=True, help="Path to structure.yml")
-    parser.add_argument("-r", "--reference", required=True, help="Reference input (.json or .csv)")
-    parser.add_argument("-p", "--profile", required=True, help="Profile/test input (.json or .csv)")
+    parser.add_argument("-s", "--schema", help="Path to structure.yml")
+    parser.add_argument("-r", "--reference", help="Reference input (.json or .csv)")
+    parser.add_argument("-p", "--profile", help="Profile/test input (.json or .csv)")
     parser.add_argument("-t", "--type", dest="shared_type", default=None, help="Shared mapper type for CSV inputs (used for both reference and profile unless overridden)")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase log verbosity (-v, -vv)")
     parser.add_argument("--reference-type", dest="reference_type", default=None, help="Mapper type for reference CSV input")
@@ -39,6 +39,7 @@ def add_full_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--report-output", dest="report_output", default="comparison.html", help="Output HTML filename/path for final report")
     parser.add_argument("--exclude-style-and-scripts", action="store_true", help="Link CSS/JS instead of inlining them into the HTML")
     parser.add_argument("--no-zip", action="store_true", help="Disable zip creation for the report output")
+    parser.add_argument("--list-capabilities", action="store_true", help="List comparator visualization capabilities and exit")
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -132,6 +133,22 @@ def _ensure_json_input(
 def run_full_from_namespace(args: argparse.Namespace) -> int:
     slog.setup_logging(getattr(args, "verbose", 0))
     log = slog.get_logger("FULL")
+
+    if getattr(args, "list_capabilities", False):
+        print_comparator_capability_catalog()
+        return 0
+
+    missing_arguments = [
+        flag_name
+        for flag_name, value in (("--schema", args.schema), ("--reference", args.reference), ("--profile", args.profile))
+        if not value
+    ]
+    if missing_arguments:
+        raise UserInputError(
+            f"Missing required arguments: {', '.join(missing_arguments)}. "
+            "Provide them for the full workflow, or use --list-capabilities to inspect available visualizations.",
+            component="FULL",
+        )
 
     ref_input = Path(args.reference).resolve()
     prof_input = Path(args.profile).resolve()
