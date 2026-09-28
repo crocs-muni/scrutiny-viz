@@ -72,7 +72,7 @@ python scrutinize.py map -h
 ```bash
 python scrutinize.py map \
   -t tpm \
-  tests/mapper/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
+  tests/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
   -o results/tpm_input.json
 ```
 
@@ -81,7 +81,7 @@ python scrutinize.py map \
 ```bash
 python scrutinize.py map \
   -t jcalgsupport \
-  --folder tests/mapper/test-data/jcAlgSupport \
+  --folder tests/test-data/jcAlgSupport \
   -o results/jcalgsupport_mapped
 ```
 
@@ -225,8 +225,8 @@ python scrutinize.py full -h
 ```bash
 python scrutinize.py full \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r tests/mapper/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
-  -p tests/mapper/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
+  -r tests/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
+  -p tests/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
   -t tpm \
   --verify-output results/tpm_verify.json \
   --report-output tpm_comparison.html
@@ -238,7 +238,7 @@ python scrutinize.py full \
 python scrutinize.py full \
   -s scrutiny/schemas/TPMAlgTest.yml \
   -r examples/TPM/tpm_example1.json \
-  -p tests/mapper/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
+  -p tests/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
   --profile-type tpm \
   --verify-output results/tpm_verify.json \
   --report-output tpm_comparison.html
@@ -293,7 +293,7 @@ python scrutinize.py batch-verify -h
 python scrutinize.py batch-verify \
   -s scrutiny/schemas/jcAlgSupport.yml \
   -r examples/jcAlgSupport/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT.json \
-  --profiles-dir tests/mapper/test-data/jcAlgSupport \
+  --profiles-dir tests/test-data/jcAlgSupport \
   --profile-type jcalgsupport
 ```
 
@@ -312,8 +312,8 @@ python scrutinize.py batch-verify \
 ```bash
 python scrutinize.py batch-verify \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r tests/mapper/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
-  --profiles-dir tests/mapper/test-data/TPMAlgTest \
+  -r tests/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
+  --profiles-dir tests/test-data/TPMAlgTest \
   -t tpm
 ```
 

@@ -42,8 +42,8 @@ Example:
 ```bash
 python scrutinize.py full \
   -s scrutiny/schemas/TPMAlgTest.yml \
-  -r tests/mapper/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
-  -p tests/mapper/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
+  -r tests/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
+  -p tests/test-data/TPMAlgTest/INTC_Intel_10.0.36.1030.csv \
   -t tpm \
   --verify-output results/tpm_verify.json \
   --report-output tpm_comparison.html
@@ -165,7 +165,7 @@ Batch verification is useful when you want to compare one reference against many
 python scrutinize.py batch-verify \
   -s scrutiny/schemas/jcAlgSupport.yml \
   -r examples/jcAlgSupport/Infineon_CJTOP_80K_INF_SLJ_52GLA080AL_M8.4_ICFabDate_2012_001_ALGSUPPORT.json \
-  --profiles-dir tests/mapper/test-data/jcAlgSupport \
+  --profiles-dir tests/test-data/jcAlgSupport \
   --profile-type jcalgsupport
 ```
 
