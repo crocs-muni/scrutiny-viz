@@ -26,7 +26,7 @@ def _print_viz_catalog() -> None:
 def add_report_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("-p", "--verification-profile", metavar="file", help="Input verification JSON produced by verify.py")
     parser.add_argument("--list-viz", action="store_true", help="List discovered viz plugins and exit")
-    parser.add_argument("-o", "--output-file", metavar="outfile", default="comparison.html", help="Name of output HTML")
+    parser.add_argument("-o", "--output-file", metavar="outfile", default="comparison.html", help="Output HTML path. A bare file name is written into ./results/; a path with a directory is used as given.")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Increase log verbosity (-v, -vv)")
     parser.add_argument("--exclude-style-and-scripts", action="store_true", help="Inline CSS/JS instead of linking to /data/")
     parser.add_argument("--no-zip", action="store_true", help="Disables creation of a zip")

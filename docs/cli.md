@@ -203,7 +203,7 @@ python scrutinize.py report --list-viz
 ### Important options
 
 - `-p, --verification-profile` — verification JSON input
-- `-o, --output-file` — HTML filename
+- `-o, --output-file` — HTML output path; a bare file name is written into `./results/`, a path with a directory is used as given
 - `--exclude-style-and-scripts` — link CSS/JS instead of inlining them
 - `--no-zip` — disable zip generation
 - `--list-viz` — print discovered viz plugins and exit
@@ -253,7 +253,7 @@ python scrutinize.py full \
 - `--reference-type`, `--profile-type` — side-specific mapper types
 - `--mapped-dir` — location for intermediate mapped JSON files
 - `--verify-output` — verification JSON output path
-- `--report-output` — final report HTML output path
+- `--report-output` — final report HTML output path; a bare file name is written into `./results/`, a path with a directory is used as given
 - `--emit-matches`, `--print-diffs`, `--print-matches`
 - `--exclude-style-and-scripts`, `--no-zip`
 

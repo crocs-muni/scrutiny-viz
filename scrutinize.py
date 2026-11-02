@@ -36,7 +36,7 @@ def add_full_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--emit-matches", action="store_true", help="Pass through to verification")
     parser.add_argument("--print-diffs", type=int, default=3, metavar="N", help="Print up to N diffs per section (default: 3, 0 to disable)")
     parser.add_argument("--print-matches", type=int, default=0, metavar="N", help="Print up to N matches per section (default: 0)")
-    parser.add_argument("--report-output", dest="report_output", default="comparison.html", help="Output HTML filename/path for final report")
+    parser.add_argument("--report-output", dest="report_output", default="comparison.html", help="Output HTML path for the final report. A bare file name is written into ./results/; a path with a directory is used as given.")
     parser.add_argument("--exclude-style-and-scripts", action="store_true", help="Link CSS/JS instead of inlining them into the HTML")
     parser.add_argument("--no-zip", action="store_true", help="Disable zip creation for the report output")
 

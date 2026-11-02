@@ -191,10 +191,9 @@ def _generate_report_into_batch(
     report_dir: Path,
     output_stem: str,
 ) -> Path:
-    temp_name = f"batch_tmp_{output_stem}_{datetime.now().strftime('%H%M%S%f')}.html"
     report_result = run_report_html(
         verification_profile=str(verify_json_path),
-        output_file=temp_name,
+        output_file=str(report_dir / f"{output_stem}.html"),
         exclude_style_and_scripts=False,
         no_zip=True,
     )
@@ -204,15 +203,7 @@ def _generate_report_into_batch(
             f"{report_result.get('error', 'unknown error')}",
             component="BATCH",
         )
-
-    source = Path(report_result["html_path"]).resolve()
-    if not source.exists():
-        raise ReportError(f"Expected generated report not found: {source}", component="BATCH")
-
-    destination = report_dir / f"{output_stem}.html"
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(str(source), str(destination))
-    return destination
+    return Path(report_result["html_path"]).resolve()
 
 
 def run_batch_verification(
