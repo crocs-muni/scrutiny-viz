@@ -18,7 +18,7 @@ from scrutiny import logging as slog
 from scrutiny.errors import ReportError, ScrutinyError
 from scrutiny.interfaces import ContrastState
 from scrutiny.paths import REPORT_ASSETS_DIR, results_dir
-from scrutiny.validation import read_json_file
+from scrutiny.validation import ensure_output_parent, read_json_file
 
 from report.bundle import prepare_report_bundle
 from report.viz import registry as viz_registry
@@ -769,6 +769,15 @@ def _load_text_file(path: Path, *, kind: str) -> str:
         return ""
 
 
+def resolve_report_output_path(output_file: str | os.PathLike[str]) -> Path:
+    """A bare file name goes into ./results/; a path with a directory part is used as given."""
+    if not os.path.dirname(os.fspath(output_file)):
+        out_dir = results_dir()
+        out_dir.mkdir(parents=True, exist_ok=True)
+        return (out_dir / os.fspath(output_file)).resolve()
+    return ensure_output_parent(output_file, label="Report output file", component="REPORT")
+
+
 def _load_report_json(verification_profile: str) -> Dict[str, Any] | None:
     log.step("Loading report JSON", verification_profile)
     payload = read_json_file(verification_profile, label="Verification profile JSON", component="REPORT")
@@ -789,9 +798,11 @@ def run_report_html(
     except ScrutinyError as exc:
         return _fail(getattr(exc, "exit_code", 1), str(exc))
 
-    out_dir = results_dir()
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = (out_dir / os.path.basename(output_file)).resolve()
+    try:
+        out_path = resolve_report_output_path(output_file)
+    except ScrutinyError as exc:
+        return _fail(getattr(exc, "exit_code", 1), str(exc))
+    out_dir = out_path.parent
 
     bundle_result = prepare_report_bundle(
         report,

@@ -24,6 +24,21 @@ _GROUP_HEADER_RE = re.compile(r"Group \[(\d+)\] is often missclassified as:", re
 _EDGE_RE = re.compile(r"group g\[(\d+)\] in ([0-9]+(?:\.[0-9]+)?)% cases", re.IGNORECASE)
 
 
+def _top1_accuracies(doc: Any) -> dict[str, Any]:
+    accuracies = (doc or {}).get("accuracies") or {}
+    per_group = accuracies.get("1")
+    return per_group if isinstance(per_group, dict) else {}
+
+
+def _matrix_group_labels(bucket_docs: dict[int, Any], size: int) -> list[str] | None:
+    # RSABias indexes the matrix by its group names sorted as strings ("1", "10", "11", ..., "2", ...).
+    for n_keys in sorted(bucket_docs):
+        groups = sorted(str(g) for g in _top1_accuracies(bucket_docs[n_keys]))
+        if len(groups) == size:
+            return groups
+    return None
+
+
 class RSABiasMapper(MapperPlugin):
     spec = MapperSpec(
         name="rsabias",
@@ -106,7 +121,7 @@ class RSABiasMapper(MapperPlugin):
         result["CONFUSION_TOP"] = self._parse_confusion_text(confusion_text) if confusion_text else []
 
         if confusion_matrix is not None:
-            matrix_meta, matrix_cells, matrix_nonzero = self._flatten_confusion_matrix(confusion_matrix)
+            matrix_meta, matrix_cells, matrix_nonzero = self._flatten_confusion_matrix(confusion_matrix, bucket_docs)
             result["CONFUSION_MATRIX_META"] = matrix_meta
             result["CONFUSION_MATRIX_CELLS"] = matrix_cells
             result["CONFUSION_MATRIX_NONZERO"] = matrix_nonzero
@@ -119,17 +134,15 @@ class RSABiasMapper(MapperPlugin):
 
     def _aggregate_accuracy(self, doc: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         grouped: dict[str, dict[str, int]] = {}
-        accuracies = doc.get("accuracies") or {}
+        # Keys "1", "2", "3" count the true group within the top 1, 2 and 3; only top-1 is the accuracy.
+        per_group = _top1_accuracies(doc)
 
-        for _run_id, per_group in accuracies.items():
-            if not isinstance(per_group, dict):
+        for group_id, counts in per_group.items():
+            if not isinstance(counts, dict):
                 continue
-            for group_id, counts in per_group.items():
-                if not isinstance(counts, dict):
-                    continue
-                acc = grouped.setdefault(str(group_id), {"correct": 0, "wrong": 0})
-                acc["correct"] += int(counts.get("correct", 0) or 0)
-                acc["wrong"] += int(counts.get("wrong", 0) or 0)
+            acc = grouped.setdefault(str(group_id), {"correct": 0, "wrong": 0})
+            acc["correct"] += int(counts.get("correct", 0) or 0)
+            acc["wrong"] += int(counts.get("wrong", 0) or 0)
 
         rows: list[dict[str, Any]] = []
         total_correct = 0
@@ -200,7 +213,9 @@ class RSABiasMapper(MapperPlugin):
             row["rank"] = idx
         return rows
 
-    def _flatten_confusion_matrix(self, matrix: Any) -> tuple[list[dict[str, str]], list[dict[str, Any]], list[dict[str, Any]]]:
+    def _flatten_confusion_matrix(
+        self, matrix: Any, bucket_docs: dict[int, Any] | None = None
+    ) -> tuple[list[dict[str, str]], list[dict[str, Any]], list[dict[str, Any]]]:
         if np is None:
             raise RuntimeError("numpy is required to process confusion_matrix.pkl")
 
@@ -209,6 +224,15 @@ class RSABiasMapper(MapperPlugin):
             raise ValueError(f"Expected a 2D confusion matrix, got shape {arr.shape}")
 
         rows, cols = arr.shape
+        group_labels = _matrix_group_labels(bucket_docs or {}, rows) if rows == cols else None
+        if group_labels:
+            labels = group_labels
+            order = sorted(range(rows), key=lambda i: (0, int(labels[i])) if labels[i].isdigit() else (1, labels[i]))
+            position = {matrix_idx: pos for pos, matrix_idx in enumerate(order)}
+        else:
+            labels = [str(i) for i in range(max(rows, cols))]
+            position = {i: i for i in range(max(rows, cols))}
+
         all_rows: list[dict[str, Any]] = []
         nonzero_rows: list[dict[str, Any]] = []
 
@@ -233,11 +257,11 @@ class RSABiasMapper(MapperPlugin):
                     offdiag_sum += fval
 
                 rec = {
-                    "cell_id": f"{row_idx}:{col_idx}",
-                    "row_index": int(row_idx),
-                    "col_index": int(col_idx),
-                    "row_label": str(row_idx),
-                    "col_label": str(col_idx),
+                    "cell_id": f"{labels[row_idx]}:{labels[col_idx]}",
+                    "row_index": position[row_idx],
+                    "col_index": position[col_idx],
+                    "row_label": labels[row_idx],
+                    "col_label": labels[col_idx],
                     "value": round(fval, 8),
                     "is_diagonal": is_diag,
                 }
@@ -256,7 +280,7 @@ class RSABiasMapper(MapperPlugin):
             {"name": "nonzero_finite_cells", "value": str(nonzero_finite_cells)},
             {"name": "diag_sum", "value": f"{diag_sum:.8f}"},
             {"name": "offdiag_sum", "value": f"{offdiag_sum:.8f}"},
-            {"name": "labels_mode", "value": "matrix_index"},
+            {"name": "labels_mode", "value": "group" if group_labels else "matrix_index"},
         ]
         return meta, all_rows, nonzero_rows
 

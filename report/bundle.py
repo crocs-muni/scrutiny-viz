@@ -12,6 +12,7 @@ from urllib.parse import unquote, urlparse
 from scrutiny import logging as slog
 
 _NAME_PATTERN = re.compile(r"[^A-Za-z0-9._-]+")
+_IMAGE_TABLE_VARIANTS = {"tracescompare", "traceclassifier"}
 
 
 def _safe_name(value: str, *, fallback: str = "item") -> str:
@@ -28,7 +29,7 @@ def _is_tracecompare_table_section(section: Dict[str, Any]) -> bool:
             continue
         type_name = str(item.get("type") or "").strip().lower()
         variant = str(item.get("variant") or "").strip().lower()
-        if type_name == "table" and variant == "tracescompare":
+        if type_name == "table" and variant in _IMAGE_TABLE_VARIANTS:
             return True
     return False
 
@@ -146,6 +147,7 @@ def prepare_report_bundle(
             if not isinstance(operation, dict):
                 continue
             operation_code = str(operation.get("operation_code") or "")
+            rewritten_refs: Dict[str, str] = {}
 
             for pipeline in operation.get("comparison_results") or []:
                 if not isinstance(pipeline, dict):
@@ -178,10 +180,15 @@ def prepare_report_bundle(
                         continue
 
                     rel_path = dst.relative_to(html_dir).as_posix()
+                    rewritten_refs[raw_ref] = rel_path
                     if str(comparison.get("image_path") or "") != rel_path:
                         comparison["image_path"] = rel_path
                         rewritten_paths += 1
                     copied_assets += 1
+
+            operation_ref = str(operation.get("image_path") or "").strip()
+            if operation_ref in rewritten_refs:
+                operation["image_path"] = rewritten_refs[operation_ref]
 
     if not tracecompare_detected:
         return {

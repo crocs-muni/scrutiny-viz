@@ -86,15 +86,32 @@ def _parse_alg_row(parts: list[str], section_name: str) -> Optional[dict]:
     return {"algorithm_name": algorithm_name, "is_supported": sup}
 
 
+def _normalize_section_name(name: str) -> str:
+    # Older JCAlgTest results escape dots in some headers (javacard\.security\.KeyAgreement).
+    return (name or "").replace("\\.", ".").strip()
+
+
+def _is_continuation_row(first_line: str, delimiter: str) -> bool:
+    # A group that starts with a data row (no header) continues the previous section.
+    parts = [p.strip() for p in (first_line or "").split(delimiter)]
+    if len(parts) < 2 or "." in parts[0]:
+        return False
+    return _looks_like_alg_name(parts[0]) and _norm_supported(parts[1]) is not None
+
+
 def _detect_section_name(group: list[str], delimiter: str) -> Tuple[Optional[str], list[str]]:
     if not group:
         return None, []
 
     first_line = (group[0] or "").strip()
     if delimiter not in first_line:
-        return first_line, group[1:]
+        return _normalize_section_name(first_line) or None, group[1:]
 
-    parts = first_line.split(delimiter)
+    parts = [p.strip() for p in first_line.split(delimiter)]
+    if not any(parts[1:]):
+        # Older JCAlgTest results end header lines with the delimiter (javacardx.crypto.Cipher;).
+        return _normalize_section_name(parts[0]) or None, group[1:]
+
     section, _ = _split_group_and_alg(parts[0])
     return (section or None), group
 
@@ -133,10 +150,19 @@ class JcAlgSupportMapper(MapperPlugin):
         if basic_attrs:
             result[META_KEY] = basic_attrs
 
+        previous_section: Optional[str] = None
         for group in remaining_groups:
-            section, data_lines = _detect_section_name(group, context.delimiter)
+            if (
+                previous_section
+                and previous_section not in {"JCSystem", "CPLC"}
+                and _is_continuation_row(group[0], context.delimiter)
+            ):
+                section, data_lines = previous_section, group
+            else:
+                section, data_lines = _detect_section_name(group, context.delimiter)
             if not section:
                 continue
+            previous_section = section
 
             if section in {"JCSystem", "CPLC"}:
                 kvs: list[dict] = []

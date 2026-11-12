@@ -69,3 +69,32 @@ def test_jcalgsupport_mapper_support_values_are_boolish_when_present():
                 checked += 1
 
     assert checked > 0, "Expected at least one support value"
+
+def test_jcalgsupport_mapper_reads_older_jcalgtest_format():
+    from mapper.mapper_utils import prepare_lines
+    from mapper.mappers.contracts import build_context
+    from mapper.mappers.jcalg_support import PLUGIN
+
+    text = """JavaCard support version;2.2.1;
+
+javacardx.crypto.Cipher;
+ALG_DES_CBC_NOPAD;yes;
+ALG_DES_CBC_PKCS5;no;
+
+javacard.security.KeyBuilder;
+TYPE_DES_TRANSIENT_RESET;yes;
+
+TYPE_DSA_PRIVATE LENGTH_DSA_512;no;
+
+javacard\\.security\\.KeyAgreement
+ALG_EC_SVDP_DH;no;
+"""
+    payload = PLUGIN.map_groups(prepare_lines(text.splitlines()), build_context())
+
+    assert [r["algorithm_name"] for r in payload["javacardx.crypto.Cipher"]] == ["ALG_DES_CBC_NOPAD", "ALG_DES_CBC_PKCS5"]
+    assert [r["algorithm_name"] for r in payload["javacard.security.KeyBuilder"]] == [
+        "TYPE_DES_TRANSIENT_RESET",
+        "TYPE_DSA_PRIVATE LENGTH_DSA_512",
+    ]
+    assert payload["javacard.security.KeyAgreement"] == [{"algorithm_name": "ALG_EC_SVDP_DH", "is_supported": "no"}]
+    assert not {"javacardx", "javacard", "TYPE_DSA_PRIVATE LENGTH_DSA_512"} & set(payload)
